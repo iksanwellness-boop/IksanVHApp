@@ -763,7 +763,6 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
         <input class="in" id="nuPass" placeholder="Contraseña" type="password">
         <select class="in" id="nuRole" onchange="onNuRoleChange(this.value)">
           <option value="paid">🌿 Consultor</option>
-          <option value="operador">🔧 Operador</option>
           <option value="consult">👁️ Consulta (1 día)</option>
         </select>
       </div>
@@ -781,12 +780,6 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
         <input class="in" id="nuDays" type="number" value="30" placeholder="Días">
         <input class="in" id="nuPhone" placeholder="📱 WhatsApp" type="tel">
         <input class="in" id="nuPago" type="number" placeholder="Monto pagado" min="0">
-      </div>
-      <div class="in-row" style="margin-bottom:8px" id="nuParentRow" style="display:none">
-        <select class="in" id="nuParentId" onchange="showNuModulosForParent(this.value)">
-          <option value="">— Vincular a consultor (operadores) —</option>
-          ${users.filter(u=>u.role==='paid'&&!u.parentId).map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}
-        </select>
       </div>
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin:8px 0 5px">Módulos incluidos</div>
       <div id="nuModulos" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
@@ -3557,8 +3550,8 @@ function createUser(){
 function renderUsers(){
   const el=document.getElementById('usersList');if(!el)return;
   const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
-  // Solo mostrar usuarios principales (no sub-usuarios)
-  const mainUsers=users.filter(u=>!u.parentId);
+  // Solo mostrar usuarios principales, sin admin maestro
+  const mainUsers=users.filter(u=>!u.parentId&&u.id!=='u_admin');
   if(!mainUsers.length){el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>Sin usuarios</div>';return;}
   el.innerHTML=mainUsers.map(u=>{
     const expired=!checkAccess(u)&&u.role!=='admin';
@@ -3632,7 +3625,7 @@ function renderUserEditModal(uid){
   <!-- TABS -->
   <div style="display:flex;gap:3px;background:var(--warm);border-radius:9px;padding:3px;margin-bottom:14px">
     ${['info','modulos','pagos','acceso','subusers'].map((tab,i)=>{
-      const labels=['✏️ Info','🧩 Módulos','💰 Pagos','📅 Acceso','👥 Sub-usuarios'];
+      const labels=['✏️ Info','🧩 Módulos','💰 Pagos','📅 Acceso','🔧 Operadores'];
       return `<button onclick="ueTab('${tab}')" id="ueTab_${tab}" style="flex:1;padding:7px 2px;border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;background:${tab==='info'?'#fff':'none'};color:${tab==='info'?'var(--deep)':'var(--muted)'};font-family:-apple-system,sans-serif;box-shadow:${tab==='info'?'0 1px 4px rgba(0,0,0,.1)':'none'}">${labels[i]}</button>`;
     }).join('')}
   </div>
@@ -3799,34 +3792,79 @@ function renderUserEditModal(uid){
     <div style="font-size:10px;color:var(--muted);text-align:center">Incluye enlace con token · cuenta · módulos · contraseña</div>
   </div>
 
-  <!-- TAB: SUB-USUARIOS -->
+  <!-- TAB: OPERADORES / SOCIOS -->
   <div id="ueTabSubusers" style="display:none">
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.6">
-      Añade usuarios adicionales que compartan los módulos de <b>${u.name}</b>. Útil para socios, asistentes o familiares.
+
+    <!-- Límite de operadores info -->
+    ${u.id!=='u_admin'?`
+    <div style="background:${modsActivos.length?'#f0faf0':'#fff5f0'};border-radius:9px;padding:10px 13px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:22px">${modsActivos.length?'🔧':'⚠️'}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:${modsActivos.length?'#1a7f3c':'#c04040'}">
+          ${countOperadores(u.id)} / ${getMaxOperadores(u.id)} operadores activos
+        </div>
+        <div style="font-size:10px;color:var(--muted)">
+          ${modsActivos.length
+            ?'Límite según módulo más alto: '+(['m4','m3','m2','m1'].find(id=>modsActivos.find(m=>m.id===id))||'m1')
+            :'Activa módulos en la pestaña 🧩 Módulos para habilitar operadores'}
+        </div>
+      </div>
     </div>
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">➕ Nuevo sub-usuario</div>
-    <div class="in-row" style="margin-bottom:7px">
-      <input class="in" id="suNombre" placeholder="Nombre completo">
-      <input class="in" id="suEmail" placeholder="Email / usuario">
-    </div>
-    <div class="in-row" style="margin-bottom:10px">
-      <input class="in" id="suPass" type="text" placeholder="Contraseña">
-      <button class="btn btn-p btn-sm" style="flex:.5" onclick="addSubUser('${uid}')">+ Crear</button>
-    </div>
-    <div id="subUsersList_${uid}">
+
+    <!-- Formulario nuevo operador/socio -->
+    ${getMaxOperadores(u.id)>0?`
+    <div style="background:#f8f5ff;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px">➕ Nuevo operador o consultor socio</div>
+      <div class="in-row" style="margin-bottom:7px">
+        <input class="in" id="suNombre" placeholder="Nombre completo">
+        <input class="in" id="suEmail" placeholder="Email / usuario">
+      </div>
+      <div class="in-row" style="margin-bottom:7px">
+        <input class="in" id="suPass" type="text" placeholder="Contraseña">
+        <select class="in" id="suRol" style="flex:.7">
+          <option value="operador">🔧 Operador</option>
+          <option value="socio">🤝 Consultor Socio</option>
+        </select>
+      </div>
+      <!-- Módulos disponibles según el consultor raíz -->
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Módulos a activar</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        ${modulos.filter(m=>m.activatedFor?.includes(u.id)).map(m=>`
+        <label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:2px solid ${m.color}66;border-radius:9px;cursor:pointer;background:#fff;flex:1;min-width:120px">
+          <input type="checkbox" value="${m.id}" class="suModCheck" style="width:14px;height:14px;accent-color:${m.color}">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:${m.color}">${m.icon} ${({m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'})[m.id]||m.name}</div>
+            <div style="font-size:9px;color:#999">$${m.price}/mes</div>
+          </div>
+        </label>`).join('')||'<div style="font-size:11px;color:#bbb">Este consultor no tiene módulos activos</div>'}
+      </div>
+      <button class="btn btn-p btn-sm btn-full" onclick="addSubUser('${uid}')">✓ Crear</button>
+    </div>`
+    :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px 0 14px">Activa módulos primero para poder crear operadores</div>'}
+
+    <!-- Lista operadores/socios -->
+    <div style="display:flex;flex-direction:column;gap:6px">
       ${subUsers.length?subUsers.map(su=>`
-      <div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--warm);border-radius:9px;margin-bottom:6px">
-        <div style="width:30px;height:30px;border-radius:50%;background:var(--mid);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:10px">
+        <div style="width:34px;height:34px;border-radius:50%;background:${su.role==='socio'?'#1a7f3c':'#6b4a6e'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">
           ${su.name.charAt(0).toUpperCase()}
         </div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:700;color:var(--deep)">${su.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${su.email} · pass: ${su.pass}</div>
+          <div style="font-size:10px;color:var(--muted)">${su.role==='socio'?'🤝 Consultor Socio':'🔧 Operador'} · ${su.email}</div>
+          <div style="font-size:10px;color:var(--muted)">pass: <span style="font-family:monospace;font-weight:700">${su.pass}</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">
+            ${modulos.filter(m=>m.activatedFor?.includes(su.id)).map(m=>`<span style="background:${m.color}22;color:${m.color};font-size:9px;font-weight:700;padding:1px 6px;border-radius:5px">${m.icon} ${({m1:'Básico',m2:'Int',m3:'Avz',m4:'Plus'})[m.id]||m.name}</span>`).join('')||'<span style="font-size:9px;color:#bbb">Sin módulos</span>'}
+          </div>
         </div>
-        <button class="btn btn-d btn-sm" style="padding:2px 7px;font-size:10px" onclick="deleteSubUser('${uid}','${su.id}')">✕</button>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          ${su.role==='operador'?`<button class="btn btn-sm" style="background:#1a7f3c;color:#fff;font-size:9px;padding:3px 7px" onclick="upgradeToSocio('${su.id}')">🤝 Promover</button>`:''}
+          <button class="btn btn-d btn-sm" style="font-size:9px;padding:3px 7px" onclick="deleteSubUser('${uid}','${su.id}')">✕ Quitar</button>
+        </div>
       </div>`).join('')
-      :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Sin sub-usuarios aún</div>'}
-    </div>
+      :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Sin operadores creados aún</div>'}
+    </div>`
+    :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Admin maestro — sin operadores</div>'}
   </div>
   `;
 
@@ -3957,24 +3995,40 @@ function addSubUser(parentId){
   const nombre=document.getElementById('suNombre')?.value.trim();
   const email=document.getElementById('suEmail')?.value.trim();
   const pass=document.getElementById('suPass')?.value.trim();
+  const rol=document.getElementById('suRol')?.value||'operador';
   if(!nombre||!email||!pass){showT('Completa nombre, email y contraseña');return;}
   if(users.find(u=>u.email===email)){showT('Ese email ya existe');return;}
+
+  // Check operator limit
+  const maxOps=getMaxOperadores(parentId);
+  const currentOps=countOperadores(parentId);
+  if(currentOps>=maxOps){
+    showT('Límite alcanzado: máximo '+maxOps+' operador'+(maxOps!==1?'es':'')+' con los módulos actuales');
+    return;
+  }
+
+  // Read selected modules
+  const checkedMods=Array.from(document.querySelectorAll('.suModCheck:checked')).map(cb=>cb.value);
+
   const su={
     id:'u_'+Date.now(),name:nombre,email,pass,
-    role:parent.role,parentId:parentId,
+    role:rol,parentId:parentId,
     days:parent.days,activatedAt:parent.activatedAt,
-    modulosAsignados:parent.modulosAsignados||[],
+    modulosAsignados:checkedMods,
     active:true,createdAt:new Date().toISOString()
   };
   users.push(su);
-  // Activar mismos módulos que el padre
+
+  // Activate only selected modules for this operator
   modulos.forEach(m=>{
-    if(m.activatedFor?.includes(parentId)&&!m.activatedFor.includes(su.id)){
-      m.activatedFor.push(su.id);
+    if(checkedMods.includes(m.id)){
+      if(!m.activatedFor)m.activatedFor=[];
+      if(!m.activatedFor.includes(su.id))m.activatedFor.push(su.id);
     }
   });
+
   saveAll();
-  showT('✓ Sub-usuario creado: '+nombre);
+  showT('✓ '+(rol==='socio'?'Consultor Socio':'Operador')+' creado: '+nombre);
   renderUserEditModal(parentId);
   ueTab('subusers');
 }
@@ -3985,6 +4039,22 @@ function deleteSubUser(parentId,subId){
   saveAll();
   renderUserEditModal(parentId);
   ueTab('subusers');
+}
+
+function copyWAMsg(){
+  const ta=document.getElementById('waMsgTA');
+  if(!ta)return;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(ta.value)
+      .then(()=>showT('✓ Copiado — pégalo en WhatsApp'))
+      .catch(()=>{ta.select();document.execCommand('copy');showT('✓ Copiado');});
+  } else {
+    ta.select();document.execCommand('copy');showT('✓ Copiado');
+  }
+}
+function openWADirect(){
+  var msg=window._lastWAMsg||'';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 
 function copiarAccesoWA(uid){
@@ -4015,14 +4085,16 @@ function copiarAccesoWA(uid){
     +'\n💡 Abre el enlace en tu navegador e ingresa tu contraseña.\n'
     +'La primera vez que abras el enlace tu cuenta quedará configurada automáticamente.\n'
     +'\nSomos una herramienta independiente. Cualquier duda estoy aquí 💚';
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(msg).then(()=>showT('✓ Mensaje copiado — pégalo en WhatsApp'));
-  } else {
-    // Fallback: mostrar en modal para copiar manualmente
-    openMo(2,'<div class="m-title">💬 Mensaje para WhatsApp</div>'
-      +'<textarea class="in" style="min-height:200px;font-size:12px;resize:vertical" onclick="this.select()" readonly>'+msg+'</textarea>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:8px">Toca el texto para seleccionarlo y copiarlo</div>');
-  }
+  // Store msg for WhatsApp direct open
+  window._lastWAMsg=msg;
+  // Always show modal — clipboard API unreliable on iOS/Safari
+  openMo(2,'<div class="m-title">💬 Mensaje de activación</div>'
+    +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Toca el texto → selecciona todo → copia → pega en WhatsApp</div>'
+    +'<textarea id="waMsgTA" class="in" style="min-height:220px;font-size:12px;resize:vertical;font-family:-apple-system,sans-serif;line-height:1.6" onclick="this.select()" readonly>'+msg+'</textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:10px">'
+    +'<button class="btn btn-p" style="flex:1" onclick="copyWAMsg()">📋 Copiar todo</button>'
+    +'<button class="btn btn-wa" style="flex:1" onclick="openWADirect()">💬 Abrir WhatsApp</button>'
+    +'</div>');
 }
 
 function deleteUserFromEdit(uid){
