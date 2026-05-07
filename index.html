@@ -3,8 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Iksan Wellness</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Iksan Wellness v9</title>
+<style>
+/* System fonts — no external requests */
+:root{
+  --font-serif: 'Georgia', 'Times New Roman', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+</style>
 <style>
 :root{
   --rose:#d4a0b8;--cream:#faf8f5;--warm:#f5f0eb;
@@ -15,24 +21,24 @@
   --admin:#1a2a3e;--consultor:#9b6fbf;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);min-height:100vh;overflow-x:hidden}
+body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--deep);min-height:100vh;overflow-x:hidden}
 
 /* LOGIN */
 .login-screen{position:fixed;inset:0;background:linear-gradient(145deg,#fdf0f8,#f8f0fa,#f8f5e8);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .login-box{background:#fff;border-radius:20px;padding:36px 28px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(107,74,110,.15);border:1px solid var(--border)}
 .login-logo{text-align:center;margin-bottom:20px}
-.login-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;text-align:center;color:var(--deep);margin-bottom:4px}
+.login-title{font-family:Georgia,serif;font-size:26px;font-weight:300;text-align:center;color:var(--deep);margin-bottom:4px}
 .login-sub{font-size:12px;text-align:center;color:var(--muted);margin-bottom:20px}
 .login-user-select{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
-.login-user-btn{padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;text-align:left;transition:.15s;display:flex;align-items:center;gap:10px}
+.login-user-btn{padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-family:-apple-system,sans-serif;font-size:13px;cursor:pointer;text-align:left;transition:.15s;display:flex;align-items:center;gap:10px}
 .login-user-btn:hover{border-color:var(--rose);background:#fdf8ff}
 .login-user-btn.sel{border-color:var(--mid);background:linear-gradient(135deg,#f8f0fd,#f5eafa)}
 .login-user-role{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .login-field{margin-bottom:12px}
 .login-label{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
-.login-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--deep);background:#fff;outline:none;transition:.2s}
+.login-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:-apple-system,sans-serif;font-size:14px;color:var(--deep);background:#fff;outline:none;transition:.2s}
 .login-input:focus{border-color:var(--rose)}
-.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#c991b0,#9b6fbf);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#c991b0,#9b6fbf);color:#fff;border:none;border-radius:10px;font-family:-apple-system,sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
 .login-btn:hover{opacity:.9}
 .login-err{font-size:12px;color:#c04040;text-align:center;margin-top:8px;min-height:18px}
 
@@ -40,7 +46,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .app-header{background:linear-gradient(160deg,#fdf0f8 0%,#f8f0fa 50%,#f8f5e8 100%);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
 .logo-area{display:flex;align-items:center;gap:10px;cursor:pointer}
 .logo-svg{width:42px;height:42px;flex-shrink:0}
-.logo-text h1{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:300;letter-spacing:3px;color:var(--deep);line-height:1}
+.logo-text h1{font-family:Georgia,serif;font-size:17px;font-weight:300;letter-spacing:3px;color:var(--deep);line-height:1}
 .logo-text p{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:2px}
 .header-right{display:flex;gap:7px;align-items:center}
 .user-pill{background:linear-gradient(135deg,#c991b0,#9b6fbf);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.5px}
@@ -58,12 +64,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .ac-info{flex:1;min-width:0}
 .ac-name{font-size:13px;font-weight:600;color:var(--deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-sub{font-size:10px;color:var(--muted)}
-.ac-close{background:rgba(107,74,110,.12);border:none;color:var(--mid);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+.ac-close{background:rgba(107,74,110,.12);border:none;color:var(--mid);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif}
 
 /* NAV */
 .nav{display:flex;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
 .nav::-webkit-scrollbar{display:none}
-.nav-tab{flex:none;padding:11px 14px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:.2s;white-space:nowrap;display:flex;align-items:center;gap:5px;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
+.nav-tab{flex:none;padding:11px 14px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:.2s;white-space:nowrap;display:flex;align-items:center;gap:5px;background:none;border-top:none;border-left:none;border-right:none;font-family:-apple-system,sans-serif}
 .nav-tab.on{color:var(--mid);border-bottom-color:var(--mid)}
 .nav-tab.bo-tab{color:#1a2a3e}
 .nav-tab.bo-tab.on{border-bottom-color:#1a2a3e;color:#1a2a3e}
@@ -73,7 +79,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 /* SUB-NAV (for BO sub-tabs) */
 .subnav{display:flex;background:#f8f5fb;border-bottom:1px solid var(--border);overflow-x:auto;padding:0 8px;scrollbar-width:none}
 .subnav::-webkit-scrollbar{display:none}
-.subnav-tab{flex:none;padding:9px 12px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.subnav-tab{flex:none;padding:9px 12px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:-apple-system,sans-serif;white-space:nowrap;display:flex;align-items:center;gap:5px}
 .subnav-tab.on{color:var(--mid);border-bottom-color:var(--mid)}
 
 /* VIEWS */
@@ -81,11 +87,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .view.on{display:block}
 @keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 .wrap{max-width:760px;margin:0 auto;padding:14px}
-.sec-title{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:300;letter-spacing:1px;margin-bottom:3px}
+.sec-title{font-family:Georgia,serif;font-size:21px;font-weight:300;letter-spacing:1px;margin-bottom:3px}
 .sec-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
 
 /* BUTTONS */
-.btn{padding:9px 15px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.btn{padding:9px 15px;border:none;border-radius:10px;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
 .btn-p{background:linear-gradient(135deg,#c991b0,#9b6fbf);color:#fff}
 .btn-p:hover{opacity:.9}
 .btn-o{background:#fff;border:1.5px solid var(--border);color:var(--mid)}
@@ -99,7 +105,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .btn-full+.btn-full{margin-top:8px}
 
 /* FORMS */
-.in{padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--deep);background:#fff;outline:none;transition:.15s;width:100%}
+.in{padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-family:-apple-system,sans-serif;font-size:13px;color:var(--deep);background:#fff;outline:none;transition:.15s;width:100%}
 .in:focus{border-color:var(--rose)}
 .in-row{display:flex;gap:7px;margin-bottom:8px}
 .in-row .in{flex:1}
@@ -128,7 +134,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;padding:18px 16px 30px;position:relative}
 .m-handle{width:34px;height:3px;background:var(--border);border-radius:2px;margin:0 auto 13px}
 .m-close{position:absolute;top:13px;right:13px;background:var(--warm);border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px;color:var(--muted);z-index:10}
-.m-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--deep);margin-bottom:4px;padding-right:30px}
+.m-title{font-family:Georgia,serif;font-size:20px;font-weight:300;color:var(--deep);margin-bottom:4px;padding-right:30px}
 .m-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
 @media(min-width:500px){.overlay{align-items:center}.modal{border-radius:18px;margin:16px;max-height:85vh}}
 
@@ -140,13 +146,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px}
 .stat-box{background:#fff;border:1px solid var(--border);border-radius:10px;padding:11px;text-align:center}
 .stat-icon{font-size:20px;margin-bottom:3px}
-.stat-val{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:400;color:var(--deep);line-height:1.1}
+.stat-val{font-family:Georgia,serif;font-size:19px;font-weight:400;color:var(--deep);line-height:1.1}
 .stat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
 
 /* BO HERO */
 .bo-hero{background:linear-gradient(135deg,#1a2a3e,#0d1b2a);border-radius:12px;padding:14px;margin-bottom:13px;color:#fff}
 .bo-hero.admin{background:linear-gradient(135deg,#8b1a5a,#3a0a3a)}
-.bo-hero-title{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:300;letter-spacing:.5px}
+.bo-hero-title{font-family:Georgia,serif;font-size:19px;font-weight:300;letter-spacing:.5px}
 .bo-hero-sub{font-size:11px;opacity:.75;margin-top:2px}
 
 /* CARDS */
@@ -162,12 +168,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .prog-fill{height:100%;background:linear-gradient(90deg,#d4a0b8,#9b6fbf);border-radius:2px;transition:width .4s}
 .q-num{font-size:11px;color:var(--muted);letter-spacing:.4px;margin-bottom:4px}
 .q-emoji{font-size:30px;display:block;margin-bottom:6px}
-.q-text{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:300;color:var(--deep);margin-bottom:14px;line-height:1.4}
+.q-text{font-family:Georgia,serif;font-size:19px;font-weight:300;color:var(--deep);margin-bottom:14px;line-height:1.4}
 .opts{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
-.opt{padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:13px;color:var(--deep);cursor:pointer;text-align:left;transition:.15s;line-height:1.4;font-family:'DM Sans',sans-serif;width:100%}
+.opt{padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:13px;color:var(--deep);cursor:pointer;text-align:left;transition:.15s;line-height:1.4;font-family:-apple-system,sans-serif;width:100%}
 .opt:hover{border-color:var(--rose);background:#fdf8ff}
 .opt.sel{border-color:var(--mid);background:linear-gradient(135deg,#f8f0fd,#f5eafa);color:var(--mid)}
-.opt-other{width:100%;padding:8px 11px;border:1.5px solid var(--rose);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;display:none;margin-top:4px}
+.opt-other{width:100%;padding:8px 11px;border:1.5px solid var(--rose);border-radius:9px;font-family:-apple-system,sans-serif;font-size:13px;outline:none;display:none;margin-top:4px}
 .opt-other.show{display:block}
 
 /* PACKAGES */
@@ -179,7 +185,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .pkg-hdr.completo{background:linear-gradient(135deg,#b8960c,#8a700a)}
 .pkg-icon{font-size:26px}
 .pkg-meta{flex:1}
-.pkg-name{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:300;letter-spacing:1px}
+.pkg-name{font-family:Georgia,serif;font-size:21px;font-weight:300;letter-spacing:1px}
 .pkg-tagline{font-size:11px;opacity:.85;margin-top:2px;line-height:1.4}
 .pkg-price-area{text-align:right}
 .pkg-price-val{font-size:19px;font-weight:700}
@@ -197,7 +203,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .prod-reason{font-size:11px;color:var(--muted);margin-top:1px}
 .prod-dose-tag{font-size:10px;color:var(--mid);margin-top:2px;background:linear-gradient(135deg,#f8f0fd,#f5eafa);padding:2px 7px;border-radius:6px;display:inline-block}
 .pkg-acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
-.pkg-add-btn{flex:1;padding:9px;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:#fff;min-width:80px}
+.pkg-add-btn{flex:1;padding:9px;border:none;border-radius:9px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:#fff;min-width:80px}
 .pkg-add-btn.basic{background:var(--basic)}
 .pkg-add-btn.esencial{background:var(--esencial)}
 .pkg-add-btn.completo{background:var(--completo)}
@@ -224,7 +230,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .upload-zone:hover,.upload-zone.drag{border-color:var(--rose);background:#fdf5fa}
 .upload-zone.loaded{border-color:#c8e8c8;background:linear-gradient(135deg,#f0faf0,#e8f8e8)}
 .uz-icon{font-size:32px;margin-bottom:6px}
-.uz-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;color:var(--deep);margin-bottom:3px}
+.uz-title{font-family:Georgia,serif;font-size:16px;font-weight:300;color:var(--deep);margin-bottom:3px}
 .uz-sub{font-size:11px;color:var(--muted)}
 .spin{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--rose);border-radius:50%;animation:rot 1s linear infinite;margin:0 auto 10px}
 @keyframes rot{to{transform:rotate(360deg)}}
@@ -242,7 +248,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 .cir-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;padding:2px}
 .cart-total{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:2px solid var(--border);margin-top:4px}
 .ct-lbl{font-size:13px;font-weight:600;color:var(--muted)}
-.ct-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--deep)}
+.ct-val{font-family:Georgia,serif;font-size:22px;font-weight:400;color:var(--deep)}
 </style>
 </head>
 <body>
@@ -360,7 +366,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
       <div style="display:flex;align-items:flex-start;gap:11px">
         <div class="li-avatar" id="conAvatar" style="width:46px;height:46px;font-size:16px"></div>
         <div style="flex:1;min-width:0">
-          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300" id="conNameBig"></div>
+          <div style="font-family:Georgia,serif;font-size:20px;font-weight:300" id="conNameBig"></div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px" id="conMeta"></div>
           <div style="margin-top:6px" id="conStatusRow"></div>
         </div>
@@ -414,13 +420,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
   <div class="sec-sub">Explora productos individuales y paquetes/kits temáticos</div>
 
   <div style="display:flex;background:var(--warm);border-radius:10px;padding:3px;border:1px solid var(--border);margin-bottom:10px;gap:3px">
-    <button id="catModeProd" onclick="setCatMode('products')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--deep);box-shadow:0 1px 4px rgba(0,0,0,.1)">📦 Productos</button>
-    <button id="catModeKits" onclick="setCatMode('kits')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--muted)">🎁 Paquetes/Kits</button>
+    <button id="catModeProd" onclick="setCatMode('products')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:-apple-system,sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--deep);box-shadow:0 1px 4px rgba(0,0,0,.1)">📦 Productos</button>
+    <button id="catModeKits" onclick="setCatMode('kits')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:-apple-system,sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--muted)">🎁 Paquetes/Kits</button>
+  </div>
+  <div style="display:flex;gap:7px;margin-bottom:12px">
+    <button class="btn btn-o btn-sm" style="flex:1;font-size:11px" onclick="downloadCatalogoPadecimientos()">📄 PDF por Padecimiento</button>
+    <button class="btn btn-o btn-sm" style="flex:1;font-size:11px" onclick="downloadCatalogoCategoria()">📄 PDF por Categoría</button>
   </div>
 
   <div id="catProducts">
     <input class="in" id="catSearch" placeholder="🔍 Buscar producto, condición o beneficio..." oninput="filterCat()" style="margin-bottom:10px">
     <div class="cat-bar" id="catBar"></div>
+    <div id="hiddenProdsBar" style="display:none;margin-bottom:8px"></div>
     <div class="pgrid" id="pgrid"></div>
   </div>
 
@@ -445,7 +456,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
     <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 Citas Bio</button>
     <button class="subnav-tab" onclick="goBoView('citas-dr')" id="sb-citas-dr">👨‍⚕️ Doctores</button>
     <button class="subnav-tab" onclick="goBoView('todos-con')" id="sb-todos-con">👥 Consultantes</button>
-    <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios">🏷️ Precios</button>
+    <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios" style="display:none">🏷️ Precios</button>
     <button class="subnav-tab" onclick="goBoView('whatsapp')" id="sb-whatsapp">💬 WhatsApp Bot</button>
     <button class="subnav-tab" onclick="goBoView('mi-config')" id="sb-mi-config">🎨 Mi Config</button>
   </div>
@@ -459,6 +470,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
     </div>
     <div class="card">
       <div class="card-title">Filtrar</div>
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">🗓️ Fecha</div>
+      <div class="in-row" style="margin-bottom:9px"><input type="date" class="in" id="ventasFiltroDesde" oninput="renderVentas()"><input type="date" class="in" id="ventasFiltroHasta" oninput="renderVentas()"><button class="btn btn-o btn-sm" onclick="document.getElementById('ventasFiltroDesde').value='';document.getElementById('ventasFiltroHasta').value='';renderVentas()">✕</button></div>
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Por tipo</div>
       <div id="ventasTipoFiltro" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px"></div>
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Por origen</div>
@@ -515,7 +528,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
       <button class="btn btn-p btn-sm" onclick="saveGasto()">💾 Guardar gasto</button>
     </div>
     <div class="card">
-      <div class="card-title">Listado de gastos</div>
+      <div class="card-title">Listado de gastos
+        <span style="float:right;display:flex;gap:5px">
+          <button class="btn btn-wa btn-sm" style="font-size:10px;padding:3px 8px" onclick="shareGastosWA()">💬 WA</button>
+          <button class="btn btn-o btn-sm" style="font-size:10px;padding:3px 8px" onclick="downloadReportePDF('gastos','')">📄 PDF</button>
+        </span>
+      </div>
       <div id="gastosList"></div>
     </div>
   </div>
@@ -523,9 +541,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
   <!-- BO: Agenda -->
   <div id="bo-agenda" class="bo-view" style="display:none;padding-top:14px">
     <div style="display:flex;background:var(--warm);border-radius:10px;padding:3px;border:1px solid var(--border);margin-bottom:12px;gap:3px">
-      <button id="agendaTabCitas" onclick="setAgendaTab('citas')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--deep);box-shadow:0 1px 4px rgba(0,0,0,.1)">📅 Citas</button>
-      <button id="agendaTabPagos" onclick="setAgendaTab('pagos')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--muted)">💳 Pagos pendientes</button>
-      <button id="agendaTabTodos" onclick="setAgendaTab('todos')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--muted)">📋 Pendientes</button>
+      <button id="agendaTabCitas" onclick="setAgendaTab('citas')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:-apple-system,sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--deep);box-shadow:0 1px 4px rgba(0,0,0,.1)">📅 Citas</button>
+      <button id="agendaTabPagos" onclick="setAgendaTab('pagos')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:-apple-system,sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--muted)">💳 Pagos pendientes</button>
+      <button id="agendaTabTodos" onclick="setAgendaTab('todos')" style="flex:1;padding:8px;border:none;border-radius:7px;font-family:-apple-system,sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:none;color:var(--muted)">📋 Pendientes</button>
     </div>
     <div id="agendaCitas"></div>
     <div id="agendaPagos" style="display:none"></div>
@@ -600,25 +618,48 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
 
   <!-- BO: Precios catálogo -->
   <div id="bo-precios" class="bo-view" style="display:none;padding-top:14px">
-    <div class="card">
-      <div class="card-title">🏷️ Precios del catálogo VitalHealth</div>
-      <input class="in" id="boPriceSearch" placeholder="🔍 Buscar producto..." oninput="filterBoPrices()" style="margin-bottom:10px">
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:12px" id="boPriceTable">
-          <thead><tr style="border-bottom:2px solid var(--border)">
-            <th style="text-align:left;padding:7px;font-size:10px;text-transform:uppercase;color:var(--muted)">Producto</th>
-            <th style="text-align:right;padding:7px;font-size:10px;text-transform:uppercase;color:var(--muted)">Regular</th>
-            <th style="text-align:right;padding:7px;font-size:10px;text-transform:uppercase;color:var(--muted)">Promo</th>
-            <th style="text-align:right;padding:7px;font-size:10px;text-transform:uppercase;color:var(--muted)">%</th>
-          </tr></thead>
-          <tbody id="boPriceBody"></tbody>
-        </table>
-      </div>
-      <div style="display:flex;gap:7px;margin-top:10px">
-        <button class="btn btn-p btn-sm" onclick="saveBoPrices()">💾 Guardar</button>
-        <button class="btn btn-o btn-sm" onclick="resetPrices();initBoPriceTable()">↺ Restaurar</button>
-      </div>
+    <!-- Header + controles -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <input class="in" id="boPriceSearch" placeholder="🔍 Buscar producto o categoría..." oninput="filterBoPriceTiles()" style="flex:1;min-width:180px">
+      <button class="btn btn-p btn-sm" onclick="saveBoPrices()">💾 Guardar</button>
+      <button class="btn btn-o btn-sm" onclick="resetBoPrices()">↺ Restaurar</button>
+      <button class="btn btn-wa btn-sm" onclick="shareCatalogoWA()">💬 WA</button>
+      <button class="btn btn-o btn-sm" onclick="downloadReportePDF('catalogo','')">📄 PDF</button>
     </div>
+    <!-- Filtro categorías -->
+    <div class="cat-bar" id="boPriceCatBar" style="margin-bottom:10px"></div>
+    <!-- Contador de cambios pendientes -->
+    <div id="boPriceChangeBanner" style="display:none;background:linear-gradient(135deg,#fdf8e1,#fff8e1);border:1px solid #f0d060;border-radius:9px;padding:9px 13px;margin-bottom:10px;font-size:12px;color:#8a700a;align-items:center;gap:8px">
+      <span>⚠️</span><span id="boPriceChangeText">Hay cambios sin guardar</span>
+      <button class="btn btn-sm" style="background:#b8960c;color:#fff;margin-left:auto" onclick="saveBoPrices()">💾 Guardar ahora</button>
+    </div>
+    <!-- Grid de tarjetas igual al catálogo -->
+    <div class="pgrid" id="boPriceTilesGrid"></div>
+    <!-- Productos custom -->
+    <div style="margin-top:18px">
+      <div class="card-title">➕ Agregar servicio o producto personalizado</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Escaneo, consulta, producto propio — aparecerá en catálogo y carrito</div>
+      <div class="in-row">
+        <input class="in" id="customProdEmoji" placeholder="🔬" style="flex:.25">
+        <input class="in" id="customProdNombre" placeholder="Nombre del producto/servicio">
+      </div>
+      <div class="in-row">
+        <select class="in" id="customProdCat">
+          <option value="Servicio / Escaneo">🔬 Servicio / Escaneo</option>
+          <option value="Consulta">👩‍⚕️ Consulta</option>
+          <option value="Producto propio">📦 Producto propio</option>
+          <option value="Otro">🔹 Otro</option>
+        </select>
+        <input class="in" id="customProdPrecio" type="number" placeholder="Precio MXN" min="0" style="flex:.6">
+      </div>
+      <div class="in-row">
+        <input class="in" id="customProdDesc" placeholder="Descripción breve (beneficios, uso)">
+      </div>
+      <button class="btn btn-p btn-sm" onclick="addCustomProducto()">+ Agregar al catálogo</button>
+      <div id="customProdsList" style="margin-top:10px"></div>
+    </div>
+    <!-- Hidden tbody for backwards compat with saveBoPrices -->
+    <table style="display:none"><tbody id="boPriceBody"></tbody></table>
   </div>
 
   <!-- BO: WhatsApp Bot -->
@@ -720,10 +761,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
       </div>
       <div class="in-row">
         <input class="in" id="nuPass" placeholder="Contraseña" type="password">
-        <select class="in" id="nuRole" onchange="document.getElementById('nuDays').value=this.value==='consult'?1:30">
-          <option value="paid">🌿 Consultor (pago)</option>
+        <select class="in" id="nuRole" onchange="onNuRoleChange(this.value)">
+          <option value="paid">🌿 Consultor</option>
+          <option value="operador">🔧 Operador</option>
           <option value="consult">👁️ Consulta (1 día)</option>
-          <option value="admin">👑 Admin</option>
         </select>
       </div>
       <div class="in-row">
@@ -740,6 +781,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
         <input class="in" id="nuDays" type="number" value="30" placeholder="Días">
         <input class="in" id="nuPhone" placeholder="📱 WhatsApp" type="tel">
         <input class="in" id="nuPago" type="number" placeholder="Monto pagado" min="0">
+      </div>
+      <div class="in-row" style="margin-bottom:8px" id="nuParentRow" style="display:none">
+        <select class="in" id="nuParentId" onchange="showNuModulosForParent(this.value)">
+          <option value="">— Vincular a consultor (operadores) —</option>
+          ${users.filter(u=>u.role==='paid'&&!u.parentId).map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}
+        </select>
       </div>
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin:8px 0 5px">Módulos incluidos</div>
       <div id="nuModulos" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
@@ -771,7 +818,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
       <div id="ingresosCategoria"></div>
     </div>
     <div class="card">
-      <div class="card-title">Historial de pagos de suscripción</div>
+      <div class="card-title">Historial de pagos de suscripción
+        <span style="float:right"><button class="btn btn-o btn-sm" style="font-size:10px;padding:3px 8px" onclick="downloadReportePDF('ingresos','')">📄 PDF</button></span>
+      </div>
       <div id="ingresosList"></div>
     </div>
   </div>
@@ -780,7 +829,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--deep);
   <div id="admin-modulos" class="admin-view" style="display:none;padding-top:14px">
     <div class="card">
       <div class="card-title">🧩 Módulos disponibles · <span style="font-size:10px;color:var(--muted);font-weight:400">Edita precio y activa por consultor</span></div>
-      <div id="modulosList"></div>
+      <div id="modulosList"><p style="color:orange;font-size:11px;padding:8px">Cargando módulos...</p></div>
     </div>
   </div>
 
@@ -948,20 +997,48 @@ const S={
 let APP_CFG=S.get('ik_cfg',{appName:'IKSAN',appSub:'Wellness · VitalHealth',lang:'es'});
 let consultantes=S.get('ik_consultantes',[]);
 let prices=S.get('ik_prices',{});
-let users=S.get('ik_users',[
-  {id:'u_admin',name:'Admin Iksan',email:'admin',pass:'iksan2024',role:'admin',active:true,days:-1,activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()}
-]);
+const ADMIN_DEFAULT={id:'u_admin',name:'Admin Iksan',email:'admin',pass:'iksan2024',role:'admin',active:true,days:-1,activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()};
+let users=(function(){
+  try{
+    const saved=S.get('ik_users',[]);
+    const arr=Array.isArray(saved)?saved:[];
+    // Remove duplicate admin-role users
+    const cleaned=arr.filter(u=>u.role!=='admin'||u.id==='u_admin');
+    const idx=cleaned.findIndex(u=>u.id==='u_admin');
+    if(idx>=0){cleaned[idx]={...cleaned[idx],pass:'iksan2024',role:'admin',active:true,days:-1};}
+    else{cleaned.unshift({...ADMIN_DEFAULT});}
+    S.set('ik_users',cleaned);
+    return cleaned;
+  }catch(e){const a=[{...ADMIN_DEFAULT}];S.set('ik_users',a);return a;}
+})();
 let sales=S.get('ik_sales',[]);
 let locations=S.get('ik_locs',['General','Evento','Meta Ads','Redes Sociales','Referido']);
 let gastos=S.get('ik_gastos',[]);
 let citasBio=S.get('ik_citasBio',[]);
 let citasDr=S.get('ik_citasDr',[]);
-let modulos=S.get('ik_modulos',[
-  {id:'m1',name:'Catálogo y Carrito',icon:'📦',price:199,desc:'Catálogo de productos VitalHealth + carrito de ventas',includes:['catalogo','carrito'],baseApp:false,activatedFor:[]},
-  {id:'m2',name:'Catálogo + Paquetes + Carrito',icon:'🎁',price:299,desc:'Catálogo + kits temáticos + carrito con descuentos',includes:['catalogo','paquetes','carrito'],baseApp:false,activatedFor:[]},
-  {id:'m3',name:'Análisis Médicos + Quiz + VitalHealth',icon:'🔬',price:399,desc:'Quiz BioCuántico + análisis IA de laboratorios + reporte VitalHealth',includes:['quiz','labs','vh'],baseApp:false,activatedFor:[]},
-  {id:'m4',name:'Back Office Consultor',icon:'🏢',price:299,desc:'Agenda citas + ingresos + egresos + derivaciones a doctores',includes:['agenda','ventas','gastos','citas'],baseApp:false,activatedFor:[]}
-]);
+const MODULOS_DEFAULT=[
+  {id:'m1',name:'Básico',icon:'🌱',price:199,color:'#1a56db',desc:'Listado de clientes + recomendaciones de productos + catálogo con precios editables',includes:['clientes','catalogo','precios'],baseApp:false,activatedFor:[]},
+  {id:'m2',name:'Intermedio',icon:'🌿',price:349,color:'#1a7f3c',desc:'Todo Básico + carrito de ventas + hoja de ingesta y beneficios para el consultante',includes:['clientes','catalogo','precios','carrito','ingesta'],baseApp:false,activatedFor:[]},
+  {id:'m3',name:'Avanzado',icon:'🔬',price:549,color:'#8b1a5a',desc:'Todo Intermedio + control de ingresos y gastos + gestión de citas BioCuántico y derivaciones a doctores',includes:['clientes','catalogo','precios','carrito','ingesta','ingresos','gastos','citas'],baseApp:false,activatedFor:[]},
+  {id:'m4',name:'Plus',icon:'⭐',price:799,color:'#b8960c',desc:'Todo Avanzado + Chatbot personalizado de WhatsApp para automatizar atención y agendar citas',includes:['clientes','catalogo','precios','carrito','ingesta','ingresos','gastos','citas','chatbot'],baseApp:false,activatedFor:[]}
+];
+let modulos=(function(){
+  try{
+    const raw=localStorage.getItem('ik_modulos');
+    const saved=raw?JSON.parse(raw):[];
+    if(!Array.isArray(saved))return MODULOS_DEFAULT.map(d=>({...d}));
+    return MODULOS_DEFAULT.map(function(def){
+      var ex=saved.find(function(m){return m&&m.id===def.id;});
+      return {
+        id:def.id,name:def.name,icon:def.icon,color:def.color,
+        includes:def.includes,baseApp:def.baseApp,
+        price:(ex&&typeof ex.price==='number'&&ex.price>0)?ex.price:def.price,
+        activatedFor:(ex&&Array.isArray(ex.activatedFor))?ex.activatedFor:[],
+        desc:(ex&&ex.desc)?ex.desc:def.desc
+      };
+    });
+  }catch(e){return MODULOS_DEFAULT.map(function(d){return Object.assign({},d);});}
+})();
 let subPayments=S.get('ik_subPayments',[]);
 
 function saveAll(){
@@ -1076,14 +1153,114 @@ function showT(msg){const el=document.getElementById('toast');el.textContent=msg
 /* ═══════════════════════════════════════════════════
    LANG
    ═══════════════════════════════════════════════════ */
+const T={
+  es:{
+    consultantes:'Consultantes',catalogo:'Catálogo',bo:'BO Consultor',admin:'BO Admin',
+    ventas:'Ventas',gastos:'Gastos',agenda:'Agenda',precios:'Precios',config:'Mi Config',
+    todos:'Todos',origen:'Por origen',tipo:'Por tipo',productos:'Productos',
+    escaneo:'Escáner',derivado:'Derivados Dr.',transito:'En tránsito',
+    guardar:'Guardar',cancelar:'Cancelar',agregar:'Agregar',eliminar:'Eliminar',
+    // Nav tabs
+    nt_consultantes:'👤 Consultantes',nt_catalogo:'📦 Catálogo',nt_bo:'🏢 BO Consultor',nt_admin:'👑 BO Admin',
+    // BO subnav
+    sb_ventas:'📊 Ventas',sb_gastos:'💸 Gastos',sb_agenda:'📅 Agenda',
+    sb_citas_bio:'🔬 Citas Bio',sb_citas_dr:'👨‍⚕️ Doctores',sb_todos:'👥 Consultantes',
+    sb_precios:'🏷️ Precios',sb_wa:'💬 WhatsApp Bot',sb_miconfig:'🎨 Mi Config',
+    // Admin subnav
+    sa_subs:'💳 Suscripciones',sa_ingresos:'💰 Ingresos App',sa_modulos:'🧩 Módulos',
+    sa_onboarding:'🚀 Nuevo Consultor',sa_config:'⚙️ Configuración',
+    // Section titles
+    bo_hero_title:'🏢 Back Office Consultor',bo_hero_sub:'Tus ventas, gastos, citas y comisiones',
+    // Catalog modes
+    cat_productos:'📦 Productos',cat_kits:'🎁 Paquetes/Kits',
+    // Consultantes section
+    con_title:'👤 Consultantes',con_sub:'Selecciona o crea un consultante para empezar',
+    // Stats
+    stat_ventas:'Total ventas',stat_ops:'Operaciones',stat_clientes:'Consultantes activos',
+    // Catalog
+    cat_title:'📦 Catálogo VitalHealth',cat_search:'🔍 Buscar producto, condición o beneficio...',
+    // Cart
+    carrito:'Carrito',marcar_venta:'💰 Marcar como venta pagada',enviar_wa:'💬 Enviar por WhatsApp',
+    // Reports
+    rep_venta:'Venta',rep_total:'Total',rep_productos:'Productos',
+  },
+  en:{
+    consultantes:'Clients',catalogo:'Catalog',bo:'Consultant BO',admin:'Admin BO',
+    ventas:'Sales',gastos:'Expenses',agenda:'Agenda',precios:'Prices',config:'My Config',
+    todos:'All',origen:'By origin',tipo:'By type',productos:'Products',
+    escaneo:'Scanner',derivado:'Dr. Referrals',transito:'Pending payment',
+    guardar:'Save',cancelar:'Cancel',agregar:'Add',eliminar:'Delete',
+    // Nav tabs
+    nt_consultantes:'👤 Clients',nt_catalogo:'📦 Catalog',nt_bo:'🏢 Consultant BO',nt_admin:'👑 Admin BO',
+    // BO subnav
+    sb_ventas:'📊 Sales',sb_gastos:'💸 Expenses',sb_agenda:'📅 Agenda',
+    sb_citas_bio:'🔬 Bio Appointments',sb_citas_dr:'👨‍⚕️ Doctors',sb_todos:'👥 Clients',
+    sb_precios:'🏷️ Prices',sb_wa:'💬 WhatsApp Bot',sb_miconfig:'🎨 My Config',
+    // Admin subnav
+    sa_subs:'💳 Subscriptions',sa_ingresos:'💰 App Revenue',sa_modulos:'🧩 Modules',
+    sa_onboarding:'🚀 New Consultant',sa_config:'⚙️ Configuration',
+    // Section titles
+    bo_hero_title:'🏢 Consultant Back Office',bo_hero_sub:'Your sales, expenses, appointments and commissions',
+    // Catalog modes
+    cat_productos:'📦 Products',cat_kits:'🎁 Kits/Bundles',
+    // Consultantes section
+    con_title:'👤 Clients',con_sub:'Select or create a client to get started',
+    // Stats
+    stat_ventas:'Total sales',stat_ops:'Operations',stat_clientes:'Active clients',
+    // Catalog
+    cat_title:'📦 VitalHealth Catalog',cat_search:'🔍 Search product, condition or benefit...',
+    // Cart
+    carrito:'Cart',marcar_venta:'💰 Mark as paid sale',enviar_wa:'💬 Send via WhatsApp',
+    // Reports
+    rep_venta:'Sale',rep_total:'Total',rep_productos:'Products',
+  }
+};
+function t(k){return (T[LANG]||T.es)[k]||k;}
+
 function setLang(l){
   LANG=l;
   document.getElementById('btnES').classList.toggle('on',l==='es');
   document.getElementById('btnEN').classList.toggle('on',l==='en');
   APP_CFG.lang=l;saveAll();
-  // Re-renderizar vista activa para aplicar idioma en labels visibles
+  // Re-renderizar elementos con data-t
+  document.querySelectorAll('[data-t]').forEach(el=>{const k=el.dataset.t;const tx=t(k);if(tx&&tx!==k)el.textContent=tx;});
+  // Nav tabs texto (span dentro del button)
+  const ntMap={
+    'nt-consultantes':[l==='es'?'Consultantes':'Clients'],
+    'nt-catalogo':[l==='es'?'Catálogo':'Catalog'],
+    'nt-bo':[l==='es'?'BO Consultor':'Consultant BO'],
+    'nt-admin':[l==='es'?'BO Admin':'Admin BO']
+  };
+  Object.entries(ntMap).forEach(([id,[txt]])=>{
+    const el=document.getElementById(id);if(!el)return;
+    const sp=el.querySelector('span');if(sp)sp.textContent=txt;
+  });
+  // BO subnav
+  const snMap={
+    'sb-ventas':'sb_ventas','sb-gastos':'sb_gastos','sb-agenda':'sb_agenda',
+    'sb-citas-bio':'sb_citas_bio','sb-citas-dr':'sb_citas_dr','sb-todos-con':'sb_todos',
+    'sb-precios':'sb_precios','sb-whatsapp':'sb_wa','sb-mi-config':'sb_miconfig'
+  };
+  Object.entries(snMap).forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.textContent=t(key);});
+  // Admin subnav
+  const saMap={
+    'sa-subs':'sa_subs','sa-ingresos':'sa_ingresos','sa-modulos':'sa_modulos',
+    'sa-onboarding':'sa_onboarding','sa-config':'sa_config'
+  };
+  Object.entries(saMap).forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.textContent=t(key);});
+  // BO Hero title
+  const boHeroTitle=document.querySelector('.bo-hero .bo-hero-title');
+  const boHeroSub=document.querySelector('.bo-hero .bo-hero-sub');
+  if(boHeroTitle)boHeroTitle.textContent=t('bo_hero_title');
+  if(boHeroSub)boHeroSub.textContent=t('bo_hero_sub');
+  // Catalog search placeholder
+  const cs=document.getElementById('catSearch');if(cs)cs.placeholder=t('cat_search');
+  // Re-render visible views
   if(curView==='catalogo')initCat();
-  if(curView==='consultantes')renderActiveConPanel();
+  if(curView==='bo')renderVentas();
+  if(curView==='consultantes'){
+    const conSubEl=document.getElementById('conSub');if(conSubEl)conSubEl.textContent=t('con_sub');
+  }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1098,16 +1275,59 @@ function checkAccess(u){
 
 function initLogin(){
   const ul=document.getElementById('userSelect');
-  const activeUsers=users.filter(u=>u.active!==false);
-  if(!activeUsers.length){ul.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px">Sin usuarios — usa <strong>admin / iksan2024</strong></div>';return;}
-  ul.innerHTML=activeUsers.map(u=>{
-    const roleLbl=u.role==='admin'?'👑 Admin Iksan':u.role==='paid'?'🌿 Consultor':'👁️ Consulta';
-    return `<button class="login-user-btn" data-uid="${u.id}" onclick="selectLoginUser('${u.id}')">
-      <span style="font-size:18px">${u.role==='admin'?'👑':u.role==='paid'?'🌿':'👁️'}</span>
-      <div style="flex:1"><div style="font-size:13px;font-weight:600">${u.name}</div>
-      <div class="login-user-role">${roleLbl}</div></div>
+
+  // Check URL parameter ?u=email
+  const urlUser=sessionStorage.getItem('ik_url_user')||'';
+
+  // Solo usuarios activos sin parentId
+  const loginUsers=users.filter(u=>u.active!==false&&!u.parentId);
+  if(!loginUsers.length){ul.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px">Sin usuarios — usa <strong>admin / iksan2024</strong></div>';return;}
+
+  if(urlUser){
+    // ── MODO CONSULTOR: solo mostrar el usuario de la URL ──
+    const target=loginUsers.find(u=>
+      u.email.toLowerCase()===urlUser ||
+      u.id.toLowerCase()===urlUser ||
+      u.name.toLowerCase().replace(/\s+/g,'')===urlUser.replace(/\s+/g,'')
+    );
+    if(target&&target.id!=='u_admin'){
+      // Ocultar selector — mostrar solo su nombre
+      ul.innerHTML=`<div style="background:linear-gradient(135deg,#f8f5ff,#f0eaff);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <span style="font-size:22px">🌿</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--deep)">${target.name}</div>
+          <div style="font-size:11px;color:var(--muted)">Consultor · Iksan Wellness</div>
+        </div>
+      </div>`;
+      // Hide login subtitle, pre-select user
+      const sub=document.getElementById('loginSub');
+      if(sub)sub.textContent='Ingresa tu contraseña para continuar';
+      selectLoginUser(target.id);
+      return;
+    }
+    // Si el usuario URL no existe o es admin, mostrar login normal
+  }
+
+  // ── MODO NORMAL: mostrar todos los usuarios ──
+  const sorted=[...loginUsers.filter(u=>u.role==='admin'),...loginUsers.filter(u=>u.role!=='admin')];
+  ul.innerHTML=sorted.map(u=>{
+    const isAdmin=u.id==='u_admin';
+    const displayName=isAdmin?'Admin Iksan':u.name;
+    const icon=isAdmin?'👑':'🌿';
+    const roleLbl=isAdmin?'Admin Maestro':'Consultor';
+    return `<button class="login-user-btn${isAdmin?' sel':''}" data-uid="${u.id}" onclick="selectLoginUser('${u.id}')"
+      style="${isAdmin?'border-color:#1a2a3e;background:linear-gradient(135deg,#f0f4ff,#e8eeff)':''}">
+      <span style="font-size:18px">${icon}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:${isAdmin?'#1a2a3e':'var(--deep)'}">${displayName}</div>
+        <div class="login-user-role" style="color:${isAdmin?'#4a6a9e':'var(--muted)'}">${roleLbl}</div>
+      </div>
+      ${isAdmin?'<span style="font-size:9px;background:#1a2a3e;color:#fff;padding:2px 7px;border-radius:6px;font-weight:700">MASTER</span>':''}
     </button>`;
   }).join('');
+  // Auto-select admin
+  const admin=sorted.find(u=>u.role==='admin');
+  if(admin)selectLoginUser(admin.id);
 }
 
 function selectLoginUser(uid){
@@ -1132,11 +1352,10 @@ function doLogin(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
 
-  // Show role-specific tabs
-  document.getElementById('nt-bo').style.display='flex';
-  if(u.role==='admin'){
-    document.getElementById('nt-admin').style.display='flex';
-  }
+  // Reset ALL nav tabs first — applyModulosTabs will show correct ones
+  ['nt-consultantes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
 
   // User pill
   const pill=document.getElementById('userPill');
@@ -1158,13 +1377,10 @@ function doLogin(){
   else renderConList();
 
   // Init all
-  renderConSelect();
+  refreshAllConSelects();
   initCat();
-  initPriceTable();
-  renderUsers();
-  renderModulos();
-  renderNuModulos(false);
-  // Aplicar white-label config del consultor
+  if(u.role==='admin')safeCall(initPriceTable);
+  safeCall(applyModulosTabs,[u]);
   const boCfg=S.get('ik_boconfig_'+u.id,null);
   if(boCfg)applyBoConfig(boCfg);
   showT('Bienvenido/a, '+u.name);
@@ -1180,6 +1396,82 @@ function doLogout(){
   document.getElementById('loginPass').value='';
   document.getElementById('loginPass').dataset.uid='';
   initLogin();
+}
+
+/* ═══════════════════════════════════════════════════
+   MÓDULOS — visibilidad por usuario
+   ═══════════════════════════════════════════════════ */
+function applyModulosTabs(u){
+  if(!u)return;
+
+  // ── ADMIN: todas las pestañas ──
+  if(u.role==='admin'){
+    ['nt-consultantes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.style.display='flex';
+    });
+    // BO subnav: todas visibles para admin
+    ['sb-ventas','sb-gastos','sb-agenda','sb-citas-bio','sb-citas-dr',
+     'sb-todos-con','sb-whatsapp','sb-mi-config'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.style.display='';
+    });
+    // Precios separado: oculto (va en catálogo)
+    var sp=document.getElementById('sb-precios');if(sp)sp.style.display='none';
+    // Admin BO siempre visible
+    var ntAdmin=document.getElementById('nt-admin');if(ntAdmin)ntAdmin.style.display='flex';
+    return;
+  }
+
+  // ── NO-ADMIN: NUNCA ver BO Admin ──
+  var ntAdmin=document.getElementById('nt-admin');if(ntAdmin)ntAdmin.style.display='none';
+
+  // Socio = mismos privilegios que consultor raíz
+  // Operador = consultor pero sin gastos, ingresos, config
+  var isOperador=(u.role==='operador');
+  // For socio, treat as paid (full consultor access)
+  if(u.role==='socio'){ u=Object.assign({},u,{role:'paid'}); }
+
+  // ── CONSULTOR: gate by modulosAsignados ──
+  var mods=u.modulosAsignados||[];
+  var hasM1=mods.length>0;
+  var hasM2=mods.some(function(m){return m==='m2'||m==='m3'||m==='m4';});
+  var hasM3=mods.some(function(m){return m==='m3'||m==='m4';});
+  var hasM4=mods.indexOf('m4')>=0;
+
+  // Main nav tabs
+  var ntCon=document.getElementById('nt-consultantes');
+  var ntCat=document.getElementById('nt-catalogo');
+  var ntBo=document.getElementById('nt-bo');
+  var ntAdmin=document.getElementById('nt-admin');
+  if(ntCon)ntCon.style.display=hasM1?'flex':'none';
+  if(ntCat)ntCat.style.display=hasM1?'flex':'none';
+  if(ntBo)ntBo.style.display=hasM2?'flex':'none';
+  if(ntAdmin)ntAdmin.style.display='none'; // consultores never see admin
+
+  // BO sub-tabs
+  var boTabs={
+    'sb-ventas':hasM2&&!isOperador,        // operador no ve ingresos/ventas financieras
+    'sb-gastos':false,                      // operador nunca ve gastos
+    'sb-agenda':hasM3,
+    'sb-citas-bio':hasM3,
+    'sb-citas-dr':hasM3,
+    'sb-todos-con':hasM3,
+    'sb-precios':false,
+    'sb-whatsapp':hasM4&&!isOperador,       // operador no configura bot
+    'sb-mi-config':hasM2&&!isOperador       // operador usa config del consultor raíz
+  };
+  Object.keys(boTabs).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.style.display=boTabs[id]?'':'none';
+  });
+
+  // Redirect if on locked view
+  if(!hasM1){
+    document.getElementById('mainApp').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+    showT('Sin módulos activos. Contacta al admin.');
+    return;
+  }
+  if(!hasM2&&curView==='bo')goView('consultantes');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1219,6 +1511,8 @@ function goBoView(v){
   if(v==='mi-config'){loadBoConfigForm();renderBoGastoCuentas();renderBoRubros();}
 }
 
+function safeCall(fn,args){try{if(typeof fn==='function')fn.apply(null,args||[]);}catch(e){console.error('safeCall error:',e);}}
+
 function goAdminView(v){
   curAdminView=v;
   document.querySelectorAll('.admin-view').forEach(el=>el.style.display='none');
@@ -1228,12 +1522,12 @@ function goAdminView(v){
   if(view)view.style.display='block';
   if(tab)tab.classList.add('on');
 
-  if(v==='subs'){renderUsers();renderNuModulos(false);}
-  if(v==='ingresos')renderIngresos();
-  if(v==='modulos')renderModulos();
-  if(v==='onboarding')renderOnboardingLastUser();
-  if(v==='config'){renderCuentas();}
-  if(v==='precios')initPriceTable();
+  if(v==='subs'){safeCall(renderUsers);setTimeout(function(){safeCall(renderNuModulos,[false]);},50);}
+  if(v==='ingresos')safeCall(renderIngresos);
+  if(v==='modulos'){safeCall(renderModulos);setTimeout(function(){safeCall(renderModulos);},200);setTimeout(function(){safeCall(renderModulos);},800);}
+  if(v==='onboarding')safeCall(renderOnboardingLastUser);
+  if(v==='config')safeCall(renderCuentas);
+  if(v==='precios')safeCall(initPriceTable);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1261,6 +1555,12 @@ function populateConSelect(elId){
     consultantes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 }
 
+function refreshAllConSelects(){
+  // Actualiza TODOS los selects de consultante en la app
+  const ids=['conSelect','citaBioConsultante','citaDrConsultante'];
+  ids.forEach(id=>populateConSelect(id));
+}
+
 function createConsultante(){
   const name=document.getElementById('newConName').value.trim();
   const phone=document.getElementById('newConPhone').value.trim();
@@ -1279,7 +1579,7 @@ function createConsultante(){
     conditions:[],foodPref:[],
     status:'prospecto',statusNote:'',
     items:[],
-    history:[], // {date, type:'quiz'|'labs'|'vh'|'sale'|'note', data, summary}
+    history:[],
     createdAt:new Date().toISOString(),
     lastUpdate:new Date().toISOString()
   };
@@ -1288,7 +1588,7 @@ function createConsultante(){
   document.getElementById('newConPhone').value='';
   document.getElementById('newConEmail').value='';
   document.getElementById('newConOrigin').value='';
-  renderConSelect();
+  refreshAllConSelects();
   setActiveConsultante(c.id);
   showT('✓ '+name+' creado/a');
 }
@@ -1300,7 +1600,7 @@ function setActiveConsultante(id){
   S.set('ik_activeCon',id);
   renderActiveBar();
   renderActiveConPanel();
-  renderConSelect();
+  refreshAllConSelects();
 }
 
 function clearActiveConsultante(){
@@ -1781,7 +2081,7 @@ function renderResult(r){
   return `
     <div class="res-banner">
       <div style="font-size:24px">🌿</div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;margin-top:4px">${r.tipo_analisis}</div>
+      <div style="font-family:Georgia,serif;font-size:18px;font-weight:300;margin-top:4px">${r.tipo_analisis}</div>
       <div style="font-size:11px;color:var(--muted)">${r.paciente} · ${r.fecha}</div>
     </div>
     ${r.resumen_clinico?`<div style="background:#f8f5ff;border-radius:9px;padding:11px;margin-bottom:10px;font-size:12.5px;line-height:1.6"><strong>Resumen:</strong> ${r.resumen_clinico}</div>`:''}
@@ -1895,7 +2195,7 @@ function buildAnalysisModal(title,sub,src){
         <button class="btn btn-o btn-sm" onclick="runDemo()">Demo</button>
       </div>
     </div>
-    <div id="anaSpin" style="display:none;text-align:center;padding:30px"><div class="spin"></div><div style="font-family:'Cormorant Garamond',serif;font-size:16px">Analizando con IA...</div><div style="font-size:11px;color:var(--muted)">Identificando parámetros · Preparando protocolo</div></div>
+    <div id="anaSpin" style="display:none;text-align:center;padding:30px"><div class="spin"></div><div style="font-family:Georgia,serif;font-size:16px">Analizando con IA...</div><div style="font-size:11px;color:var(--muted)">Identificando parámetros · Preparando protocolo</div></div>
     <div id="anaRes"></div>
   `;
 }
@@ -2097,6 +2397,7 @@ function openCartModal(){
         <div style="display:flex;gap:7px;flex-wrap:wrap">
           <button class="btn btn-wa" style="flex:1" onclick="cartWhatsApp()">💬 WhatsApp</button>
           <button class="btn btn-p" style="flex:1" onclick="openPayModal()">💰 Registrar pago</button>
+          <button class="btn btn-o btn-sm" onclick="downloadCartPDF()">📄</button>
           <button class="btn btn-d btn-sm" onclick="if(confirm('Vaciar carrito?'))clearCart()">🗑️</button>
         </div>
       `:''}
@@ -2145,6 +2446,8 @@ function clearCart(){
 }
 
 function cartWhatsApp(){
+  // Redirige a la versión enriquecida si existe, si no usa la básica
+  if(typeof cartWhatsAppEnriquecido==='function'){cartWhatsAppEnriquecido();return;}
   const c=getActiveCon();if(!c||!c.items.length)return;
   const tot=c.items.reduce((s,i)=>s+i.p*i.q,0);
   const items=c.items.map(i=>`• ${i.n} × ${i.q} = $${(i.p*i.q).toLocaleString()}`).join('\n');
@@ -2290,27 +2593,40 @@ function initCat(){
 function setCat(c){aCat=c;initCat();}
 function filterCat(){
   const q=(document.getElementById('catSearch')?.value||'').toLowerCase();
-  const list=PP.filter(p=>{
-    const catOk=aCat==='Todos'||p.cat===aCat;
-    const txOk=!q||p.n.toLowerCase().includes(q)||p.b.some(b=>b.toLowerCase().includes(q))||p.pa.some(pa=>pa.toLowerCase().includes(q))||p.kw.some(k=>k.includes(q));
+  // Hidden bar
+  var hiddenCount=PP.filter(function(p){return prices[p.n]&&prices[p.n].hidden;}).length;
+  var hbar=document.getElementById('hiddenProdsBar');
+  if(hbar){
+    if(hiddenCount>0&&currentUser){
+      hbar.style.display='block';
+      hbar.innerHTML='<button class="btn btn-o btn-sm" style="font-size:11px;width:100%" onclick="openHiddenProdsModal()">🚫 '+hiddenCount+' producto'+(hiddenCount!==1?'s':'')+' oculto'+(hiddenCount!==1?'s':'')+' · toca para gestionar</button>';
+    } else { hbar.style.display='none'; }
+  }
+  var list=PP.filter(function(p){
+    if(prices[p.n]&&prices[p.n].hidden)return false;
+    var catOk=aCat==='Todos'||p.cat===aCat;
+    var txOk=!q||p.n.toLowerCase().includes(q)||p.b.some(function(b){return b.toLowerCase().includes(q);})||p.pa.some(function(pa){return pa.toLowerCase().includes(q);})||p.kw.some(function(k){return k.includes(q);});
     return catOk&&txOk;
   });
-  document.getElementById('pgrid').innerHTML=list.map(p=>{
-    const reg=getPrice(p.n),pr=getPromoPrice(p.n),disc=getDiscount(p.n);
-    return `<div class="ptile" onclick="openProductModal('${p.n.replace(/'/g,"\\'")}')">
-      <div class="pt-top" style="background:linear-gradient(145deg,#fdf5fa,#f5eafa)">
-        <div class="pt-emoji">${p.e}</div>
-        ${disc>0?`<div class="pt-disc">-${disc}%</div>`:''}
-      </div>
-      <div class="pt-body">
-        <div class="pt-name">${p.n}</div>
-        <div class="pt-cat">${p.cat}</div>
-        <div>
-          ${pr&&pr<reg?`<span class="pt-price" style="color:var(--esencial)">$${pr.toLocaleString()}</span><span class="pt-orig">$${reg.toLocaleString()}</span>`:`<span class="pt-price">$${reg.toLocaleString()}</span>`}
-        </div>
-        <button class="pt-add" onclick="event.stopPropagation();quickAdd('${p.n.replace(/'/g,"\\'")}')">+ Agregar</button>
-      </div>
-    </div>`;
+  document.getElementById('pgrid').innerHTML=list.map(function(p){
+    var reg=getPrice(p.n),pr=getPromoPrice(p.n),disc=getDiscount(p.n);
+    var canEdit=currentUser&&(currentUser.role==='admin'||currentUser.role==='paid');
+    var priceHtml=pr&&pr<reg
+      ?'<span class="pt-price" style="color:var(--esencial)">$'+pr.toLocaleString()+'</span><span class="pt-orig">$'+reg.toLocaleString()+'</span>'
+      :'<span class="pt-price">$'+reg.toLocaleString()+'</span>';
+    var editBtn=canEdit?'<button class="btn btn-sm" style="padding:2px 6px;font-size:10px;margin-left:auto;background:var(--warm);color:var(--mid);border:1px solid var(--border)" onclick="event.stopPropagation();openPriceEditModal(this.dataset.n)" data-n="'+p.n+'">✏️</button>':'';
+    return '<div class="ptile" onclick="openProductModal(this.dataset.n)" data-n="'+p.n+'">'
+      +'<div class="pt-top" style="background:linear-gradient(145deg,#fdf5fa,#f5eafa)">'
+        +'<div class="pt-emoji">'+p.e+'</div>'
+        +(disc>0?'<div class="pt-disc">-'+disc+'%</div>':'')
+      +'</div>'
+      +'<div class="pt-body">'
+        +'<div class="pt-name">'+p.n+'</div>'
+        +'<div class="pt-cat">'+p.cat+'</div>'
+        +'<div style="display:flex;align-items:center;gap:4px">'+priceHtml+editBtn+'</div>'
+        +'<button class="pt-add" onclick="event.stopPropagation();quickAdd(this.dataset.n)" data-n="'+p.n+'">+ Agregar</button>'
+      +'</div>'
+    +'</div>';
   }).join('');
 }
 
@@ -2336,7 +2652,7 @@ function renderKits(){
     const tot=prods.reduce((s,p)=>s+getEffPrice(p.n),0);
     return `<div style="background:#fff;border-radius:12px;overflow:hidden;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)">
       <div style="background:${k.c};color:#fff;padding:11px 13px;display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:300">${k.i} ${k.n}</div>
+        <div><div style="font-family:Georgia,serif;font-size:17px;font-weight:300">${k.i} ${k.n}</div>
         <div style="font-size:11px;opacity:.85">${k.d}</div></div>
         <div style="text-align:right;flex-shrink:0"><div style="font-size:17px;font-weight:700">$${tot.toLocaleString()}</div><div style="font-size:9px;opacity:.7">MXN</div></div>
       </div>
@@ -2344,7 +2660,7 @@ function renderKits(){
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
           ${prods.map(p=>`<span style="background:#f8f5ff;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer" onclick="openProductModal('${p.n.replace(/'/g,"\\'")}')">${p.e} ${p.n}</span>`).join('')}
         </div>
-        <button class="btn btn-sm" style="width:100%;background:${k.c};color:#fff" onclick='addKitToCart(${JSON.stringify(k.p)})'>🛒 Agregar kit completo</button>
+        <button class="btn btn-sm" style="width:100%;background:${k.c};color:#fff" data-kit='${JSON.stringify(k.p).replace(/'/g,"&apos;")}' onclick="addKitToCart(JSON.parse(this.dataset.kit))">🛒 Agregar kit completo</button>
       </div>
     </div>`;
   }).join('');
@@ -2369,6 +2685,88 @@ function quickAdd(name){
   saveAll();renderActiveConPanel();
   showT('✓ '+name+' → '+c.name);
 }
+
+function openPriceEditModal(name){
+  var p=PP.find(function(x){return x.n===name;});if(!p)return;
+  var reg=getPrice(name);
+  var promo=getPromoPrice(name)||'';
+  var hidden=!!(prices[name]&&prices[name].hidden);
+  window._peName=name;
+  var html='<div class="m-title">✏️ '+p.n+'</div>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin:8px 0 14px">'
+      +'<div style="font-size:30px">'+p.e+'</div>'
+      +'<div><div style="font-size:13px;font-weight:700;color:var(--deep)">'+p.n+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+p.cat+'</div></div>'
+    +'</div>'
+    +'<div class="in-row" style="margin-bottom:8px">'
+      +'<div style="flex:1"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Precio regular</div>'
+        +'<input class="in" id="peReg" type="number" value="'+reg+'" min="0" style="font-size:15px;font-weight:700"></div>'
+      +'<div style="flex:1"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Precio promo</div>'
+        +'<input class="in" id="pePromo" type="number" value="'+promo+'" min="0" placeholder="Sin promo" style="color:var(--esencial)"></div>'
+    +'</div>'
+    +'<div style="font-size:10px;color:var(--muted);margin-bottom:14px">Base sugerido: $'+p.p.toLocaleString()+'</div>'
+    +'<div style="display:flex;gap:7px;margin-bottom:12px">'
+      +'<button class="btn btn-p" style="flex:1" onclick="savePriceEdit()">💾 Guardar</button>'
+      +'<button class="btn btn-o" onclick="closeMo(3)">Cancelar</button>'
+    +'</div>'
+    +'<div style="border-top:1px solid var(--border);padding-top:10px">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Visibilidad en catálogo</div>'
+      +(hidden
+        ?'<button class="btn btn-o btn-sm" onclick="toggleProdHidden(false)">👁️ Mostrar en catálogo</button>'
+        :'<button class="btn btn-sm" style="background:#c04040;color:#fff" onclick="toggleProdHidden(true)">🚫 Ocultar del catálogo</button>'
+      )
+    +'</div>';
+  openMo(3,html);
+}
+
+function savePriceEdit(){
+  var name=window._peName;if(!name)return;
+  var reg=parseFloat(document.getElementById('peReg').value)||0;
+  var promo=parseFloat(document.getElementById('pePromo').value)||0;
+  if(!prices[name])prices[name]={};
+  prices[name].regular=reg;
+  prices[name].promo=promo||null;
+  saveAll();closeMo(3);initCat();showT('✓ Precio guardado');
+}
+
+function toggleProdHidden(hide){
+  var name=window._peName;if(!name)return;
+  var pass=prompt('Confirma con tu contraseña:');
+  if(!currentUser||pass!==currentUser.pass){showT('Contraseña incorrecta');return;}
+  if(!prices[name])prices[name]={};
+  prices[name].hidden=!!hide;
+  saveAll();closeMo(3);initCat();
+  showT(hide?'Producto ocultado del catálogo':'Producto visible en catálogo');
+}
+
+function openHiddenProdsModal(){
+  var hidden=PP.filter(function(p){return prices[p.n]&&prices[p.n].hidden;});
+  if(!hidden.length){showT('No hay productos ocultos');return;}
+  var html='<div class="m-title">🚫 Productos ocultos ('+hidden.length+')</div>'
+    +'<div style="font-size:11px;color:var(--muted);margin-bottom:12px">Toca para volver a mostrar en el catálogo.</div>';
+  hidden.forEach(function(p){
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:22px">'+p.e+'</div>'
+      +'<div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--deep)">'+p.n+'</div>'
+      +'<div style="font-size:10px;color:var(--muted)">'+p.cat+'</div></div>'
+      +'<button class="btn btn-o btn-sm" data-n="'+p.n+'" onclick="restoreHiddenProd(this.dataset.n,this)">👁️ Mostrar</button>'
+      +'</div>';
+  });
+  openMo(3,html);
+}
+
+function restoreHiddenProd(name,btn){
+  if(!prices[name])prices[name]={};
+  prices[name].hidden=false;
+  saveAll();initCat();
+  btn.textContent='✓';btn.disabled=true;
+  setTimeout(function(){
+    var rem=PP.filter(function(p){return prices[p.n]&&prices[p.n].hidden;});
+    if(!rem.length){closeMo(3);showT('Todos los productos visibles');}
+    else openHiddenProdsModal();
+  },400);
+}
+
 
 function openProductModal(name){
   const p=PP.find(x=>x.n===name);if(!p)return;
@@ -2408,37 +2806,31 @@ let gastoFiltroRubro='all', gastoFiltroQuien='all';
 let ventasTipoFilter='all';
 
 function renderVentas(){
-  // Filtros por TIPO
   const tipoEl=document.getElementById('ventasTipoFiltro');
   const tiposOpts=[
-    {k:'all',l:'Todos'},
-    {k:'tipo:producto',l:'📦 Productos'},
-    {k:'tipo:escaneo',l:'🔬 Escáner'},
-    {k:'tipo:derivado',l:'👨‍⚕️ Derivados Dr.'},
-    {k:'tipo:transito',l:'⏳ En tránsito'}
+    {k:'all',l:'🗂️ '+t('todos')},{k:'tipo:producto',l:'📦 '+t('productos')},
+    {k:'tipo:escaneo',l:'🔬 '+t('escaneo')},{k:'tipo:derivado',l:'👨‍⚕️ '+t('derivado')},
+    {k:'tipo:transito',l:'⏳ '+t('transito')}
   ];
   if(tipoEl)tipoEl.innerHTML=tiposOpts.map(o=>`<span class="cat-pill${ventasTipoFilter===o.k?' on':''}" onclick="setVentasTipo('${o.k}')">${o.l}</span>`).join('');
-
-  // Filtros por ORIGEN
+  // Origen: siempre mostrar todos aunque no haya ventas aún
   const filterEl=document.getElementById('ventasFiltro');
-  const usedOrigins=[...new Set(sales.map(s=>s.origin).filter(Boolean))];
-  const originOpts=Object.entries(ORIGIN).filter(([k])=>usedOrigins.includes(k)).map(([k,l])=>({k:'origin:'+k,l}));
-  const opts=[{k:'all',l:'Todos'},...originOpts];
+  const opts=[{k:'all',l:'🗂️ Todos'},...Object.entries(ORIGIN).map(([k,l])=>({k:'origin:'+k,l}))];
   if(filterEl)filterEl.innerHTML=opts.map(o=>`<span class="cat-pill${ventasFilter===o.k?' on':''}" onclick="setVentasFilter('${o.k}')">${o.l}</span>`).join('');
-
+  var vDesde=(document.getElementById('ventasFiltroDesde')||{}).value||'';
+  var vHasta=(document.getElementById('ventasFiltroHasta')||{}).value||'';
   let filtered=sales.filter(s=>{
-    // Filtro tipo
+    var d=(s.date||'').slice(0,10);
+    if(vDesde&&d<vDesde)return false;
+    if(vHasta&&d>vHasta)return false;
     if(ventasTipoFilter==='tipo:producto')return s.status!=='transito'&&!s.esEscaneo&&!s.esDerivado;
     if(ventasTipoFilter==='tipo:escaneo')return s.esEscaneo;
     if(ventasTipoFilter==='tipo:derivado')return s.esDerivado;
     if(ventasTipoFilter==='tipo:transito')return s.status==='transito';
-    // Filtro origen
     if(ventasFilter!=='all'&&ventasFilter.startsWith('origin:'))return s.origin===ventasFilter.slice(7);
     return true;
   });
-
-  const list=document.getElementById('ventasList');
-  if(!list)return;
+  const list=document.getElementById('ventasList');if(!list)return;
   if(!filtered.length){list.innerHTML='<div class="empty"><div class="empty-icon">📊</div>Sin ventas en este filtro</div>';return;}
   list.innerHTML=filtered.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(s=>`
     <div class="list-item">
@@ -2446,11 +2838,15 @@ function renderVentas(){
       <div class="li-info">
         <div class="li-name">${s.client}</div>
         <div class="li-meta">${s.origin?ORIGIN[s.origin]||s.origin:'Sin origen'} · ${new Date(s.date).toLocaleDateString('es-MX')} · ${s.productsCount||1} prod.</div>
-        ${s.status==='transito'?'<span style="font-size:10px;background:#fff8e1;color:#b8960c;padding:2px 7px;border-radius:5px">⏳ Pago en tránsito</span>':''}
+        ${s.status==='transito'?'<span style="font-size:10px;background:#fff8e1;color:#b8960c;padding:2px 7px;border-radius:5px">⏳ Tránsito</span>':''}
       </div>
       <div style="text-align:right">
         <div style="font-weight:700;color:var(--esencial)">$${s.total.toLocaleString()}</div>
-        <button class="btn btn-d btn-sm" style="font-size:10px;padding:3px 7px;margin-top:3px" onclick="if(confirm('¿Eliminar venta?'))deleteSale('${s.id}')">✕</button>
+        <div style="display:flex;gap:3px;margin-top:4px;justify-content:flex-end">
+          <button class="btn btn-wa btn-sm" style="font-size:10px;padding:3px 6px" onclick="shareVentaWA('${s.id}')">💬</button>
+          <button class="btn btn-o btn-sm" style="font-size:10px;padding:3px 6px" onclick="downloadReportePDF('venta','${s.id}')">📄</button>
+          <button class="btn btn-d btn-sm" style="font-size:10px;padding:3px 6px" onclick="if(confirm('¿Eliminar?'))deleteSale('${s.id}')">✕</button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -2466,6 +2862,13 @@ function updateStatsBO(){
   document.getElementById('statVentasCount').textContent=sales.length;
   const conConActividad=new Set([...sales.map(s=>s.cliId),...citasBio.map(c=>c.cliId),...citasDr.map(c=>c.cliId)]);
   document.getElementById('statClientesAct').textContent=consultantes.filter(c=>conConActividad.has(c.id)||c.status==='activo').length;
+  // Labels i18n
+  const lblV=document.querySelector('#statVentasTotal')?.closest('.stat-box')?.querySelector('.stat-lbl');
+  const lblO=document.querySelector('#statVentasCount')?.closest('.stat-box')?.querySelector('.stat-lbl');
+  const lblC=document.querySelector('#statClientesAct')?.closest('.stat-box')?.querySelector('.stat-lbl');
+  if(lblV)lblV.textContent=t('stat_ventas');
+  if(lblO)lblO.textContent=t('stat_ops');
+  if(lblC)lblC.textContent=t('stat_clientes');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2518,6 +2921,7 @@ function renderGastoFiltros(){
 function setGastoFiltro(tipo,val){
   if(tipo==='rubro')gastoFiltroRubro=val;
   else gastoFiltroQuien=val;
+  renderGastoFiltros();
   renderGastos();
 }
 
@@ -2813,6 +3217,7 @@ function renderAgendaTodos(){
     </div>
     <div style="font-size:12px;color:var(--deep);align-self:center">${c.txt}</div>
   </div>`).join('');
+}  // cierre renderAgendaTodos
 
 /* ═══════════════════════════════════════════════════
    BO CONSULTOR — CITAS BIOCUÁNTICO
@@ -2992,20 +3397,107 @@ function renderAllConsultantes(){
 /* ═══════════════════════════════════════════════════
    BO ADMIN — USUARIOS / SUSCRIPCIONES
    ═══════════════════════════════════════════════════ */
+function onNuRoleChange(role){
+  const parentRow=document.getElementById('nuParentRow');
+  const daysEl=document.getElementById('nuDays');
+  if(parentRow)parentRow.style.display=(role==='operador'||role==='socio')?'flex':'none';
+  if(daysEl&&role==='consult')daysEl.value='1';
+  // Reset parent selector
+  const parentSel=document.getElementById('nuParentId');
+  if(parentSel)parentSel.value='';
+  renderNuModulos(false);
+  // Refresh parent selector options
+  if(parentSel){
+    parentSel.innerHTML='<option value="">— Vincular a consultor (requerido) —</option>'
+      +users.filter(u=>u.role==='paid'&&!u.parentId).map(u=>'<option value="'+u.id+'">'+u.name+'</option>').join('');
+  }
+}
+
 function setSusPeriodo(v){
-  const d={document:{nuDays:{value:'30'}}};
   const map={'2d':2,'30':30,'90':90,'180':180,'365':365};
   const dEl=document.getElementById('nuDays');
   if(dEl&&map[v])dEl.value=map[v];
   renderNuModulos(v==='2d');
+  // Show/hide parent selector based on role
+  const role=document.getElementById('nuRole')?.value||'paid';
+  const parentRow=document.getElementById('nuParentRow');
+  if(parentRow)parentRow.style.display=(role==='operador'||role==='socio')?'flex':'none';
+}
+
+function showNuModulosForParent(parentId){
+  // When creating an operador, show only modules the parent consultor has
+  if(!parentId){renderNuModulos(false);return;}
+  const el=document.getElementById('nuModulos');
+  if(!el)return;
+  el.innerHTML='';
+  const parentMods=modulos.filter(m=>m.activatedFor&&m.activatedFor.includes(parentId));
+  const maxOps=getMaxOperadores(parentId);
+  const currentOps=countOperadores(parentId);
+  const remaining=maxOps-currentOps;
+  const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+
+  // Show limit info
+  const info=document.createElement('div');
+  info.style.cssText='font-size:11px;color:var(--muted);margin-bottom:8px;width:100%';
+  info.textContent='Operadores disponibles: '+remaining+' de '+maxOps+' (módulo más alto del consultor)';
+  el.appendChild(info);
+
+  if(remaining<=0){
+    info.style.color='#c04040';
+    info.textContent='⚠️ Este consultor ya alcanzó el límite de '+maxOps+' operadores con sus módulos actuales';
+    return;
+  }
+
+  parentMods.forEach(function(m){
+    var color=m.color||'#6b4a6e';
+    var label=document.createElement('label');
+    label.style.cssText='display:flex;align-items:center;gap:7px;padding:7px 10px;border:2px solid '+color+'66;border-radius:9px;cursor:pointer;background:#fff;flex:1;min-width:130px';
+    var cb=document.createElement('input');
+    cb.type='checkbox';cb.value=m.id;
+    cb.style.cssText='width:15px;height:15px;accent-color:'+color;
+    label.appendChild(cb);
+    var nd=document.createElement('div');
+    nd.style.cssText='font-size:11px;font-weight:700;color:'+color;
+    nd.textContent=m.icon+' '+(labelMap[m.id]||m.name);
+    var pd=document.createElement('div');
+    pd.style.cssText='font-size:9px;color:#999';
+    pd.textContent='$'+m.price+'/mes';
+    var info2=document.createElement('div');
+    info2.appendChild(nd);info2.appendChild(pd);
+    label.appendChild(info2);
+    el.appendChild(label);
+  });
+
+  if(!parentMods.length){
+    el.innerHTML='<div style="font-size:11px;color:#c04040">Este consultor no tiene módulos activos</div>';
+  }
 }
 
 function renderNuModulos(all){
-  const el=document.getElementById('nuModulos');if(!el)return;
-  el.innerHTML=modulos.map(m=>`
-    <label style="display:flex;align-items:center;gap:5px;padding:4px 9px;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:11px;background:${all?'#f0faf0':'#fff'}">
-      <input type="checkbox" value="${m.id}" ${all?'checked':''} style="width:13px;height:13px"> ${m.icon} ${m.name}
-    </label>`).join('');
+  var el=document.getElementById('nuModulos');
+  if(!el)return;
+  el.innerHTML='';
+  if(!modulos||!modulos.length)return;
+  var labels={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+  modulos.forEach(function(m){
+    var color=m.color||'#6b4a6e';
+    var label=document.createElement('label');
+    label.style.cssText='display:flex;align-items:center;gap:7px;padding:7px 10px;border:2px solid '+(all?color:color+'66')+';border-radius:9px;cursor:pointer;background:'+(all?color+'18':'#fff')+';flex:1;min-width:130px';
+    var cb=document.createElement('input');
+    cb.type='checkbox';cb.value=m.id;cb.checked=!!all;
+    cb.style.cssText='width:15px;height:15px;accent-color:'+color;
+    label.appendChild(cb);
+    var nd=document.createElement('div');
+    nd.style.cssText='font-size:11px;font-weight:700;color:'+color;
+    nd.textContent=m.icon+' '+(labels[m.id]||m.name);
+    var pd=document.createElement('div');
+    pd.style.cssText='font-size:9px;color:#999';
+    pd.textContent='$'+m.price+'/mes';
+    var info=document.createElement('div');
+    info.appendChild(nd);info.appendChild(pd);
+    label.appendChild(info);
+    el.appendChild(label);
+  });
 }
 
 function createUser(){
@@ -3022,11 +3514,24 @@ function createUser(){
   const modulosAsignados=periodo==='2d'?modulos.map(m=>m.id):modChecks;
   if(!name||!email||!pass){showT('Completa nombre, email y contraseña');return;}
   if(users.find(u=>u.email===email)){showT('Ese email ya existe');return;}
+
+  // Validate operator limit if creating an operador linked to a consultor
+  const parentIdVal=document.getElementById('nuParentId')?.value||'';
+  if((role==='operador'||role==='socio')&&parentIdVal){
+    const maxOps=getMaxOperadores(parentIdVal);
+    const currentOps=countOperadores(parentIdVal);
+    if(currentOps>=maxOps){
+      const parentUser=users.find(u=>u.id===parentIdVal);
+      showT('Límite de operadores alcanzado para '+(parentUser?parentUser.name:'este consultor')+' (máx '+maxOps+')');
+      return;
+    }
+  }
   const u={
     id:'u_'+Date.now(),
     name,email,pass,role,
     days:role==='consult'?1:days,
     phone,modulosAsignados,
+    parentId:parentIdVal||null,
     active:true,
     activatedAt:new Date().toISOString(),
     createdAt:new Date().toISOString()
@@ -3051,32 +3556,572 @@ function createUser(){
 
 function renderUsers(){
   const el=document.getElementById('usersList');if(!el)return;
-  if(!users.length){el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>Sin usuarios</div>';return;}
-  el.innerHTML=users.map(u=>{
+  const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+  // Solo mostrar usuarios principales (no sub-usuarios)
+  const mainUsers=users.filter(u=>!u.parentId);
+  if(!mainUsers.length){el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>Sin usuarios</div>';return;}
+  el.innerHTML=mainUsers.map(u=>{
     const expired=!checkAccess(u)&&u.role!=='admin';
     const exp=u.activatedAt&&u.days>0?new Date(new Date(u.activatedAt).getTime()+u.days*86400000).toLocaleDateString('es-MX'):'∞';
-    const roleIcon=u.role==='admin'?'👑':u.role==='paid'?'🌿':'👁️';
-    const roleLbl=u.role==='admin'?'Admin':u.role==='paid'?'Consultor':'Consulta';
+    const roleIcon=u.id==='u_admin'?'👑':u.role==='paid'||u.role==='admin'?'🌿':u.role==='operador'?'🔧':u.role==='socio'?'🤝':'👁️';
+    const roleLbl=u.id==='u_admin'?'Admin Maestro':u.role==='paid'||u.role==='admin'?'Consultor':u.role==='operador'?'Operador':u.role==='socio'?'Consultor Socio':'Consulta';
     const daysLeft=u.activatedAt&&u.days>0?Math.max(0,Math.round((new Date(u.activatedAt).getTime()+u.days*86400000-Date.now())/86400000)):null;
-    return `<div class="list-item">
-      <div class="li-avatar" style="background:${expired?'#f5f5f5':u.role==='admin'?'#1a2a3e':'#1a7f3c'};color:#fff">${roleIcon}</div>
-      <div class="li-info">
+    // Módulos activos para este usuario
+    const modsActivos=modulos.filter(m=>m.activatedFor?.includes(u.id));
+    return `<div class="list-item" style="flex-wrap:wrap;align-items:flex-start;cursor:pointer" onclick="openUserEditModal('${u.id}')">
+      <div class="li-avatar" style="background:${expired?'#ccc':u.role==='admin'?'#1a2a3e':u.role==='paid'?'#1a7f3c':'#6b4a6e'};color:#fff;flex-shrink:0">${roleIcon}</div>
+      <div class="li-info" style="min-width:0">
         <div class="li-name">${u.name}</div>
-        <div class="li-meta">${u.email} · ${roleLbl}${u.phone?' · '+u.phone:''}</div>
-        <div style="margin-top:3px">
-          <span class="status-pill" style="background:${expired?'#f5f5f5':'#e6f4ea'};color:${expired?'#999':'#1a7f3c'}">${expired?'Expirado':'Activo'}</span>
-          ${daysLeft!=null?`<span class="status-pill" style="background:${daysLeft<7?'#fff5f5;color:#c04040':'#fff8e8;color:#b8960c'};margin-left:3px">⏰ ${daysLeft} días</span>`:''}
-          <span class="status-pill" style="background:var(--warm);color:var(--muted);margin-left:3px">Vence: ${exp}</span>
+        <div class="li-meta">${u.email}${u.phone?' · '+u.phone:''} · ${roleLbl}${u.parentId?(' · hijo de '+( users.find(x=>x.id===u.parentId)?.name||'?')):''}${!u.parentId&&(u.role==='paid'||u.role==='admin')?' · 🔧 '+countOperadores(u.id)+'/'+getMaxOperadores(u.id)+' operadores':''}</div>
+        <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">
+          <span class="status-pill" style="background:${expired?'#f0f0f0':'#e6f4ea'};color:${expired?'#999':'#1a7f3c'}">${expired?'Expirado':'✅ Activo'}</span>
+          ${daysLeft!=null?`<span class="status-pill" style="background:${daysLeft<7?'#fff5f5':'#fff8e8'};color:${daysLeft<7?'#c04040':'#b8960c'}">⏰ ${daysLeft}d</span>`:''}
+          <span class="status-pill" style="background:var(--warm);color:var(--muted)">Vence: ${exp}</span>
         </div>
+        ${u.role!=='admin'?`<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;align-items:center">
+          ${modsActivos.length?modsActivos.map(m=>`<span style="background:${m.color}22;color:${m.color};font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">${m.icon} ${labelMap[m.id]||m.name}</span>`).join(''):'<span style="font-size:10px;color:#bbb">Sin módulos</span>'}
+        </div>`:''}
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        ${u.role!=='admin'?`<button class="btn btn-o btn-sm" style="font-size:10px;padding:3px 7px" onclick="renewUser('${u.id}')">↻ Renovar</button>
-        <button class="btn btn-o btn-sm" style="font-size:10px;padding:3px 7px" onclick="showUserPass('${u.id}')">🔑 Pass</button>
-        <button class="btn btn-d btn-sm" style="font-size:10px;padding:3px 7px" onclick="if(confirm('Eliminar usuario?'))deleteUser('${u.id}')">✕</button>`:''}
-      </div>
+      <div style="font-size:18px;color:var(--muted);align-self:center;padding-left:8px">›</div>
     </div>`;
   }).join('');
 }
+
+function openUserEditModal(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  _ueUid=uid;
+  renderUserEditModal(uid);
+}
+
+var _ueUid=null;
+
+function renderUserEditModal(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  const roleIcon=u.id==='u_admin'?'👑':u.role==='paid'||u.role==='admin'?'🌿':u.role==='operador'?'🔧':u.role==='socio'?'🤝':'👁️';
+  const expired=!checkAccess(u)&&u.role!=='admin';
+  const exp=u.activatedAt&&u.days>0?new Date(new Date(u.activatedAt).getTime()+u.days*86400000).toLocaleDateString('es-MX'):'∞';
+  const daysLeft=u.activatedAt&&u.days>0?Math.max(0,Math.round((new Date(u.activatedAt).getTime()+u.days*86400000-Date.now())/86400000)):null;
+  const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+  const modsActivos=modulos.filter(m=>m.activatedFor?.includes(u.id));
+
+  // Historial de pagos de este usuario
+  const pagos=subPayments.filter(p=>p.userId===u.id).slice().sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const totalPagado=pagos.reduce((s,p)=>s+p.monto,0);
+
+  // Sub-usuarios vinculados (usuarios con parentId === uid)
+  const subUsers=users.filter(x=>x.parentId===u.id);
+
+  const appFile=APP_CFG.appName||'Iksan Wellness';
+
+  let html=`
+  <div class="m-title">${roleIcon} ${u.name}</div>
+  <div class="m-sub">${u.id==='u_admin'?'Admin Maestro':u.role==='paid'?'Consultor':'Consulta'}${u.phone?' · '+u.phone:''}</div>
+
+  <!-- STATUS BAR -->
+  <div style="background:${expired?'#fff5f5':'#f0faf0'};border-radius:10px;padding:10px 13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="font-size:24px">${expired?'⚠️':'✅'}</div>
+    <div style="flex:1;min-width:120px">
+      <div style="font-size:13px;font-weight:700;color:${expired?'#c04040':'#1a7f3c'}">${expired?'Acceso expirado':'Acceso activo'}</div>
+      <div style="font-size:11px;color:var(--muted)">Vence: ${exp}${daysLeft!=null?' · '+daysLeft+' días restantes':''}</div>
+    </div>
+    ${modsActivos.length?`<div style="display:flex;flex-wrap:wrap;gap:4px">
+      ${modsActivos.map(m=>`<span style="background:${m.color};color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px">${m.icon} ${labelMap[m.id]||m.name}</span>`).join('')}
+    </div>`:'<span style="font-size:11px;color:#bbb">Sin módulos activos</span>'}
+  </div>
+
+  <!-- TABS -->
+  <div style="display:flex;gap:3px;background:var(--warm);border-radius:9px;padding:3px;margin-bottom:14px">
+    ${['info','modulos','pagos','acceso','subusers'].map((tab,i)=>{
+      const labels=['✏️ Info','🧩 Módulos','💰 Pagos','📅 Acceso','👥 Sub-usuarios'];
+      return `<button onclick="ueTab('${tab}')" id="ueTab_${tab}" style="flex:1;padding:7px 2px;border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;background:${tab==='info'?'#fff':'none'};color:${tab==='info'?'var(--deep)':'var(--muted)'};font-family:-apple-system,sans-serif;box-shadow:${tab==='info'?'0 1px 4px rgba(0,0,0,.1)':'none'}">${labels[i]}</button>`;
+    }).join('')}
+  </div>
+
+  <!-- TAB: INFO -->
+  <div id="ueTabInfo">
+    <div class="in-row" style="margin-bottom:7px">
+      <input class="in" id="ueNombre" value="${u.name||''}" placeholder="Nombre completo">
+      <input class="in" id="uePhone" value="${u.phone||''}" placeholder="📱 WhatsApp" type="tel" style="flex:.8">
+    </div>
+    <div class="in-row" style="margin-bottom:7px">
+      <input class="in" id="ueEmail" value="${u.email||''}" placeholder="Email / usuario">
+      <select class="in" id="ueRole" style="flex:.6">
+        <option value="paid"${u.role==='paid'||u.role==='admin'?' selected':''}>🌿 Consultor</option>
+        <option value="operador"${u.role==='operador'?' selected':''}>🔧 Operador</option>
+        <option value="consult"${u.role==='consult'?' selected':''}>👁️ Consulta (1 día)</option>
+      </select>
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🔑 Contraseña</div>
+    <div style="background:var(--warm);border-radius:8px;padding:9px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+      <span style="font-family:monospace;font-size:17px;font-weight:700;color:var(--deep);letter-spacing:2px">${u.pass}</span>
+      <span style="font-size:10px;color:var(--muted)">actual</span>
+    </div>
+    <input class="in" id="uePass1" type="text" placeholder="Nueva contraseña (vacío = no cambiar)" style="margin-bottom:14px">
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn btn-p" style="flex:1" onclick="saveUserEdit('${uid}')">💾 Guardar info</button>
+      ${u.role==='operador'?`<button class="btn btn-sm" style="background:#1a7f3c;color:#fff" onclick="upgradeToSocio('${uid}')">🤝 Promover a Consultor Socio</button>`:''}
+      ${u.role==='socio'?`<button class="btn btn-sm" style="background:#8b6a00;color:#fff" onclick="downgradeToOperador('${uid}')">🔧 Regresar a Operador</button>`:''}
+      ${u.role!=='admin'?`<button class="btn btn-d btn-sm" onclick="if(confirm('¿Eliminar a ${u.name}?'))deleteUserFromEdit('${uid}')">🗑️ Eliminar</button>`:''}
+    </div>
+  </div>
+
+  <!-- TAB: MÓDULOS -->
+  <div id="ueTabModulos" style="display:none">
+    ${u.id!=='u_admin'?`
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Toca para activar o desactivar. Los cambios se guardan de inmediato.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      ${modulos.map(m=>{
+        const active=m.activatedFor?.includes(u.id);
+        const det=(typeof MOD_DETALLE!=='undefined'&&MOD_DETALLE[m.id])||{items:[]};
+        return `<div style="border:2px solid ${active?m.color:'var(--border)'};border-radius:11px;overflow:hidden;transition:.2s">
+          <div style="background:${active?m.color:m.color+'18'};padding:10px 13px;display:flex;align-items:center;gap:9px">
+            <div style="font-size:20px">${m.icon}</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:${active?'#fff':m.color}">${labelMap[m.id]||m.name}</div>
+              <div style="font-size:10px;color:${active?'rgba(255,255,255,.7)':'var(--muted)'}">$${m.price}/mes</div>
+            </div>
+            <button class="btn btn-sm" style="background:${active?'rgba(255,255,255,.2)':m.color};color:#fff;font-size:11px;border:${active?'1px solid rgba(255,255,255,.4)':'none'}"
+              onclick="toggleUeMod('${uid}','${m.id}',this)">
+              ${active?'✕ Quitar':'✓ Activar'}
+            </button>
+          </div>
+          ${active?`<div style="background:#fff;padding:7px 13px;display:flex;flex-wrap:wrap;gap:4px">
+            ${(det.items||[]).slice(0,3).map(i=>`<span style="font-size:10px;color:var(--deep)">✓ ${i}</span>`).join('<span style="color:#ddd"> · </span>')}
+          </div>`:''}
+        </div>`;
+      }).join('')}
+    </div>`
+    :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Admin maestro — acceso completo</div>'}
+  </div>
+
+  <!-- TAB: PAGOS -->
+  <div id="ueTabPagos" style="display:none">
+
+    <!-- Resumen total -->
+    <div style="background:linear-gradient(135deg,#f0faf0,#e6f8ea);border-radius:10px;padding:12px 15px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">💰</div>
+      <div style="flex:1">
+        <div style="font-size:22px;font-weight:700;color:#1a7f3c">$${totalPagado.toLocaleString()} MXN</div>
+        <div style="font-size:11px;color:var(--muted)">${pagos.length} pago${pagos.length!==1?'s':''} · acumulado total</div>
+      </div>
+    </div>
+
+    <!-- Formulario nuevo pago -->
+    <div style="background:#f8f5ff;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px">➕ Registrar nuevo pago</div>
+      <div class="in-row" style="margin-bottom:7px">
+        <input class="in" id="ueNuevoPagoMonto" type="number" placeholder="Monto $" min="0" style="flex:.5">
+        <input class="in" id="ueNuevoPagoFecha" type="date" value="${new Date().toISOString().slice(0,10)}" style="flex:.6">
+      </div>
+      <div class="in-row" style="margin-bottom:7px">
+        <input class="in" id="ueNuevoPagoConcepto" placeholder="Concepto (ej: Módulo Avanzado, Renovación)">
+      </div>
+      <div class="in-row" style="margin-bottom:10px">
+        <select class="in" id="ueNuevoPagoCuenta">
+          <option value="">— Cuenta / depósito —</option>
+          ${(S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}])).map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}
+        </select>
+        <button class="btn btn-p btn-sm" style="flex:.4" onclick="addUserPago('${uid}')">✓ Añadir</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted)">💡 Las cuentas se configuran en Admin BO → Configuración → Cuentas de cobro</div>
+    </div>
+
+    <!-- Lista de pagos con scroll -->
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Historial de pagos</div>
+    <div style="overflow-y:auto;max-height:260px;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:5px;padding-right:4px">
+      ${pagos.length?pagos.map(p=>`
+      <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:9px">
+        <div style="width:32px;height:32px;border-radius:50%;background:#e6f4ea;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">💳</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.categoria||'Pago'}</div>
+          <div style="font-size:10px;color:var(--muted)">${p.fecha}${p.cuentaNombre?' · '+p.cuentaNombre:p.meses?' · '+p.meses+' mes(es)':''}</div>
+        </div>
+        <div style="font-weight:700;color:#1a7f3c;font-size:14px;flex-shrink:0">$${p.monto.toLocaleString()}</div>
+        <button class="btn btn-d btn-sm" style="padding:3px 8px;font-size:10px;flex-shrink:0" onclick="deleteUserPago('${uid}','${p.id}')">✕</button>
+      </div>`).join('')
+      :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Sin pagos registrados aún</div>'}
+    </div>
+  </div>
+
+  <!-- TAB: ACCESO (renovar + link/archivo) -->
+  <div id="ueTabAcceso" style="display:none">
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Renovar acceso</div>
+    <div class="in-row" style="margin-bottom:14px">
+      <select class="in" id="ueRenovar">
+        <option value="">— No cambiar —</option>
+        <option value="2">Prueba 2 días (gratis)</option>
+        <option value="30">1 mes · 30 días</option>
+        <option value="90">3 meses · 90 días</option>
+        <option value="180">6 meses · 180 días</option>
+        <option value="365">1 año · 365 días</option>
+      </select>
+      <input class="in" id="uePago" type="number" placeholder="Monto pagado $" min="0" style="flex:.6">
+    </div>
+    <button class="btn btn-p btn-full" style="margin-bottom:16px" onclick="renovarUserAcceso('${uid}')">↻ Renovar acceso</button>
+
+    <!-- Qué compartir -->
+    <div style="background:linear-gradient(135deg,#f0f4ff,#e8eeff);border-radius:10px;padding:13px;margin-bottom:10px;border:1px solid #c8d4f8">
+      <div style="font-size:12px;font-weight:700;color:#1a2a3e;margin-bottom:8px">📦 ¿Qué debes compartirle al consultor?</div>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+        <div style="width:22px;height:22px;border-radius:50%;background:#1a2a3e;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div style="font-size:12px;color:var(--deep);line-height:1.6"><b>Este mismo archivo HTML</b> — es el que estás usando ahora.<br>
+        <span style="font-size:11px;color:var(--muted)">Compártelo por WhatsApp, email, AirDrop o Google Drive.</span></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="width:22px;height:22px;border-radius:50%;background:#1a2a3e;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div style="font-size:12px;color:var(--deep);line-height:1.6"><b>Sus credenciales</b> — usuario y contraseña de abajo.<br>
+        <span style="font-size:11px;color:var(--muted)">Al abrirlo verá solo los módulos que le activaste.</span></div>
+      </div>
+    </div>
+
+    <!-- Credenciales + link con token -->
+    <div style="background:#fff;border:2px solid #e0d4ec;border-radius:10px;padding:13px;margin-bottom:12px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📋 Resumen de acceso</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:13px;margin-bottom:10px">
+        <span style="color:var(--muted);font-size:11px">🔑 Contraseña</span>
+        <span style="font-family:monospace;font-weight:700;color:var(--deep);background:var(--warm);padding:3px 10px;border-radius:6px">${u.pass}</span>
+        <span style="color:var(--muted);font-size:11px">⏳ Acceso</span>
+        <span style="font-size:12px;color:var(--deep)">${exp}${daysLeft!=null?' ('+daysLeft+' días)':''}</span>
+        <span style="color:var(--muted);font-size:11px">🧩 Módulos</span>
+        <span style="font-size:12px;color:var(--deep)">${modsActivos.length?modsActivos.map(m=>m.icon+' '+(labelMap[m.id]||m.name)).join(', '):'<span style="color:#bbb">Sin módulos — actívalos en pestaña Módulos</span>'}</span>
+      </div>
+      <div style="background:#e8f5e9;border-radius:8px;padding:10px;border-left:3px solid #1a7f3c">
+        <div style="font-size:11px;font-weight:700;color:#1a7f3c;margin-bottom:4px">⚡ Enlace inteligente con activación automática</div>
+        <div style="font-size:11px;color:#2d4a2d;line-height:1.6">
+          El botón de WhatsApp genera un enlace que cuando el consultor lo abre por primera vez,
+          <b>crea su cuenta automáticamente</b> en su dispositivo con sus módulos ya activados.
+          Solo necesita ingresar su contraseña.
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-wa btn-full" style="margin-bottom:8px" onclick="copiarAccesoWA('${uid}')">💬 Generar y copiar enlace de activación para WhatsApp</button>
+    <div style="font-size:10px;color:var(--muted);text-align:center">Incluye enlace con token · cuenta · módulos · contraseña</div>
+  </div>
+
+  <!-- TAB: SUB-USUARIOS -->
+  <div id="ueTabSubusers" style="display:none">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.6">
+      Añade usuarios adicionales que compartan los módulos de <b>${u.name}</b>. Útil para socios, asistentes o familiares.
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">➕ Nuevo sub-usuario</div>
+    <div class="in-row" style="margin-bottom:7px">
+      <input class="in" id="suNombre" placeholder="Nombre completo">
+      <input class="in" id="suEmail" placeholder="Email / usuario">
+    </div>
+    <div class="in-row" style="margin-bottom:10px">
+      <input class="in" id="suPass" type="text" placeholder="Contraseña">
+      <button class="btn btn-p btn-sm" style="flex:.5" onclick="addSubUser('${uid}')">+ Crear</button>
+    </div>
+    <div id="subUsersList_${uid}">
+      ${subUsers.length?subUsers.map(su=>`
+      <div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--warm);border-radius:9px;margin-bottom:6px">
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--mid);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">
+          ${su.name.charAt(0).toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--deep)">${su.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${su.email} · pass: ${su.pass}</div>
+        </div>
+        <button class="btn btn-d btn-sm" style="padding:2px 7px;font-size:10px" onclick="deleteSubUser('${uid}','${su.id}')">✕</button>
+      </div>`).join('')
+      :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Sin sub-usuarios aún</div>'}
+    </div>
+  </div>
+  `;
+
+  openMo(1,html);
+}
+
+function ueTab(tab){
+  ['info','modulos','pagos','acceso','subusers'].forEach(function(t){
+    var panel=document.getElementById('ueTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    var btn=document.getElementById('ueTab_'+t);
+    if(panel)panel.style.display=t===tab?'block':'none';
+    if(btn){
+      btn.style.background=t===tab?'#fff':'none';
+      btn.style.color=t===tab?'var(--deep)':'var(--muted)';
+      btn.style.boxShadow=t===tab?'0 1px 4px rgba(0,0,0,.1)':'none';
+    }
+  });
+}
+
+function toggleUeMod(uid,modId,btn){
+  const m=modulos.find(x=>x.id===modId);if(!m)return;
+  if(!m.activatedFor)m.activatedFor=[];
+  const idx=m.activatedFor.indexOf(uid);
+  const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+  if(idx>=0){
+    m.activatedFor.splice(idx,1);
+    // Update button appearance
+    btn.style.background='var(--warm)';btn.style.color='var(--muted)';btn.style.border='none';
+    btn.textContent='✓ Activar';
+    // Hide body row
+    var parent=btn.closest('div[style*="border:2px"]');
+    if(parent){parent.style.borderColor='var(--border)';var hdr=parent.querySelector('div');if(hdr)hdr.style.background=m.color+'18';var lbl=hdr?hdr.querySelector('div div'):null;if(lbl)lbl.style.color=m.color;}
+    var bodyRow=btn.closest('div[style*="border:2px"]')?.querySelector('div:last-child[style*="background:#fff"]');
+    if(bodyRow)bodyRow.style.display='none';
+  } else {
+    m.activatedFor.push(uid);
+    btn.style.background='rgba(255,255,255,.2)';btn.style.color='#fff';btn.style.border='1px solid rgba(255,255,255,.4)';
+    btn.textContent='✕ Quitar';
+    var parent2=btn.closest('div[style*="border:2px"]');
+    if(parent2){parent2.style.borderColor=m.color;var hdr2=parent2.querySelector('div');if(hdr2)hdr2.style.background=m.color;}
+  }
+  // Sync modulosAsignados so applyModulosTabs works when user logs in
+  var targetUser=users.find(function(x){return x.id===uid;});
+  if(targetUser){
+    targetUser.modulosAsignados=modulos.filter(function(m){
+      return m.activatedFor&&m.activatedFor.includes(uid);
+    }).map(function(m){return m.id;});
+  }
+  saveAll();
+  renderUsers();
+  showT((idx>=0?'✕ Módulo desactivado: ':'✓ Módulo activado: ')+(labelMap[modId]||modId));
+}
+
+function saveUserEdit(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  const nombre=document.getElementById('ueNombre')?.value.trim();
+  const phone=document.getElementById('uePhone')?.value.trim();
+  const email=document.getElementById('ueEmail')?.value.trim();
+  const role=document.getElementById('ueRole')?.value;
+  const pass1=document.getElementById('uePass1')?.value.trim();
+  if(nombre)u.name=nombre;
+  if(phone!==undefined)u.phone=phone;
+  if(email)u.email=email;
+  // role: solo permitir paid o consult, nunca admin
+  if(role&&role!=='admin')u.role=role;
+  if(pass1&&pass1.length>=4){u.pass=pass1;}
+  else if(pass1&&pass1.length>0){showT('Contraseña mínimo 4 caracteres');return;}
+  // Sync modulosAsignados from activatedFor so applyModulosTabs works correctly
+  u.modulosAsignados=modulos.filter(m=>m.activatedFor&&m.activatedFor.includes(u.id)).map(m=>m.id);
+  saveAll();
+  closeMo(1);
+  renderUsers();
+  showT('✓ '+u.name+' actualizado');
+}
+
+function renovarUserAcceso(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  const renovar=document.getElementById('ueRenovar')?.value;
+  const pago=parseFloat(document.getElementById('uePago')?.value)||0;
+  if(!renovar){showT('Selecciona un período');return;}
+  const days=parseInt(renovar);
+  u.days=days;u.activatedAt=new Date().toISOString();u.active=true;
+  if(pago>0){
+    subPayments.push({id:'sp_'+Date.now(),userId:u.id,userName:u.name,
+      categoria:'Renovación · '+days+' días',monto:pago,
+      meses:Math.round(days/30),fecha:new Date().toISOString().slice(0,10),
+      createdAt:new Date().toISOString()});
+  }
+  saveAll();
+  showT('✓ Acceso renovado por '+days+' días');
+  renderUserEditModal(uid);
+}
+
+function addUserPago(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  const monto=parseFloat(document.getElementById('ueNuevoPagoMonto')?.value)||0;
+  const concepto=document.getElementById('ueNuevoPagoConcepto')?.value.trim()||'Pago';
+  const fechaEl=document.getElementById('ueNuevoPagoFecha');
+  const fecha=fechaEl?.value||new Date().toISOString().slice(0,10);
+  const cuentaId=document.getElementById('ueNuevoPagoCuenta')?.value||'';
+  if(!monto){showT('Escribe el monto');return;}
+  if(!concepto){showT('Escribe el concepto');return;}
+  // Get cuenta name
+  const cuentas=S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}]);
+  const cuenta=cuentas.find(c=>c.id===cuentaId);
+  const cuentaNombre=cuenta?cuenta.nombre:(cuentaId||'');
+  subPayments.push({
+    id:'sp_'+Date.now(),userId:u.id,userName:u.name,
+    categoria:concepto,monto:monto,meses:0,
+    cuentaId:cuentaId,cuentaNombre:cuentaNombre,
+    fecha:fecha,createdAt:new Date().toISOString()
+  });
+  saveAll();
+  showT('✓ $'+monto.toLocaleString()+' registrado'+(cuentaNombre?' · '+cuentaNombre:''));
+  renderUserEditModal(uid);
+  ueTab('pagos');
+}
+
+function deleteUserPago(uid,pid){
+  subPayments=subPayments.filter(p=>p.id!==pid);
+  saveAll();
+  renderUserEditModal(uid);
+  ueTab('pagos');
+}
+
+function addSubUser(parentId){
+  const parent=users.find(x=>x.id===parentId);if(!parent)return;
+  const nombre=document.getElementById('suNombre')?.value.trim();
+  const email=document.getElementById('suEmail')?.value.trim();
+  const pass=document.getElementById('suPass')?.value.trim();
+  if(!nombre||!email||!pass){showT('Completa nombre, email y contraseña');return;}
+  if(users.find(u=>u.email===email)){showT('Ese email ya existe');return;}
+  const su={
+    id:'u_'+Date.now(),name:nombre,email,pass,
+    role:parent.role,parentId:parentId,
+    days:parent.days,activatedAt:parent.activatedAt,
+    modulosAsignados:parent.modulosAsignados||[],
+    active:true,createdAt:new Date().toISOString()
+  };
+  users.push(su);
+  // Activar mismos módulos que el padre
+  modulos.forEach(m=>{
+    if(m.activatedFor?.includes(parentId)&&!m.activatedFor.includes(su.id)){
+      m.activatedFor.push(su.id);
+    }
+  });
+  saveAll();
+  showT('✓ Sub-usuario creado: '+nombre);
+  renderUserEditModal(parentId);
+  ueTab('subusers');
+}
+
+function deleteSubUser(parentId,subId){
+  users=users.filter(u=>u.id!==subId);
+  modulos.forEach(m=>{if(m.activatedFor)m.activatedFor=m.activatedFor.filter(id=>id!==subId);});
+  saveAll();
+  renderUserEditModal(parentId);
+  ueTab('subusers');
+}
+
+function copiarAccesoWA(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+  const modsActivos=modulos.filter(m=>m.activatedFor?.includes(u.id));
+  const exp=u.activatedAt&&u.days>0?new Date(new Date(u.activatedAt).getTime()+u.days*86400000).toLocaleDateString('es-MX'):'Sin límite';
+  const appName=APP_CFG.appName||'Iksan Wellness';
+  const baseUrl=window.location.href.split('?')[0].split('#')[0];
+  // Build provisioning token with all user data
+  const tokenData={
+    id:u.id, name:u.name, email:u.email, pass:u.pass,
+    role:'paid', phone:u.phone||'',
+    days:u.days, activatedAt:u.activatedAt,
+    active:true, createdAt:u.createdAt||new Date().toISOString(),
+    modulosAsignados:u.modulosAsignados||[],
+    modulosSnapshot:modsActivos.map(function(m){return {id:m.id,name:m.name,icon:m.icon,color:m.color,price:m.price};}),
+    parentId:null
+  };
+  const token=btoa(JSON.stringify(tokenData));
+  const consultUrl=baseUrl+'?u='+encodeURIComponent(u.email)+'&t='+token;
+  const msg='Hola '+u.name+' 👋\n\n'
+    +'Bienvenido/a a *IKSAN Wellness* — tu herramienta de gestión y ventas VitalHealth.\n\n'
+    +'🔗 *Tu enlace de acceso:*\n'+consultUrl+'\n\n'
+    +'🔑 Contraseña: *'+u.pass+'*\n'
+    +'⏳ Acceso hasta: *'+exp+'*\n'
+    +(modsActivos.length?'🧩 Módulos: *'+modsActivos.map(function(m){return labelMap[m.id]||m.name;}).join(', ')+'*\n':'')
+    +'\n💡 Abre el enlace en tu navegador e ingresa tu contraseña.\n'
+    +'La primera vez que abras el enlace tu cuenta quedará configurada automáticamente.\n'
+    +'\nSomos una herramienta independiente. Cualquier duda estoy aquí 💚';
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(msg).then(()=>showT('✓ Mensaje copiado — pégalo en WhatsApp'));
+  } else {
+    // Fallback: mostrar en modal para copiar manualmente
+    openMo(2,'<div class="m-title">💬 Mensaje para WhatsApp</div>'
+      +'<textarea class="in" style="min-height:200px;font-size:12px;resize:vertical" onclick="this.select()" readonly>'+msg+'</textarea>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:8px">Toca el texto para seleccionarlo y copiarlo</div>');
+  }
+}
+
+function deleteUserFromEdit(uid){
+  users=users.filter(u=>u.id!==uid);
+  modulos.forEach(m=>{if(m.activatedFor)m.activatedFor=m.activatedFor.filter(id=>id!==uid);});
+  saveAll();closeMo(1);renderUsers();showT('Usuario eliminado');
+}
+
+
+function upgradeToSocio(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  if(!confirm('¿Promover a '+u.name+' como Consultor Socio? Tendrá los mismos privilegios que el Consultor raíz (sin BO Admin).'))return;
+  u.role='socio';
+  saveAll();
+  showT('✓ '+u.name+' ahora es Consultor Socio');
+  renderUserEditModal(uid);
+  renderUsers();
+}
+
+function downgradeToOperador(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  if(!confirm('¿Regresar a '+u.name+' como Operador? Perderá acceso a ventas, gastos y configuración.'))return;
+  u.role='operador';
+  saveAll();
+  showT('✓ '+u.name+' es Operador nuevamente');
+  renderUserEditModal(uid);
+  renderUsers();
+}
+
+// Get max operators allowed for a consultor based on their highest module
+function getMaxOperadores(uid){
+  const mods=modulos.filter(m=>m.activatedFor&&m.activatedFor.includes(uid));
+  const ids=mods.map(m=>m.id);
+  if(ids.includes('m4'))return 4;
+  if(ids.includes('m3'))return 3;
+  if(ids.includes('m2'))return 2;
+  if(ids.includes('m1'))return 1;
+  return 0;
+}
+
+// Count current operadores linked to a consultor
+function countOperadores(consultorId){
+  return users.filter(u=>u.parentId===consultorId&&(u.role==='operador'||u.role==='socio')).length;
+}
+
+
+function openUserModulosModal(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  const labelMap={m1:'BÁSICO',m2:'INTERMEDIO',m3:'AVANZADO',m4:'PLUS'};
+  openMo(2,`
+    <div class="m-title">🧩 Módulos · ${u.name}</div>
+    <div class="m-sub">Activa o desactiva módulos para este consultor</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+      ${modulos.map(m=>{
+        const active=m.activatedFor?.includes(u.id);
+        const color=m.color||'var(--mid)';
+        const det=MOD_DETALLE[m.id]||{items:[]};
+        return `<div style="border:2px solid ${active?color:'var(--border)'};border-radius:11px;overflow:hidden;transition:.2s">
+          <div style="background:${active?color:color+'15'};padding:9px 13px;display:flex;align-items:center;gap:9px">
+            <div style="font-size:20px">${m.icon}</div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:${active?'#fff':color}">${labelMap[m.id]||m.name}</div>
+              <div style="font-size:10px;color:${active?'rgba(255,255,255,.8)':'var(--muted)'}">$${m.price}/mes</div>
+            </div>
+            <button class="btn btn-sm" style="background:${active?'rgba(255,255,255,.25)':color};color:${active?'#fff':'#fff'};font-size:11px;border:${active?'1px solid rgba(255,255,255,.5)':'none'}"
+              onclick="toggleUserModulo('${uid}','${m.id}')">
+              ${active?'✕ Quitar':'✓ Activar'}
+            </button>
+          </div>
+          ${active?`<div style="background:#fff;padding:7px 13px;display:flex;flex-wrap:wrap;gap:3px">
+            ${det.items.slice(0,3).map(i=>`<span style="font-size:10px;color:var(--deep)">✓ ${i}</span>`).join('<span style="color:#ddd"> · </span>')}
+          </div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+  `);
+}
+
+function toggleUserModulo(uid,modId){
+  const m=modulos.find(x=>x.id===modId);if(!m)return;
+  if(!m.activatedFor)m.activatedFor=[];
+  const idx=m.activatedFor.indexOf(uid);
+  if(idx>=0){
+    m.activatedFor.splice(idx,1);
+  } else {
+    m.activatedFor.push(uid);
+    const u=users.find(x=>x.id===uid);
+    if(u&&m.price>0){
+      subPayments.push({id:'sp_'+Date.now(),userId:uid,userName:u.name,
+        moduloId:m.id,categoria:m.name,monto:m.price,meses:1,
+        fecha:new Date().toISOString().slice(0,10),createdAt:new Date().toISOString()});
+    }
+  }
+  saveAll();
+  renderUsers();
+  openUserModulosModal(uid);
+  renderModulos();
+}
+
 
 function renewUser(id){
   const u=users.find(x=>x.id===id);if(!u)return;
@@ -3192,141 +4237,300 @@ function saveModulo(){
 
 // Contenido detallado fijo por módulo (no editable)
 const MOD_DETALLE={
-  m1:{items:['📦 Catálogo completo 31 productos','🛒 Carrito de ventas por consultante','💰 Registro de pago con forma de cobro','🧾 Comprobante adjunto']},
-  m2:{items:['📦 Todo el Módulo 1','🎁 26 Kits temáticos por padecimiento','⬇️ Descuentos por % o monto fijo','🏷️ Etiqueta de promo (evento, mayoreo, etc.)']},
-  m3:{items:['🌿 Quiz BioCuántico 6 preguntas','🩺 Análisis IA de laboratorios','🔬 Reporte VitalHealth / BioCuántico','📋 Historial clínico por consultante','📲 Envío de resultados por WhatsApp']},
-  m4:{items:['📊 Registro y filtro de ventas','💸 Control de gastos por rubro','📅 Citas BioCuántico con recordatorio WA','👨‍⚕️ Derivaciones a doctores con comisión','👥 Vista de todos los consultantes','🏷️ Precios editables del catálogo']}
+  m1:{items:[
+    '👥 Listado completo de clientes/consultantes',
+    '🌿 Recomendaciones de productos personalizadas por perfil',
+    '📦 Catálogo visual con 31 productos VitalHealth + kits',
+    '🏷️ Precios editables del catálogo (precio regular + promo)',
+    '📋 Historial básico por consultante',
+    '💬 Envío de recomendaciones por WhatsApp'
+  ]},
+  m2:{items:[
+    '✅ Todo lo del plan Básico',
+    '🛒 Carrito de ventas por consultante',
+    '💰 Registro de pago con múltiples formas de cobro',
+    '🧾 Hoja de ingesta personalizada con dosis y horarios',
+    '✨ Hoja de beneficios por producto (qué esperar al tomarlo)',
+    '📲 Envío de protocolo completo por WhatsApp o PDF',
+    '📸 Adjuntar comprobante de pago'
+  ]},
+  m3:{items:[
+    '✅ Todo lo del plan Intermedio',
+    '📊 Registro y análisis de ingresos por venta',
+    '💸 Control de gastos por rubro y persona',
+    '📅 Agenda de citas BioCuántico con recordatorio WA',
+    '👨‍⚕️ Derivaciones a doctores con seguimiento de comisión',
+    '📈 Estadísticas de ventas y clientes activos',
+    '🏥 Vista de todos los consultantes con historial'
+  ]},
+  m4:{items:[
+    '✅ Todo lo del plan Avanzado',
+    '🤖 Chatbot de WhatsApp personalizado con tu nombre e imagen',
+    '📆 Agendamiento automático de citas por WhatsApp',
+    '💬 Respuestas automáticas sobre productos y precios',
+    '🔔 Recordatorios automáticos a clientes',
+    '🌐 Integración con Meta Cloud API (WhatsApp Business)',
+    '⚙️ Panel de configuración del bot (horarios, personalidad, info)'
+  ]}
 };
 
 function renderModulos(){
-  const el=document.getElementById('modulosList');if(!el)return;
-  el.innerHTML=modulos.map(m=>{
-    const subs=m.activatedFor?.length||0;
-    const ingresos=subPayments.filter(p=>p.categoria===m.name).reduce((s,p)=>s+p.monto,0);
-    const det=MOD_DETALLE[m.id]||{items:[]};
-    const colores={m1:'#1a56db',m2:'#1a7f3c',m3:'#8b1a5a',m4:'#1a2a3e'};
-    const color=colores[m.id]||'var(--mid)';
-    return `<div style="border:2px solid ${color}22;border-radius:13px;padding:13px;margin-bottom:11px;background:#fff">
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <div style="font-size:28px;min-width:36px">${m.icon}</div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700;color:${color}">${m.name}</div>
-          <div style="font-size:11px;color:var(--muted);margin:3px 0 7px">${m.desc}</div>
-          <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px">
-            ${det.items.map(i=>`<div style="font-size:11px;color:var(--deep)">✓ ${i}</div>`).join('')}
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <span style="background:#e6f4ea;color:#1a7f3c;font-size:10px;padding:3px 9px;border-radius:6px;font-weight:600">👥 ${subs} suscriptor${subs!==1?'es':''}</span>
-            <span style="background:#fdf8e1;color:#b8960c;font-size:10px;padding:3px 9px;border-radius:6px;font-weight:600">💰 $${ingresos.toLocaleString()} acumulado</span>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:110px">
-          <div style="display:flex;align-items:center;gap:4px">
-            <span style="font-size:10px;color:var(--muted)">$</span>
-            <input class="in" type="number" value="${m.price}" style="width:72px;padding:5px 7px;font-size:13px;font-weight:700;text-align:right;color:${color}" onchange="updateModPrice('${m.id}',this.value)" min="0">
-            <span style="font-size:10px;color:var(--muted)">/mes</span>
-          </div>
-          <button class="btn btn-sm" style="background:${color};color:#fff;font-size:11px;padding:5px 10px" onclick="manageModuloActivation('${m.id}')">⚙️ Asignar</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  var el=document.getElementById('modulosList');
+  if(!el){console.error('modulosList not found');return;}
+  // Show diagnostic first
+  var diag='modulos='+JSON.stringify((modulos||[]).map(function(m){return m.id;}));
+  el.innerHTML='<p style="color:#888;font-size:10px;padding:4px">'+diag+'</p>';
+  if(!modulos||!modulos.length){
+    el.innerHTML='<p style="color:red;padding:8px">Sin módulos — '+diag+'</p>';return;
+  }
+  var labels={m1:'BÁSICO',m2:'INTERMEDIO',m3:'AVANZADO',m4:'PLUS'};
+  modulos.forEach(function(m){
+    var color=m.color||'#6b4a6e';
+    var lbl=labels[m.id]||m.name;
+    var det=(typeof MOD_DETALLE!=='undefined'&&MOD_DETALLE[m.id])||{items:[]};
+    var subs=(m.activatedFor||[]).length;
+
+    /* ── wrapper ── */
+    var wrap=document.createElement('div');
+    wrap.style.cssText='border:2px solid '+color+'44;border-radius:14px;margin-bottom:13px;overflow:hidden';
+
+    /* ── header ── */
+    var hdr=document.createElement('div');
+    hdr.style.cssText='background:'+color+';padding:12px 15px;display:flex;align-items:flex-start;gap:10px';
+
+    var ico=document.createElement('div');
+    ico.style.cssText='font-size:26px;line-height:1';
+    ico.textContent=m.icon;
+    hdr.appendChild(ico);
+
+    var mid=document.createElement('div');
+    mid.style.cssText='flex:1;min-width:0';
+    var ttl=document.createElement('div');
+    ttl.style.cssText='font-size:16px;font-weight:700;color:#fff';
+    ttl.textContent=lbl;
+    mid.appendChild(ttl);
+    var ta=document.createElement('textarea');
+    ta.rows=2;ta.value=m.desc||'';ta.dataset.mid=m.id;
+    ta.style.cssText='width:100%;margin-top:5px;padding:5px 8px;border-radius:7px;border:none;font-size:11px;resize:none;line-height:1.4;color:#2d1a2e;background:rgba(255,255,255,.92)';
+    ta.addEventListener('change',function(){updateModDesc(this.dataset.mid,this.value);});
+    mid.appendChild(ta);
+    hdr.appendChild(mid);
+
+    /* ── price column ── */
+    var pc=document.createElement('div');
+    pc.style.cssText='text-align:right;flex-shrink:0;min-width:90px';
+    var pr=document.createElement('div');
+    pr.style.cssText='display:flex;align-items:center;gap:3px;justify-content:flex-end';
+    var sym=document.createElement('span');sym.style.cssText='font-size:12px;color:rgba(255,255,255,.8)';sym.textContent='$';
+    var inp=document.createElement('input');
+    inp.type='number';inp.value=m.price;inp.min=0;inp.dataset.mid=m.id;
+    inp.style.cssText='width:70px;padding:4px 6px;font-size:16px;font-weight:700;text-align:right;color:'+color+';background:#fff;border:none;border-radius:7px';
+    inp.addEventListener('change',function(){updateModPrice(this.dataset.mid,this.value);});
+    var mes=document.createElement('span');mes.style.cssText='font-size:10px;color:rgba(255,255,255,.7)';mes.textContent='/mes';
+    pr.appendChild(sym);pr.appendChild(inp);pr.appendChild(mes);
+    pc.appendChild(pr);
+    var si=document.createElement('div');
+    si.style.cssText='font-size:9px;color:rgba(255,255,255,.65);margin-top:4px';
+    si.textContent='👥 '+subs+' activo'+(subs!==1?'s':'');
+    pc.appendChild(si);
+    hdr.appendChild(pc);
+    wrap.appendChild(hdr);
+
+    /* ── body ── */
+    var body=document.createElement('div');
+    body.style.cssText='background:#fff;padding:11px 14px';
+    var grid=document.createElement('div');
+    grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-bottom:10px';
+    (det.items||[]).forEach(function(txt){
+      var row=document.createElement('div');
+      row.style.cssText='font-size:11px;color:#2d1a2e;display:flex;gap:5px;padding:2px 0';
+      var ck=document.createElement('span');ck.style.cssText='color:'+color+';font-weight:700;flex-shrink:0';ck.textContent='✓';
+      var lb=document.createElement('span');lb.textContent=txt;
+      row.appendChild(ck);row.appendChild(lb);grid.appendChild(row);
+    });
+    body.appendChild(grid);
+    var btn=document.createElement('button');
+    btn.className='btn btn-sm';
+    btn.style.cssText='background:'+color+';color:#fff;font-size:11px';
+    btn.textContent='👥 Asignar / quitar consultores';
+    btn.dataset.mid=m.id;
+    btn.addEventListener('click',function(){openAsignarModal(this.dataset.mid);});
+    body.appendChild(btn);
+    wrap.appendChild(body);
+    el.appendChild(wrap);
+  });
 }
+
+function updateModDesc(id,val){
+  const m=modulos.find(x=>x.id===id);if(!m)return;
+  m.desc=val;saveAll();showT('Descripción guardada');
+}
+
+function openAsignarModal(modId){
+  const m=modulos.find(x=>x.id===modId);if(!m)return;
+  if(!m.activatedFor)m.activatedFor=[];
+  const consultorUsers=users.filter(u=>u.role==='paid'||u.role==='consult');
+  const color=m.color||'var(--mid)';
+  const labelMap={m1:'BÁSICO',m2:'INTERMEDIO',m3:'AVANZADO',m4:'PLUS'};
+  openMo(2,`
+    <div class="m-title">${m.icon} ${labelMap[m.id]||m.name} · $${m.price}/mes</div>
+    <div class="m-sub">${m.desc}</div>
+    ${!consultorUsers.length?'<div class="empty"><div class="empty-icon">👥</div>Sin consultores registrados</div>':
+    consultorUsers.map(u=>{
+      const active=m.activatedFor.includes(u.id);
+      return `<div style="display:flex;align-items:center;gap:9px;padding:9px 11px;border:1.5px solid ${active?color:'var(--border)'};border-radius:10px;margin-bottom:6px;background:${active?color+'11':'#fff'}">
+        <div style="width:32px;height:32px;border-radius:50%;background:${active?color:'#eee'};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${active?'#fff':'var(--muted)'}">
+          ${u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600">${u.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${u.email}</div>
+        </div>
+        <button class="btn btn-sm" style="background:${active?'#c04040':color};color:#fff;font-size:11px;padding:5px 11px"
+          onclick="toggleModuloUser('${m.id}','${u.id}')">
+          ${active?'✕ Quitar':'✓ Activar'}
+        </button>
+      </div>`;
+    }).join('')}
+  `);
+}
+
 
 function updateModPrice(id,val){
   const m=modulos.find(x=>x.id===id);if(!m)return;
   m.price=parseFloat(val)||0;saveAll();showT('Precio actualizado');
 }
 
-function manageModuloActivation(modId){
-  const m=modulos.find(x=>x.id===modId);if(!m)return;
-  if(!m.activatedFor)m.activatedFor=[];
-  const consultorUsers=users.filter(u=>u.role==='paid');
-  if(!consultorUsers.length){showT('Sin consultores registrados');return;}
-  openMo(2,`
-    <div class="m-title">${m.icon} ${m.name}</div>
-    <div class="m-sub">Activa este módulo para tus consultores · $${m.price}/mes c/u</div>
-    <div class="card-title">Consultores</div>
-    ${consultorUsers.map(u=>{
-      const active=m.activatedFor.includes(u.id);
-      return `<div style="display:flex;align-items:center;gap:9px;padding:9px;border:1.5px solid ${active?'var(--esencial)':'var(--border)'};border-radius:9px;margin-bottom:6px;background:${active?'#f0faf0':'#fff'}">
-        <div style="font-size:18px">${u.role==='admin'?'👑':'🌿'}</div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">${u.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${u.email}</div>
-        </div>
-        <button class="btn btn-sm" style="background:${active?'#c04040':'var(--esencial)'};color:#fff;font-size:11px" onclick="toggleModuloUser('${m.id}','${u.id}')">${active?'Desactivar':'Activar'}</button>
-      </div>`;
-    }).join('')}
-  `);
-}
-
-function toggleModuloUser(modId,uid){
-  const m=modulos.find(x=>x.id===modId);if(!m)return;
-  if(!m.activatedFor)m.activatedFor=[];
-  const idx=m.activatedFor.indexOf(uid);
-  if(idx>=0){m.activatedFor.splice(idx,1);showT('Módulo desactivado');}
-  else{
-    m.activatedFor.push(uid);
-    // Registrar pago automático del módulo
-    const u=users.find(x=>x.id===uid);
-    if(u&&m.price>0){
-      subPayments.push({
-        id:'sp_'+Date.now(),userId:uid,userName:u.name,
-        categoria:m.name,
-        monto:m.price,meses:1,
-        fecha:new Date().toISOString().slice(0,10),
-        createdAt:new Date().toISOString()
-      });
-    }
-    showT('✓ Módulo activado · pago registrado');
-  }
-  saveAll();manageModuloActivation(modId);renderModulos();
-}
-
+// Alias para compatibilidad con referencias antiguas
+function manageModuloActivation(modId){openAsignarModal(modId);}
+function toggleModuloUser(modId,uid){toggleUserModulo(uid,modId);}
 function deleteModulo(id){modulos=modulos.filter(m=>m.id!==id);saveAll();renderModulos();}
+
 
 /* ═══════════════════════════════════════════════════
    BO ADMIN — PRECIOS CATÁLOGO
    ═══════════════════════════════════════════════════ */
 // BO Consultor precios — misma lógica que admin pero con IDs "bo"
+// ─── BO PRECIOS: sistema de tarjetas visuales ───────────────────────────────
+
+let boPriceCatFilter='Todos';
+let boPricePendingChanges={};  // {prodName: {regular, promo}}
+
 function initBoPriceTable(){
-  const body=document.getElementById('boPriceBody');if(!body)return;
-  body.innerHTML=PP.map(p=>{
-    const reg=prices[p.n]?.regular||p.p;
-    const promo=prices[p.n]?.promo||'';
-    const disc=promo?Math.round((1-promo/reg)*100):0;
-    return `<tr data-prod="${p.n}" style="border-bottom:1px solid var(--border)">
-      <td style="padding:6px 7px"><span style="font-size:14px">${p.e}</span> ${p.n}</td>
-      <td style="padding:6px 7px;text-align:right"><input class="in" style="width:80px;padding:5px 7px;font-size:12px;text-align:right" value="${reg}" data-type="regular" oninput="updateBoPriceDisc(this)"></td>
-      <td style="padding:6px 7px;text-align:right"><input class="in" style="width:80px;padding:5px 7px;font-size:12px;text-align:right" value="${promo}" data-type="promo" placeholder="—" oninput="updateBoPriceDisc(this)"></td>
-      <td style="padding:6px 7px;text-align:right"><span id="bodisc-${p.n.replace(/[^\w]/g,'_')}" style="font-size:10px;background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:5px">${disc>0?disc+'%':'—'}</span></td>
-    </tr>`;
+  // Categorías
+  const customProds=getCustomProds();
+  const todos=[...PP,...customProds];
+  const cats=['Todos',...new Set(PP.map(p=>p.cat)),'✨ Custom'];
+  const catBar=document.getElementById('boPriceCatBar');
+  if(catBar)catBar.innerHTML=cats.map(c=>`<span class="cat-pill${c===boPriceCatFilter?' on':''}" onclick="setBoPriceCat('${c.replace(/'/g,"\\'")}')">${c}</span>`).join('');
+  renderBoPriceTiles();
+  renderCustomProdsList();
+}
+
+function setBoPriceCat(c){boPriceCatFilter=c;renderBoPriceTiles();}
+
+function renderBoPriceTiles(){
+  const grid=document.getElementById('boPriceTilesGrid');if(!grid)return;
+  const q=(document.getElementById('boPriceSearch')?.value||'').toLowerCase();
+  const customProds=getCustomProds();
+  const todos=[...PP,...customProds];
+  const filtered=todos.filter(p=>{
+    if(boPriceCatFilter==='✨ Custom')return !!p.isCustom;
+    if(boPriceCatFilter!=='Todos'&&p.cat!==boPriceCatFilter)return false;
+    if(q&&!p.n.toLowerCase().includes(q)&&!(p.cat||'').toLowerCase().includes(q)&&!(p.b||[]).some(b=>b.toLowerCase().includes(q)))return false;
+    return true;
+  });
+  if(!filtered.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div>Sin resultados</div>';return;}
+  grid.innerHTML=filtered.map(p=>{
+    const pending=boPricePendingChanges[p.n];
+    const reg=pending?.regular!==undefined?pending.regular:(prices[p.n]?.regular||p.p);
+    const promo=pending?.promo!==undefined?pending.promo:(prices[p.n]?.promo||'');
+    const disc=promo&&promo<reg?Math.round((1-promo/reg)*100):0;
+    const hasPending=!!pending;
+    const isCustom=!!p.isCustom;
+    const safeN=p.n.replace(/['"\\]/g,'_');
+    return `<div class="ptile" style="${hasPending?'border-color:#b8960c;box-shadow:0 0 0 2px #fdf8e1':''}">
+      <div class="pt-top" style="background:linear-gradient(145deg,#fdf5fa,#f5eafa);flex-direction:column;gap:3px;padding:8px">
+        <div style="font-size:32px">${p.e||'📦'}</div>
+        ${isCustom?'<span style="font-size:9px;background:#e8e0f8;color:var(--mid);padding:1px 6px;border-radius:4px;font-weight:600">custom</span>':''}
+        ${disc>0?`<div class="pt-disc">-${disc}%</div>`:''}
+      </div>
+      <div class="pt-body">
+        <div class="pt-name">${p.n}</div>
+        <div class="pt-cat">${p.cat||'Custom'}</div>
+        <div style="margin:5px 0 3px">
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Precio regular</div>
+          <input class="in" type="number" value="${reg}" min="0" data-prod="${safeN}" data-realname="${p.n.replace(/"/g,'&quot;')}" data-type="regular"
+            style="padding:5px 7px;font-size:13px;font-weight:700;color:var(--mid);text-align:right;width:100%"
+            oninput="onBoPriceInput(this,'${safeN}','regular')">
+        </div>
+        <div style="margin-bottom:5px">
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Precio promo</div>
+          <input class="in" type="number" value="${promo}" min="0" placeholder="Sin promo" data-prod="${safeN}" data-realname="${p.n.replace(/"/g,'&quot;')}" data-type="promo"
+            style="padding:5px 7px;font-size:12px;color:var(--esencial);text-align:right;width:100%"
+            oninput="onBoPriceInput(this,'${safeN}','promo')">
+        </div>
+        ${isCustom?`<button class="pt-add" style="background:#c04040;margin-top:2px" onclick="deleteCustomProdFromTable('${p.id}')">✕ Eliminar</button>`:''}
+      </div>
+    </div>`;
   }).join('');
 }
-function updateBoPriceDisc(inp){
-  const row=inp.closest('tr');const prod=row.dataset.prod;
-  const reg=parseFloat(row.querySelector('[data-type=regular]').value)||0;
-  const promo=parseFloat(row.querySelector('[data-type=promo]').value)||0;
-  const disc=promo&&promo<reg?Math.round((1-promo/reg)*100):0;
-  const b=document.getElementById('bodisc-'+prod.replace(/[^\w]/g,'_'));
-  if(b)b.textContent=disc>0?disc+'%':'—';
+
+function onBoPriceInput(inp,safeN,type){
+  // El nombre real del producto está en data-realname del input
+  const realProd=inp.getAttribute('data-realname')||inp.dataset.prod;
+  if(!boPricePendingChanges[realProd])boPricePendingChanges[realProd]={};
+  boPricePendingChanges[realProd][type]=parseFloat(inp.value)||0;
+  // Banner de cambios pendientes
+  const count=Object.keys(boPricePendingChanges).length;
+  const banner=document.getElementById('boPriceChangeBanner');
+  const txt=document.getElementById('boPriceChangeText');
+  if(banner){banner.style.display=count>0?'flex':'none';}
+  if(txt)txt.textContent=count+' producto'+(count!==1?'s':'')+' con cambios sin guardar';
 }
+
+function filterBoPriceTiles(){renderBoPriceTiles();}
+
 function saveBoPrices(){
-  document.querySelectorAll('#boPriceBody tr').forEach(row=>{
-    const prod=row.dataset.prod;
-    const reg=parseFloat(row.querySelector('[data-type=regular]').value)||0;
-    const promo=parseFloat(row.querySelector('[data-type=promo]').value)||0;
-    prices[prod]={regular:reg,promo:promo||null};
+  // Lee todos los inputs visibles en el grid
+  document.querySelectorAll('#boPriceTilesGrid input[data-realname]').forEach(inp=>{
+    const prod=inp.getAttribute('data-realname');
+    const type=inp.dataset.type;
+    const val=parseFloat(inp.value)||0;
+    if(!prices[prod])prices[prod]={regular:0,promo:null};
+    if(type==='regular')prices[prod].regular=val;
+    if(type==='promo')prices[prod].promo=val||null;
   });
-  saveAll();initCat();showT('✓ Precios guardados');
-}
-function filterBoPrices(){
-  const q=(document.getElementById('boPriceSearch')?.value||'').toLowerCase();
-  document.querySelectorAll('#boPriceBody tr').forEach(r=>{
-    r.style.display=q&&!r.dataset.prod.toLowerCase().includes(q)?'none':'';
+  // También aplica los cambios pendientes (de tiles no visibles por filtro activo)
+  Object.entries(boPricePendingChanges).forEach(([prod,changes])=>{
+    if(!prices[prod])prices[prod]={regular:0,promo:null};
+    if(changes.regular!==undefined)prices[prod].regular=changes.regular;
+    if(changes.promo!==undefined)prices[prod].promo=changes.promo||null;
   });
+  boPricePendingChanges={};
+  saveAll();initCat();
+  const banner=document.getElementById('boPriceChangeBanner');if(banner)banner.style.display='none';
+  renderBoPriceTiles();
+  showT('✓ Precios guardados — catálogo actualizado');
 }
+
+function resetBoPrices(){
+  if(!confirm('¿Restaurar todos los precios a los valores originales?'))return;
+  prices={};boPricePendingChanges={};
+  saveAll();initCat();initBoPriceTable();
+  showT('Precios restaurados');
+}
+
+function deleteCustomProdFromTable(id){
+  const prods=getCustomProds().filter(p=>p.id!==id);
+  S.set(getCustomProdsKey(),prods);
+  initBoPriceTable();showT('Eliminado');
+}
+
+// Mantener estas por si quedan referencias
+function updateBoPriceDisc(){}
+function filterBoPrices(){filterBoPriceTiles();}
+
 
 function initPriceTable(){
   const body=document.getElementById('priceBody');if(!body)return;
@@ -3581,7 +4785,7 @@ function previewBoConfig(){
   openMo(3,`
     <div class="m-title">👁️ Vista previa</div>
     <div style="background:linear-gradient(135deg,${c1},${c2});border-radius:12px;padding:16px;color:#fff;text-align:center;margin-bottom:10px">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;letter-spacing:2px">${nombre}</div>
+      <div style="font-family:Georgia,serif;font-size:22px;font-weight:300;letter-spacing:2px">${nombre}</div>
       <div style="font-size:11px;opacity:.8;margin-top:3px">${document.getElementById('boSubApp')?.value||'Tu slogan aquí'}</div>
     </div>
     <div style="display:flex;gap:8px">
@@ -3590,8 +4794,6 @@ function previewBoConfig(){
     </div>
     <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center">Guarda para aplicar los cambios</div>
   `);
-}
-
 }
 
 /* ═══════════════════════════════════════════════════
@@ -3691,6 +4893,212 @@ function getLangPrompt(){
     : 'Responde COMPLETAMENTE en español. Todos los hallazgos, resúmenes, justificaciones y nombres de productos en español.';
 }
 
+/* ═══════════════════════════════════════════════════
+   PRODUCTOS CUSTOM POR CONSULTOR
+   ═══════════════════════════════════════════════════ */
+function getCustomProdsKey(){return 'ik_customprods_'+(currentUser?.id||'default');}
+function getCustomProds(){return S.get(getCustomProdsKey(),[]);}
+
+function addCustomProducto(){
+  const emoji=document.getElementById('customProdEmoji')?.value.trim()||'📦';
+  const nombre=document.getElementById('customProdNombre')?.value.trim();
+  const cat=document.getElementById('customProdCat')?.value||'Servicio / Escaneo';
+  const precio=parseFloat(document.getElementById('customProdPrecio')?.value)||0;
+  const desc=document.getElementById('customProdDesc')?.value.trim()||'';
+  if(!nombre||!precio){showT('Escribe nombre y precio');return;}
+  const prods=getCustomProds();
+  prods.push({id:'cp_'+Date.now(),n:nombre,e:emoji,cat,p:precio,desc,isCustom:true});
+  S.set(getCustomProdsKey(),prods);
+  ['customProdEmoji','customProdNombre','customProdPrecio','customProdDesc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderCustomProdsList();
+  showT('✓ '+nombre+' agregado al catálogo');
+}
+
+function renderCustomProdsList(){
+  const el=document.getElementById('customProdsList');if(!el)return;
+  const prods=getCustomProds();
+  if(!prods.length){el.innerHTML='<div style="font-size:11px;color:var(--muted)">Sin productos personalizados aún</div>';return;}
+  el.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Tus productos/servicios custom</div>'+
+    prods.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px">
+      <span style="font-size:18px">${p.e}</span>
+      <div style="flex:1"><div style="font-size:12px;font-weight:600">${p.n}</div>
+      <div style="font-size:10px;color:var(--muted)">${p.cat} · $${p.p.toLocaleString()}</div></div>
+      <button class="btn btn-d btn-sm" style="padding:3px 7px;font-size:10px" onclick="deleteCustomProd('${p.id}')">✕</button>
+    </div>`).join('');
+}
+
+function deleteCustomProd(id){
+  const prods=getCustomProds().filter(p=>p.id!==id);
+  S.set(getCustomProdsKey(),prods);renderCustomProdsList();showT('Eliminado');
+}
+
+function getAllProductos(){
+  return [...PP,...getCustomProds()];
+}
+
+/* ═══════════════════════════════════════════════════
+   CARRITO ENRIQUECIDO — WA con beneficios + PDF
+   ═══════════════════════════════════════════════════ */
+function cartWhatsAppEnriquecido(){
+  const c=getActiveCon();if(!c||!c.items.length)return;
+  const {final,promo,desc}=getCartTotals();
+  const appNombre=APP_CFG.appName||'Iksan Wellness';
+  let msg=`🌿 *${appNombre} — Protocolo personalizado*\n`;
+  msg+=`👤 *${c.name}*${c.age?' · '+c.age+' años':''}${c.sex?' · '+sexLabel(c.sex):''}\n\n`;
+  msg+=`*Productos recomendados:*\n`;
+  c.items.forEach(it=>{
+    const px=getAllProductos().find(p=>p.n===it.n);
+    msg+=`\n${it.e||px?.e||'🌿'} *${it.n}* × ${it.q}\n`;
+    if(px?.b?.length)msg+=`   ✓ ${px.b.slice(0,2).join('\n   ✓ ')}\n`;
+    if(px?.d)msg+=`   💊 ${px.d}\n`;
+    if(px?.t)msg+=`   ⏰ ${px.t}\n`;
+    msg+=`   💰 $${(it.p*it.q).toLocaleString()} MXN\n`;
+  });
+  msg+=`\n`;
+  if(desc>0)msg+=`🏷️ Descuento${promo?' ('+promo+')':''}: -$${desc.toLocaleString()}\n`;
+  msg+=`💳 *Total: $${final.toLocaleString()} MXN*\n\n`;
+  msg+=`_Cualquier duda estoy para ayudarte 💚_`;
+  const phone=(c.phone||'').replace(/\D/g,'');
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+function downloadCartPDF(){
+  const c=getActiveCon();if(!c||!c.items.length)return;
+  const {final,promo,desc}=getCartTotals();
+  const appNombre=APP_CFG.appName||'Iksan Wellness';
+  let contenido=`${appNombre} — Protocolo Personalizado\n${'='.repeat(40)}\n`;
+  contenido+=`Cliente: ${c.name}${c.age?' · '+c.age+' años':''}${c.sex?' · '+sexLabel(c.sex):''}\n`;
+  contenido+=`Fecha: ${new Date().toLocaleDateString('es-MX')}\n\n`;
+  contenido+=`PRODUCTOS RECOMENDADOS:\n${'─'.repeat(30)}\n`;
+  c.items.forEach(it=>{
+    const px=getAllProductos().find(p=>p.n===it.n);
+    contenido+=`\n${it.e||px?.e||'•'} ${it.n} × ${it.q} — $${(it.p*it.q).toLocaleString()} MXN\n`;
+    if(px?.b?.length)contenido+=`  Beneficios: ${px.b.slice(0,3).join(' | ')}\n`;
+    if(px?.d)contenido+=`  Dosis: ${px.d}\n`;
+    if(px?.t)contenido+=`  Cuándo: ${px.t}\n`;
+    if(px?.dur)contenido+=`  Duración: ${px.dur}\n`;
+  });
+  contenido+=`\n${'─'.repeat(30)}\n`;
+  if(desc>0)contenido+=`Descuento${promo?' ('+promo+')':''}: -$${desc.toLocaleString()}\n`;
+  contenido+=`TOTAL: $${final.toLocaleString()} MXN\n\n`;
+  contenido+=`Cualquier duda estamos para ayudarte 💚\n${appNombre}`;
+  const blob=new Blob([contenido],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`protocolo_${c.name.replace(/\s/g,'_')}.txt`;
+  a.click();URL.revokeObjectURL(url);showT('✓ Protocolo descargado');
+}
+
+// cartWhatsApp definida arriba con fallback a enriquecida
+
+/* ═══════════════════════════════════════════════════
+   PDF / COMPARTIR REPORTES
+   ═══════════════════════════════════════════════════ */
+function downloadReportePDF(tipo,id){
+  let contenido='';
+  const appNombre=APP_CFG.appName||'Iksan Wellness';
+  const isEN=LANG==='en';
+  const loc=isEN?'en-US':'es-MX';
+  const fecha=new Date().toLocaleDateString(loc);
+  const LBL={
+    venta:isEN?'Sale Receipt':'Comprobante de Venta',
+    gastos:isEN?'Expense Report':'Reporte de Gastos',
+    ingresos:isEN?'Revenue Report':'Reporte de Ingresos App',
+    catalogo:isEN?'Product Catalog':'Catálogo de Productos',
+    ventas:isEN?'Sales Report':'Reporte de Ventas',
+    cliente:isEN?'Client':'Cliente',
+    fecha_lbl:isEN?'Date':'Fecha',
+    pago:isEN?'Payment method':'Forma de pago',
+    productos:isEN?'Products':'Productos',
+    desc:isEN?'Discount':'Descuento',
+    total:isEN?'TOTAL':'TOTAL',
+    desde:isEN?'From':'Desde',
+    hasta:isEN?'To':'Hasta',
+    pendiente:isEN?'[PENDING]':'[PENDIENTE]',
+    cat:isEN?'Category':'Categoría',
+    precio:isEN?'Price':'Precio',
+  };
+
+  if(tipo==='venta'){
+    const s=sales.find(x=>x.id===id);if(!s)return;
+    contenido=`${appNombre} — ${LBL.venta}\n${'='.repeat(40)}\n${LBL.cliente}: ${s.client}\n${LBL.fecha_lbl}: ${new Date(s.date).toLocaleDateString(loc)}\n${LBL.pago}: ${s.payMethod||''}\n\n${LBL.productos}:\n${(s.items||[]).map(i=>`  ${i.n} × ${i.q} = $${(i.p*i.q).toLocaleString()}`).join('\n')}\n${s.desc>0?'\n'+LBL.desc+': -$'+s.desc.toLocaleString():''}\n${LBL.total}: $${s.total.toLocaleString()} MXN`;
+  } else if(tipo==='gastos'){
+    const desde=document.getElementById('gastoFiltroDesde')?.value||'';
+    const hasta=document.getElementById('gastoFiltroHasta')?.value||'';
+    const lista=gastos.filter(g=>{
+      if(desde&&g.fecha<desde)return false;
+      if(hasta&&g.fecha>hasta)return false;
+      if(gastoFiltroRubro!=='all'&&g.rubro!==gastoFiltroRubro)return false;
+      if(gastoFiltroQuien!=='all'&&g.quienPago!==gastoFiltroQuien)return false;
+      return true;
+    });
+    const total=lista.filter(g=>!g.pendiente).reduce((s,g)=>s+g.monto,0);
+    contenido=`${appNombre} — ${LBL.gastos}\n${'='.repeat(40)}\n${LBL.fecha_lbl}: ${fecha}${desde?' | '+LBL.desde+': '+desde:''}${hasta?' | '+LBL.hasta+': '+hasta:''}\n\n${lista.map(g=>`${g.fecha} | ${g.rubroLbl||g.rubro} | ${g.concepto} | $${g.monto.toLocaleString()}${g.pendiente?' '+LBL.pendiente:''}`).join('\n')}\n\n${LBL.total}: $${total.toLocaleString()} MXN`;
+  } else if(tipo==='ingresos'){
+    const desde=document.getElementById('ingresoDesde')?.value||'';
+    const hasta=document.getElementById('ingresoHasta')?.value||'';
+    const lista=subPayments.filter(p=>{
+      if(desde&&p.fecha<desde)return false;
+      if(hasta&&p.fecha>hasta)return false;
+      return true;
+    });
+    const total=lista.reduce((s,p)=>s+p.monto,0);
+    contenido=`${appNombre} — ${LBL.ingresos}\n${'='.repeat(40)}\n${LBL.fecha_lbl}: ${fecha}\n\n${lista.map(p=>`${p.fecha} | ${p.userName} | ${p.categoria} | $${p.monto.toLocaleString()}`).join('\n')}\n\n${LBL.total}: $${total.toLocaleString()} MXN`;
+  } else if(tipo==='catalogo'){
+    contenido=`${appNombre} — ${LBL.catalogo}\n${'='.repeat(40)}\n${LBL.fecha_lbl}: ${fecha}\n\n${PP.map(p=>`${p.e} ${p.n}\n   ${LBL.cat}: ${p.cat}\n   ${LBL.precio}: $${getEffPrice(p.n).toLocaleString()}${getPromoPrice(p.n)?` (regular $${getPrice(p.n).toLocaleString()})`:''}\n   ${p.b.slice(0,2).join(' · ')}`).join('\n\n')}`;
+  } else if(tipo==='ventas'){
+    const lista=sales.slice().sort((a,b)=>b.date.localeCompare(a.date));
+    const total=lista.reduce((s,x)=>s+x.total,0);
+    contenido=`${appNombre} — ${LBL.ventas}\n${'='.repeat(40)}\n${LBL.fecha_lbl}: ${fecha}\n\n${lista.map(s=>`${new Date(s.date).toLocaleDateString(loc)} | ${s.client} | ${s.origin?ORIGIN[s.origin]||s.origin:''} | $${s.total.toLocaleString()} | ${s.payMethod||''}`).join('\n')}\n\n${LBL.total}: $${total.toLocaleString()} MXN`;
+  }
+
+  if(!contenido){showT('Sin datos para exportar');return;}
+  const blob=new Blob([contenido],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`${appNombre.replace(/\s/g,'_')}_${tipo}_${fecha.replace(/\//g,'-')}.txt`;
+  a.click();URL.revokeObjectURL(url);
+  showT('✓ '+(isEN?'Report downloaded':'Reporte descargado'));
+}
+
+function shareVentaWA(id){
+  const s=sales.find(x=>x.id===id);if(!s)return;
+  const appNombre=APP_CFG.appName||'Iksan Wellness';
+  const items=(s.items||[]).map(i=>`• ${i.n} × ${i.q} = $${(i.p*i.q).toLocaleString()}`).join('\n');
+  const msg=`🌿 *${appNombre} — Comprobante*\n👤 ${s.client}\n📅 ${new Date(s.date).toLocaleDateString('es-MX')}\n\n${items}\n\n💳 *Total: $${s.total.toLocaleString()} MXN*\n${s.payMethod?'Pago: '+s.payMethod:''}`;
+  const c=consultantes.find(x=>x.id===s.cliId);
+  const phone=(c?.phone||'').replace(/\D/g,'');
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+function shareCatalogoWA(){
+  const appNombre=APP_CFG.appName||'Iksan Wellness';
+  let msg=`🌿 *${appNombre} — Catálogo VitalHealth*\n\n`;
+  const cats=[...new Set(PP.map(p=>p.cat))];
+  cats.slice(0,8).forEach(cat=>{
+    const prods=PP.filter(p=>p.cat===cat);
+    msg+=`*${cat}*\n${prods.map(p=>`${p.e} ${p.n} — $${getEffPrice(p.n).toLocaleString()}`).join('\n')}\n\n`;
+  });
+  msg+=`_Para más información contáctame 💚_`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+/* ═══════════════════════════════════════════════════
+   BOTONES DESCARGA/WA EN INGRESOS Y GASTOS
+   ═══════════════════════════════════════════════════ */
+function shareGastosWA(){
+  const desde=document.getElementById('gastoFiltroDesde')?.value||'';
+  const hasta=document.getElementById('gastoFiltroHasta')?.value||'';
+  const lista=gastos.filter(g=>{
+    if(desde&&g.fecha<desde)return false;
+    if(hasta&&g.fecha>hasta)return false;
+    return true;
+  });
+  const total=lista.filter(g=>!g.pendiente).reduce((s,g)=>s+g.monto,0);
+  const msg=`💸 Gastos ${desde?'desde '+desde:''} ${hasta?'hasta '+hasta:''}\n\n${lista.map(g=>`${g.fecha} | ${g.concepto} | $${g.monto.toLocaleString()}${g.pendiente?' ⏳':''}`).join('\n')}\n\nTotal: $${total.toLocaleString()} MXN`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
 function renderOnboardingLastUser(){
   const el=document.getElementById('onboardingLastUser');if(!el)return;
   const last=S.get('ik_lastCreatedUser',null);
@@ -3723,7 +5131,634 @@ function copiarOnboardingMsg(name,email,pass,days){
   navigator.clipboard?.writeText(msg).then(()=>showT('✓ Mensaje copiado')).catch(()=>showT('Copia manualmente el mensaje'));
 }
 
+/* ═══════════════════════════════════════════════════
+   CATÁLOGO PDF — generado 100% en el browser con canvas
+   ═══════════════════════════════════════════════════ */
+
+// ── Paleta por categoría ────────────────────────────────────────────────
+var CAT_PDF_COLORS={
+  'Detox / Hígado':          {bg:'#0d1f17',acc:'#2d9a5f',lt:'#1a3d28'},
+  'Glucosa / Diabetes':      {bg:'#0d1630',acc:'#2563eb',lt:'#1a2a50'},
+  'Riñones':                 {bg:'#0a1e28',acc:'#0891b2',lt:'#0f2d3d'},
+  'Energía / Sexual':        {bg:'#1a0d26',acc:'#9333ea',lt:'#2d1540'},
+  'Dolor / Articulaciones':  {bg:'#220d12',acc:'#dc2626',lt:'#3d1018'},
+  'Antienvejecimiento':      {bg:'#160d22',acc:'#7c3aed',lt:'#26144a'},
+  'Digestión':               {bg:'#1a1800',acc:'#ca8a04',lt:'#2d2800'},
+  'Circulación / Corazón':   {bg:'#1c0808',acc:'#b91c1c',lt:'#300f0f'},
+  'Cerebro / Corazón':       {bg:'#080d1c',acc:'#1e40af',lt:'#0f1830'},
+  'Estrés / Sueño':          {bg:'#080e1c',acc:'#2563eb',lt:'#0f1830'},
+  'Inmunidad':               {bg:'#0a1f10',acc:'#15803d',lt:'#142e1c'},
+  'Antiinflamatorio':        {bg:'#1c0808',acc:'#b91c1c',lt:'#300f0f'},
+  'Peso / Metabolismo':      {bg:'#1a1000',acc:'#d97706',lt:'#2d1c00'},
+  'Piel / Huesos':           {bg:'#1c0814',acc:'#be185d',lt:'#2e1020'},
+  'Multivitamínico':         {bg:'#0a1220',acc:'#0369a1',lt:'#0f1e35'},
+  'Proteína / Nutrición':    {bg:'#0a1a10',acc:'#166534',lt:'#102818'},
+  'Energía / Peso':          {bg:'#1a0e00',acc:'#c2410c',lt:'#2e1800'},
+  'Circulación / Sexual':    {bg:'#1a0820',acc:'#86198f',lt:'#2e1035'},
+  'Café / Peso':             {bg:'#140a00',acc:'#92400e',lt:'#241400'},
+  'Café / Sexual':           {bg:'#1c0a10',acc:'#9d174d',lt:'#30101e'},
+  'Café / Cerebro':          {bg:'#080818',acc:'#312e81',lt:'#0f0f28'},
+  'Café / Keto':             {bg:'#100800',acc:'#78350f',lt:'#1e1000'},
+  'Keto / Energía':          {bg:'#141000',acc:'#854d0e',lt:'#221800'},
+  'Niños':                   {bg:'#1a0a00',acc:'#ea580c',lt:'#2e1400'},
+  'Servicio / Escaneo':      {bg:'#080d1c',acc:'#1d4ed8',lt:'#0f1830'},
+};
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+function hexToRgba(hex,a){
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+function drawRoundRect(ctx,x,y,w,h,r,fill,stroke){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();}
+}
+function wrapText(ctx,text,x,y,maxW,lineH){
+  var words=text.split(' '),line='',lines=[];
+  for(var i=0;i<words.length;i++){
+    var test=line?line+' '+words[i]:words[i];
+    if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=words[i];}
+    else line=test;
+  }
+  if(line)lines.push(line);
+  lines.forEach(function(l,i){ctx.fillText(l,x,y+i*lineH);});
+  return lines.length;
+}
+
+// ── Draw watermark on a canvas ───────────────────────────────────────────
+function drawWatermark(ctx,W,H){
+  ctx.save();
+  ctx.globalAlpha=0.07;
+  ctx.fillStyle='#b4e0ff';
+  ctx.font='bold 18px -apple-system,sans-serif';
+  ctx.textAlign='center';
+  var step=220;
+  for(var row=-1;row*step<H+step;row++){
+    for(var col=-1;col*step<W+step;col++){
+      ctx.save();
+      ctx.translate(col*step+90,row*step+40);
+      ctx.rotate(-0.42);
+      ctx.fillText('IKSAN WELLNESS',0,0);
+      ctx.restore();
+    }
+  }
+  ctx.globalAlpha=0.13;
+  ctx.font='bold 14px -apple-system,sans-serif';
+  ctx.fillText('IKSAN WELLNESS · VITALHEALTH',W/2,H-22);
+  ctx.restore();
+}
+
+// ── Draw one product card on canvas (returns new Y) ─────────────────────
+function drawProductCard(ctx,p,x,y,cardW){
+  var theme=CAT_PDF_COLORS[p.cat]||{bg:'#0d0818',acc:'#7c3aed',lt:'#1a0d2e'};
+  var cardH=340;
+  var headerH=72;
+  var pad=16;
+
+  // Card shadow
+  ctx.shadowColor='rgba(0,0,0,0.35)';
+  ctx.shadowBlur=12;
+  ctx.shadowOffsetY=4;
+  drawRoundRect(ctx,x,y,cardW,cardH,10,theme.bg);
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+
+  // Header bar
+  drawRoundRect(ctx,x,y,cardW,headerH,10,theme.acc);
+  // Header bottom square corners
+  ctx.fillStyle=theme.acc;
+  ctx.fillRect(x,y+headerH-10,cardW,10);
+
+  // Emoji
+  ctx.font='30px serif';
+  ctx.textAlign='left';
+  ctx.fillText(p.e,x+pad,y+46);
+
+  // Product name
+  ctx.fillStyle='rgba(255,255,255,0.97)';
+  ctx.font='bold 22px -apple-system,sans-serif';
+  ctx.fillText(p.n,x+pad+44,y+34);
+
+  // Category + presentation
+  ctx.fillStyle='rgba(255,255,255,0.60)';
+  ctx.font='11px -apple-system,sans-serif';
+  ctx.fillText(p.cat.toUpperCase()+'  ·  '+p.ct,x+pad+44,y+56);
+
+  // CONTENT area ─────────────────────────────────────────
+  var cy=y+headerH+12;
+  var col1x=x+pad, col2x=x+cardW/2+4;
+  var colW=cardW/2-pad-8;
+
+  // LEFT: Beneficios
+  ctx.fillStyle=hexToRgba(theme.acc,0.9);
+  ctx.font='bold 9px -apple-system,sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('BENEFICIOS',col1x,cy+10);
+  ctx.fillStyle='rgba(200,230,210,0.8)';
+  ctx.font='11px -apple-system,sans-serif';
+  var by=cy+24;
+  p.b.forEach(function(b){
+    ctx.fillStyle=hexToRgba(theme.acc,0.9);
+    ctx.fillText('✓',col1x,by);
+    ctx.fillStyle='rgba(220,245,225,0.85)';
+    var lines=[];var words=b.split(' ');var line='';
+    words.forEach(function(w){
+      var t=line?line+' '+w:w;
+      if(ctx.measureText(t).width>colW-14&&line){lines.push(line);line=w;}else line=t;
+    });
+    lines.push(line);
+    lines.forEach(function(l,i){ctx.fillText(l,col1x+14,by+i*14);});
+    by+=lines.length*14+4;
+  });
+
+  // Padecimientos
+  by+=6;
+  ctx.fillStyle=hexToRgba(theme.acc,0.9);
+  ctx.font='bold 9px -apple-system,sans-serif';
+  ctx.fillText('APOYA CON',col1x,by);
+  by+=12;
+  ctx.font='10px -apple-system,sans-serif';
+  p.pa.slice(0,5).forEach(function(pa){
+    ctx.fillStyle=hexToRgba(theme.acc,0.25);
+    drawRoundRect(ctx,col1x,by-10,Math.min(ctx.measureText(pa).width+16,colW),18,9,hexToRgba(theme.acc,0.25));
+    ctx.fillStyle='rgba(220,220,255,0.85)';
+    ctx.fillText(pa,col1x+8,by+1);
+    by+=22;
+  });
+
+  // RIGHT: Indicaciones
+  ctx.fillStyle=hexToRgba(theme.acc,0.9);
+  ctx.font='bold 9px -apple-system,sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('INDICACIONES',col2x,cy+10);
+
+  var indItems=[
+    {icon:'💊',lbl:'DOSIS',val:p.d},
+    {icon:'⏰',lbl:'CUÁNDO',val:p.t},
+    {icon:'📅',lbl:'DURACIÓN',val:p.dur},
+  ];
+  var iy=cy+24;
+  indItems.forEach(function(item){
+    // Mini card
+    drawRoundRect(ctx,col2x,iy,colW,52,7,hexToRgba(theme.lt,0.9));
+    ctx.font='14px serif';
+    ctx.fillText(item.icon,col2x+8,iy+22);
+    ctx.fillStyle=hexToRgba(theme.acc,0.9);
+    ctx.font='bold 8px -apple-system,sans-serif';
+    ctx.fillText(item.lbl,col2x+28,iy+14);
+    ctx.fillStyle='rgba(220,235,225,0.85)';
+    ctx.font='10px -apple-system,sans-serif';
+    // wrap value
+    var words=item.val.split(' '),line='',lines=[];
+    words.forEach(function(w){
+      var t=line?line+' '+w:w;
+      if(ctx.measureText(t).width>colW-32&&line){lines.push(line);line=w;}else line=t;
+    });
+    lines.push(line);
+    lines.slice(0,2).forEach(function(l,i){ctx.fillText(l,col2x+28,iy+26+i*13);});
+    iy+=58;
+  });
+
+  // Ingredientes
+  iy+=2;
+  ctx.fillStyle=hexToRgba(theme.acc,0.9);
+  ctx.font='bold 9px -apple-system,sans-serif';
+  ctx.fillText('INGREDIENTES',col2x,iy);
+  iy+=12;
+  drawRoundRect(ctx,col2x,iy,colW,46,7,hexToRgba(theme.lt,0.8));
+  ctx.fillStyle='rgba(200,210,220,0.75)';
+  ctx.font='9px -apple-system,sans-serif';
+  wrapText(ctx,p.ing,col2x+8,iy+14,colW-16,13);
+
+  return y+cardH+14;
+}
+
+// ── Build padecimientos index (map pa→products) ──────────────────────────
+function buildPadecimientosIndex(){
+  var idx={};
+  PP.forEach(function(p){
+    (p.pa||[]).forEach(function(pa){
+      if(!idx[pa])idx[pa]=[];
+      if(!idx[pa].find(function(x){return x.n===p.n;}))idx[pa].push(p);
+    });
+  });
+  return idx;
+}
+
+// ── Draw cover page ─────────────────────────────────────────────────────
+function drawCoverPage(ctx,W,H,title,subtitle){
+  // Deep bg
+  var grad=ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'#0a0416');
+  grad.addColorStop(1,'#1a0830');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+
+  // Ambient circles
+  [[W*0.85,H*0.12,300,0.08,'#6b2d82'],[W*0.1,H*0.7,250,0.06,'#1a4db8']].forEach(function(c){
+    ctx.beginPath();ctx.arc(c[0],c[1],c[2],0,Math.PI*2);
+    ctx.fillStyle=hexToRgba(c[4],c[3]);ctx.fill();
+  });
+
+  // Gold lines
+  ctx.strokeStyle='rgba(180,140,12,0.6)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(60,70);ctx.lineTo(W-60,70);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(60,H-70);ctx.lineTo(W-60,H-70);ctx.stroke();
+
+  // IKSAN
+  ctx.fillStyle='rgba(255,255,255,0.97)';
+  ctx.font='bold 88px -apple-system,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('IKSAN',W/2,H*0.36);
+
+  // WELLNESS
+  ctx.fillStyle='rgba(180,140,12,0.9)';
+  ctx.font='bold 20px -apple-system,sans-serif';
+  ctx.fillText('W E L L N E S S  ·  V I T A L H E A L T H',W/2,H*0.44);
+
+  // Title
+  ctx.fillStyle='rgba(200,180,230,0.85)';
+  ctx.font='16px -apple-system,sans-serif';
+  ctx.fillText(title,W/2,H*0.51);
+
+  // Badge
+  drawRoundRect(ctx,W/2-130,H*0.555,260,44,22,'rgba(100,30,160,0.5)');
+  ctx.fillStyle='rgba(220,200,255,0.9)';
+  ctx.font='bold 15px -apple-system,sans-serif';
+  ctx.fillText(subtitle,W/2,H*0.555+26);
+
+  // Bottom
+  ctx.fillStyle='rgba(160,140,190,0.6)';
+  ctx.font='13px -apple-system,sans-serif';
+  ctx.fillText('Nutrición de precisión para tu bienestar integral',W/2,H-90);
+
+  drawWatermark(ctx,W,H);
+}
+
+// ── Draw section header ──────────────────────────────────────────────────
+function drawSectionHeader(ctx,title,subtitle,x,y,W,theme){
+  var th=theme||{acc:'#7c3aed',lt:'#26144a'};
+  drawRoundRect(ctx,x,y,W,56,10,th.acc);
+  ctx.fillStyle='rgba(255,255,255,0.95)';
+  ctx.textAlign='left';
+  ctx.font='bold 20px -apple-system,sans-serif';
+  ctx.fillText(title,x+18,y+32);
+  if(subtitle){
+    ctx.fillStyle='rgba(255,255,255,0.55)';
+    ctx.font='11px -apple-system,sans-serif';
+    ctx.textAlign='right';
+    ctx.fillText(subtitle,x+W-18,y+36);
+    ctx.textAlign='left';
+  }
+  return y+56+16;
+}
+
+// ── Master PDF builder using multi-page canvas trick ─────────────────────
+function buildCatalogoPDF(byPadecimiento){
+  var PW=794,PH=1123; // A4 at 96dpi
+  var margin=28;
+  var contentW=PW-2*margin;
+
+  // We'll collect all "pages" as canvas elements
+  var pages=[];
+
+  function newPage(){
+    var c=document.createElement('canvas');
+    c.width=PW;c.height=PH;
+    var ctx=c.getContext('2d');
+    // Page bg
+    ctx.fillStyle='#f5f2ef';
+    ctx.fillRect(0,0,PW,PH);
+    // Header bar
+    ctx.fillStyle='#0d0818';
+    ctx.fillRect(0,0,PW,28);
+    ctx.fillStyle='rgba(180,140,12,0.9)';
+    ctx.font='bold 9px -apple-system,sans-serif';
+    ctx.textAlign='left';
+    ctx.fillText('IKSAN WELLNESS  ·  VITALHEALTH',margin,18);
+    ctx.fillStyle='rgba(180,180,200,0.8)';
+    ctx.font='9px -apple-system,sans-serif';
+    ctx.textAlign='right';
+    ctx.fillText('CATÁLOGO VITALHEALTH',PW-margin,18);
+    ctx.textAlign='left';
+    pages.push({canvas:c,ctx:ctx,y:margin+28+10});
+    return pages[pages.length-1];
+  }
+
+  function addPageFooter(pg,pageNum){
+    var ctx=pg.ctx;
+    ctx.strokeStyle='rgba(100,60,140,0.3)';
+    ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(margin,PH-32);ctx.lineTo(PW-margin,PH-32);ctx.stroke();
+    ctx.fillStyle='rgba(120,100,140,0.7)';
+    ctx.font='9px -apple-system,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('Iksan Wellness  ·  Página '+pageNum,PW/2,PH-16);
+    drawWatermark(ctx,PW,PH);
+  }
+
+  // Cover page
+  var coverC=document.createElement('canvas');
+  coverC.width=PW;coverC.height=PH;
+  var coverCtx=coverC.getContext('2d');
+  var titleStr=byPadecimiento?'Catálogo por Padecimiento':'Catálogo por Categoría';
+  var subStr=byPadecimiento
+    ?PP.reduce(function(s,p){return s+(p.pa||[]).length;},0)+' referencias  ·  '+PP.length+' productos'
+    :PP.length+' Productos  ·  '+new Set(PP.map(function(p){return p.cat;})).size+' Categorías';
+  drawCoverPage(coverCtx,PW,PH,titleStr,subStr);
+  pages.push({canvas:coverC,ctx:coverCtx,y:PH});// mark as full
+
+  var pageNum=1;
+  var cur=newPage();
+  var CARD_H=354; // card + gap
+
+  if(byPadecimiento){
+    var idx=buildPadecimientosIndex();
+    var padList=Object.keys(idx).sort();
+
+    padList.forEach(function(pa){
+      var prods=idx[pa];
+      // Section header needs ~72px
+      if(cur.y+72>PH-50){addPageFooter(cur,pageNum);pageNum++;cur=newPage();}
+      var theme={acc:'#7c3aed',lt:'#1a0d2e',bg:'#0d0818'};
+      // Try to match accent from first product's cat
+      var fc=prods[0]?CAT_PDF_COLORS[prods[0].cat]:null;
+      if(fc)theme=fc;
+      cur.y=drawSectionHeader(cur.ctx,pa,prods.length+' producto'+(prods.length!==1?'s':''),
+                               margin,cur.y,contentW,theme);
+
+      prods.forEach(function(p){
+        if(cur.y+CARD_H>PH-50){addPageFooter(cur,pageNum);pageNum++;cur=newPage();}
+        cur.y=drawProductCard(cur.ctx,p,margin,cur.y,contentW);
+      });
+      cur.y+=8;
+    });
+
+  } else {
+    // By category
+    var cats={};
+    PP.forEach(function(p){if(!cats[p.cat])cats[p.cat]=[];cats[p.cat].push(p);});
+
+    Object.keys(cats).forEach(function(cat){
+      var prods=cats[cat];
+      if(cur.y+72>PH-50){addPageFooter(cur,pageNum);pageNum++;cur=newPage();}
+      var theme=CAT_PDF_COLORS[cat]||{acc:'#7c3aed',lt:'#1a0d2e'};
+      cur.y=drawSectionHeader(cur.ctx,cat,prods.length+' producto'+(prods.length!==1?'s':''),
+                               margin,cur.y,contentW,theme);
+      prods.forEach(function(p){
+        if(cur.y+CARD_H>PH-50){addPageFooter(cur,pageNum);pageNum++;cur=newPage();}
+        cur.y=drawProductCard(cur.ctx,p,margin,cur.y,contentW);
+      });
+      cur.y+=8;
+    });
+  }
+  addPageFooter(cur,pageNum);
+
+  return pages.map(function(pg){return pg.canvas;});
+}
+
+// ── Stitch pages into a single tall canvas → download ───────────────────
+function downloadCatalogoPDF(byPadecimiento){
+  showT('Generando catálogo... puede tardar unos segundos');
+  setTimeout(function(){
+    try{
+      var pages=buildCatalogoPDF(byPadecimiento);
+      var PW=794,PH=1123;
+      // Create one tall canvas with all pages stacked
+      var total=document.createElement('canvas');
+      total.width=PW;
+      total.height=PH*pages.length;
+      var tCtx=total.getContext('2d');
+      pages.forEach(function(pg,i){tCtx.drawImage(pg,0,i*PH);});
+
+      // Download as PNG (print-quality image)
+      var link=document.createElement('a');
+      var filename=byPadecimiento?'iksan_catalogo_padecimientos.png':'iksan_catalogo_categorias.png';
+      var dataUrl=total.toDataURL('image/png');
+      // Mostrar visor inline — funciona en todos los dispositivos
+      openCatalogoViewer(dataUrl,filename,pages.length);
+    }catch(e){
+      console.error('Error generando catálogo:',e);
+      showT('Error: '+e.message);
+    }
+  },100);
+}
+
+function downloadCatalogoPadecimientos(){downloadCatalogoPDF(true);}
+function downloadCatalogoCategoria(){downloadCatalogoPDF(false);}
+
+function openCatalogoViewer(dataUrl,filename,pageCount){
+  // Full-screen overlay viewer with save/share options
+  var existing=document.getElementById('catViewerOverlay');
+  if(existing)existing.remove();
+
+  var overlay=document.createElement('div');
+  overlay.id='catViewerOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:#0d0818;z-index:999;display:flex;flex-direction:column;overflow:hidden';
+
+  // Top bar
+  var bar=document.createElement('div');
+  bar.style.cssText='background:#1a0830;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:1px solid rgba(180,140,12,0.3)';
+
+  var title=document.createElement('div');
+  title.style.cssText='flex:1;font-size:13px;font-weight:700;color:#b4960c';
+  title.textContent='IKSAN · Catálogo ('+pageCount+' págs)';
+  bar.appendChild(title);
+
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  var isAndroid=/Android/.test(navigator.userAgent);
+
+  // Save button
+  var btnSave=document.createElement('button');
+  btnSave.style.cssText='background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer';
+  btnSave.textContent=isIOS?'💾 Guardar':'⬇️ Descargar';
+  btnSave.onclick=function(){
+    if(isIOS){
+      // iOS: long-press instruction
+      var tip=document.createElement('div');
+      tip.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;text-align:center;z-index:9999;line-height:1.7;max-width:300px';
+      tip.innerHTML='📲 <b>Toca y mantén la imagen</b> abajo<br>→ "Guardar imagen" o "Añadir a Fotos"<br><br>O toca <b>Compartir ↑</b> → "Guardar en Archivos"';
+      document.body.appendChild(tip);
+      setTimeout(function(){tip.remove();},5000);
+    } else {
+      var a=document.createElement('a');
+      a.download=filename;a.href=dataUrl;a.click();
+      showT('✓ Descargando en carpeta Descargas...');
+    }
+  };
+  bar.appendChild(btnSave);
+
+  // Print button (PC/Mac)
+  if(!isIOS&&!isAndroid){
+    var btnPrint=document.createElement('button');
+    btnPrint.style.cssText='background:#1a4a2a;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer';
+    btnPrint.textContent='🖨️ Imprimir';
+    btnPrint.onclick=function(){
+      var pw=window.open('','_blank');
+      pw.document.write('<html><head><style>@page{margin:0}body{margin:0}img{width:100%;display:block}</style></head><body><img src="'+dataUrl+'"></body></html>');
+      pw.document.close();
+      pw.focus();
+      setTimeout(function(){pw.print();},600);
+    };
+    bar.appendChild(btnPrint);
+  }
+
+  // Close button
+  var btnClose=document.createElement('button');
+  btnClose.style.cssText='background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:8px;padding:7px 11px;font-size:14px;cursor:pointer';
+  btnClose.textContent='✕';
+  btnClose.onclick=function(){overlay.remove();};
+  bar.appendChild(btnClose);
+  overlay.appendChild(bar);
+
+  // Scroll container with image
+  var scroll=document.createElement('div');
+  scroll.style.cssText='flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:10px 0';
+
+  var img=document.createElement('img');
+  img.src=dataUrl;
+  img.style.cssText='width:100%;display:block;touch-action:pinch-zoom';
+  img.alt='Catálogo VitalHealth';
+  scroll.appendChild(img);
+
+  // Bottom instruction for iOS
+  if(isIOS){
+    var inst=document.createElement('div');
+    inst.style.cssText='background:#1a0830;color:#a090c0;font-size:12px;padding:12px 16px;text-align:center;line-height:1.7;border-top:1px solid rgba(120,60,160,0.3)';
+    inst.innerHTML='📲 Para guardar: <b>toca y mantén la imagen</b> → "Guardar imagen"<br>O toca <b>💾 Guardar</b> arriba para instrucciones';
+    scroll.appendChild(inst);
+  }
+
+  overlay.appendChild(scroll);
+  document.body.appendChild(overlay);
+}
+
+// Fallback: watch when admin-modulos div becomes visible and auto-render
+(function(){
+  var checked=false;
+  setInterval(function(){
+    var el=document.getElementById('admin-modulos');
+    var ml=document.getElementById('modulosList');
+    if(!el||!ml)return;
+    var visible=el.style.display!=='none'&&el.offsetParent!==null;
+    if(visible&&ml.innerHTML.indexOf('Cargando')>=0&&!checked){
+      checked=true;
+      if(typeof renderModulos==='function')renderModulos();
+    }
+    if(!visible)checked=false;
+  },300);
+})();
+
 window.addEventListener('load',function(){
+  // ── URL PARAMETERS ────────────────────────────────────────────────────
+  (function(){
+    var params=new URLSearchParams(window.location.search);
+    var uParam=params.get('u');
+    var tParam=params.get('t'); // provisioning token
+
+    // Token de activación: auto-crear usuario en este dispositivo
+    if(tParam){
+      try{
+        var decoded=JSON.parse(atob(tParam));
+        if(decoded&&decoded.id&&decoded.email){
+          // Cargar usuarios actuales del dispositivo
+          var existing=JSON.parse(localStorage.getItem('ik_users')||'[]');
+          // Solo instalar si no existe ya
+          var alreadyExists=existing.find(function(u){return u.id===decoded.id||u.email===decoded.email;});
+          if(!alreadyExists){
+            existing.push(decoded);
+            localStorage.setItem('ik_users',JSON.stringify(existing));
+          } else {
+            // Actualizar módulos y datos si ya existe (para re-activaciones)
+            var idx=existing.findIndex(function(u){return u.id===decoded.id;});
+            if(idx>=0){
+              existing[idx].modulosAsignados=decoded.modulosAsignados||[];
+              existing[idx].days=decoded.days;
+              existing[idx].activatedAt=decoded.activatedAt;
+              existing[idx].active=true;
+              localStorage.setItem('ik_users',JSON.stringify(existing));
+            }
+          }
+          // También instalar los módulos activados
+          if(decoded.modulosSnapshot){
+            try{
+              var mods=JSON.parse(localStorage.getItem('ik_modulos')||'[]');
+              decoded.modulosSnapshot.forEach(function(snap){
+                var m=mods.find(function(x){return x.id===snap.id;});
+                if(m){
+                  if(!m.activatedFor)m.activatedFor=[];
+                  if(m.activatedFor.indexOf(decoded.id)<0)m.activatedFor.push(decoded.id);
+                }
+              });
+              localStorage.setItem('ik_modulos',JSON.stringify(mods));
+            }catch(e){}
+          }
+          // Guardar el usuario en sessionStorage para auto-seleccionarlo
+          sessionStorage.setItem('ik_url_user', decoded.email.toLowerCase());
+          // Limpiar URL para que no se vea el token (seguridad)
+          window.history.replaceState({},'',window.location.pathname+'?u='+encodeURIComponent(decoded.email));
+        }
+      }catch(e){console.warn('Token inválido:',e);}
+    }
+
+    if(uParam){
+      sessionStorage.setItem('ik_url_user', uParam.toLowerCase().trim());
+    }
+  })();
+
+  // Version check - clear corrupted data from old versions
+  var APP_VER='v9.1';
+  var storedVer=localStorage.getItem('ik_appver');
+
+  // CRITICAL: ensure only u_admin exists as master, clean any corruption
+  (function(){
+    try{
+      var saved=JSON.parse(localStorage.getItem('ik_users')||'[]');
+      if(!Array.isArray(saved))saved=[];
+      // Remove any user that has role=admin and is NOT u_admin
+      var cleaned=saved.filter(function(u){return u.id==='u_admin'||u.role!=='admin';});
+      // Fix u_admin always
+      var adminIdx=cleaned.findIndex(function(u){return u.id==='u_admin';});
+      if(adminIdx>=0){
+        cleaned[adminIdx].name='Admin Iksan';
+        cleaned[adminIdx].email='admin';
+        cleaned[adminIdx].pass='iksan2024';
+        cleaned[adminIdx].role='admin';
+        cleaned[adminIdx].active=true;
+        cleaned[adminIdx].days=-1;
+      } else {
+        cleaned.unshift({id:'u_admin',name:'Admin Iksan',email:'admin',pass:'iksan2024',
+          role:'admin',active:true,days:-1,
+          activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()});
+      }
+      localStorage.setItem('ik_users',JSON.stringify(cleaned));
+    }catch(e){}
+  })();
+
+  if(storedVer!==APP_VER){
+    // Clear potentially corrupted ik_users and ik_modulos from old versions
+    localStorage.removeItem('ik_modulos');
+    // Force re-init users
+    users=(function(){
+      try{
+        var saved=JSON.parse(localStorage.getItem('ik_users')||'[]');
+        var arr=Array.isArray(saved)?saved:[];
+        var cleaned=arr.filter(function(u){return u.role!=='admin'||u.id==='u_admin';});
+        var idx=cleaned.findIndex(function(u){return u.id==='u_admin';});
+        if(idx>=0){cleaned[idx].pass='iksan2024';cleaned[idx].role='admin';cleaned[idx].active=true;cleaned[idx].days=-1;}
+        else{cleaned.unshift(Object.assign({},ADMIN_DEFAULT));}
+        localStorage.setItem('ik_users',JSON.stringify(cleaned));
+        return cleaned;
+      }catch(e){var a=[Object.assign({},ADMIN_DEFAULT)];localStorage.setItem('ik_users',JSON.stringify(a));return a;}
+    })();
+    // Re-init modulos
+    modulos=MODULOS_DEFAULT.map(function(d){return Object.assign({},d);});
+    localStorage.setItem('ik_appver',APP_VER);
+  }
   initLogin();
   renderCitaAlerts();
 });
