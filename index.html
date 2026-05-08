@@ -770,54 +770,25 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
   <!-- ADMIN: Suscripciones (usuarios) -->
   <div id="admin-subs" class="admin-view" style="display:block;padding-top:14px">
 
-    <!-- NUEVO CONSULTOR -->
+    <!-- NUEVO CONSULTOR — solo datos básicos -->
     <div class="card" style="border-left:4px solid var(--mid)">
       <div class="card-title">➕ Nuevo consultor</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Crea el perfil del consultor. El pago, módulos y activación se gestionan en la tarjeta del consultor → <b>💰 Pago & Acceso</b>.</div>
       <div class="in-row" style="margin-bottom:7px">
         <input class="in" id="nuName" placeholder="Nombre completo">
         <input class="in" id="nuPhone" placeholder="📱 WhatsApp" type="tel" style="flex:.7">
       </div>
-      <div class="in-row" style="margin-bottom:7px">
+      <div class="in-row" style="margin-bottom:12px">
         <input class="in" id="nuEmail" placeholder="Email / usuario" type="email">
         <input class="in" id="nuPass" placeholder="Contraseña" style="flex:.7">
       </div>
-      <div class="in-row" style="margin-bottom:7px">
-        <select class="in" id="nuRole" onchange="onNuRoleChange(this.value)">
-          <option value="paid">🌿 Consultor</option>
-          <option value="consult">👁️ Consulta (1 día)</option>
-        </select>
-        <select class="in" id="nuPeriodo" onchange="setSusPeriodo(this.value)" style="flex:1.2">
-          <option value="2d">🎁 Prueba 2 días</option>
-          <option value="30" selected>📅 1 mes</option>
-          <option value="90">📅 3 meses</option>
-          <option value="180">📅 6 meses</option>
-          <option value="365">📅 1 año</option>
-        </select>
-        <input class="in" id="nuPago" type="number" placeholder="Monto $" min="0" style="flex:.6">
-      </div>
       <input type="hidden" id="nuDays" value="30">
-      <div class="in-row" style="margin-bottom:7px">
-        <select class="in" id="nuCuentaPago">
-          <option value="">— Cuenta donde se recibe el pago —</option>
-          ${(S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}])).map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}
-        </select>
-        <input class="in" id="nuFechaPago" type="date" value="${new Date().toISOString().slice(0,10)}" style="flex:.6">
-      </div>
-      <div style="font-size:10px;color:var(--muted);margin-bottom:8px">💡 Sin monto o cuenta: se crea pero queda <b>inactivo</b> hasta registrar pago</div>
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin:8px 0 6px">🧩 Módulos a activar</div>
-      <div id="nuModulos" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"></div>
+      <input type="hidden" id="nuPago" value="0">
+      <input type="hidden" id="nuRole" value="paid">
+      <div id="nuModulos" style="display:none"></div>
       <button class="btn btn-admin btn-full" onclick="createUser()" style="font-size:13px;padding:12px">
-        ✓ Crear consultor y generar enlace
+        💾 Guardar datos de consultor
       </button>
-      <!-- Enlace generado -->
-      <div id="nuLinkBox" style="display:none;margin-top:12px;background:#f0faf0;border-radius:10px;padding:12px;border:1px solid #b8e0c0">
-        <div style="font-size:11px;font-weight:700;color:#1a7f3c;margin-bottom:6px">✅ Consultor creado — enlace de acceso generado</div>
-        <div id="nuLinkUrl" style="font-size:10px;font-family:monospace;color:#1a4a2a;word-break:break-all;background:#fff;padding:7px;border-radius:6px;margin-bottom:8px"></div>
-        <div style="display:flex;gap:7px">
-          <button class="btn btn-wa" style="flex:1;font-size:12px" onclick="openWANewUser()">💬 Enviar por WhatsApp</button>
-          <button class="btn btn-o btn-sm" onclick="copyNewUserLink()">📋 Copiar</button>
-        </div>
-      </div>
     </div>
 
     <!-- SUSCRIPTORES ACTIVOS -->
@@ -4546,15 +4517,14 @@ function renderUserEditModal(uid){
   <!-- TAB PAGO & ACCESO: TODO en un lugar -->
   <div id="ueTabPagoAcceso" style="display:none">
 
-    <!-- Toggle manual de acceso -->
+    <!-- Estado de acceso -->
     <div style="display:flex;align-items:center;gap:10px;background:${expired?'#fff5f5':'#f0faf0'};border-radius:9px;padding:10px 13px;margin-bottom:12px">
+      <div style="font-size:20px">${expired?'⚠️':'✅'}</div>
       <div style="flex:1">
-        <div style="font-size:12px;font-weight:700;color:${expired?'#c04040':'#1a7f3c'}">${expired?'Acceso desactivado':'Acceso activo'}</div>
-        <div style="font-size:10px;color:var(--muted)">${expired?'Registra un pago para activar':''+exp+(daysLeft!=null?' · '+daysLeft+' días restantes':'')}</div>
+        <div style="font-size:12px;font-weight:700;color:${expired?'#c04040':'#1a7f3c'}">${expired?'Sin acceso activo':'Acceso activo'}</div>
+        <div style="font-size:10px;color:var(--muted)">${expired?'Registra un pago o cortesía para activar':exp+(daysLeft!=null?' · '+daysLeft+' días':'')}</div>
       </div>
-      <button class="btn btn-sm" style="background:${expired?'#1a7f3c':'#c04040'};color:#fff;font-size:11px" onclick="toggleUserAcceso('${uid}',${expired})">
-        ${expired?'▶ Activar':'⏸ Desactivar'}
-      </button>
+      ${!expired?`<button class="btn btn-sm" style="background:#c04040;color:#fff;font-size:11px" onclick="toggleUserAcceso('${uid}',false)">⏸ Desactivar</button>`:''}
     </div>
 
     <!-- MÓDULOS a activar con el pago -->
@@ -5019,9 +4989,21 @@ function addUserPago(uid){
 
 function deleteUserPago(uid,pid){
   subPayments=subPayments.filter(p=>p.id!==pid);
+  const remaining=subPayments.filter(p=>p.userId===uid);
+  const u=users.find(x=>x.id===uid);
+  if(u&&remaining.length===0&&u.role!=='admin'){
+    const isIndefCourtesy=(u.days===-1||u.days<0);
+    if(!isIndefCourtesy){
+      u.active=false;
+      u.activatedAt=new Date(Date.now()-999*86400000).toISOString();
+      API.updateUsuario(uid,{active:false,activated_at:u.activatedAt}).catch(function(){});
+      showT('Sin pagos — acceso desactivado automáticamente');
+    }
+  }
   saveAll();
-  renderUserEditModal(uid);
-  ueTab('pagos');
+  API.deletePago(pid).catch(function(){});
+  closeMo(1);
+  setTimeout(function(){openUserEditModal(uid);setTimeout(function(){ueTab('pago-acceso');},100);},50);
 }
 
 function addSubUser(parentId){
@@ -5086,6 +5068,11 @@ function copyWAMsg(){
     ta.select();document.execCommand('copy');showT('✓ Copiado');
   }
 }
+window._copyShortUrl=function(){
+  var url=window._lastShortUrl||'';
+  if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showT('Link copiado');});}
+  else{showT('Copia el link manualmente');}
+};
 function openWADirectEdited(tel){
   var ta=document.getElementById('waMsgTA');
   var msg=ta?ta.value:window._lastWAMsg||'';
@@ -5113,20 +5100,20 @@ function copiarAccesoWA(uid){
   const exp=u.activatedAt&&u.days>0?new Date(new Date(u.activatedAt).getTime()+u.days*86400000).toLocaleDateString('es-MX'):'Sin límite';
   const appName=APP_CFG.appName||'Iksan Wellness';
   const baseUrl=window.location.href.split('?')[0].split('#')[0];
-  // Build provisioning token with all user data
   const tokenData={
-    id:u.id, name:u.name, email:u.email, pass:u.pass,
-    role:'paid', phone:u.phone||'',
-    days:u.days, activatedAt:u.activatedAt,
-    active:true, createdAt:u.createdAt||new Date().toISOString(),
+    id:u.id,name:u.name,email:u.email,pass:u.pass,
+    role:'paid',phone:u.phone||'',
+    days:u.days,activatedAt:u.activatedAt||new Date().toISOString(),
+    active:true,createdAt:u.createdAt||new Date().toISOString(),
     modulosAsignados:u.modulosAsignados||[],
-    modulosSnapshot:modsActivos.map(function(m){return {id:m.id,name:m.name,icon:m.icon,color:m.color,price:m.price};}),
+    modulosSnapshot:modsActivos.map(function(m){return{id:m.id,name:m.name,icon:m.icon,color:m.color,price:m.price};}),
     parentId:null
   };
-  const token=btoa(JSON.stringify(tokenData));
+  const token=btoa(unescape(encodeURIComponent(JSON.stringify(tokenData))));
   const tel=(u.phone||'').replace(/[^0-9]/g,'');
   window._lastWATel=tel;
   const consultUrl=baseUrl+'?u='+encodeURIComponent(u.email)+'&t='+token;
+  const isRenovacion=pagos.length>1; // more than 1 payment = renewal
   const msg='Hola '+u.name+' 👋\n\n'
     +'Bienvenido/a a *IKSAN Wellness* — tu herramienta de gestión y ventas VitalHealth.\n\n'
     +'🔗 *Tu enlace de acceso:*\n'+consultUrl+'\n\n'
@@ -5139,15 +5126,68 @@ function copiarAccesoWA(uid){
   // Store msg for WhatsApp direct open
   window._lastWAMsg=msg;
   // Always show modal — clipboard API unreliable on iOS/Safari
-  // Show editable message modal
-  openMo(2,'<div class="m-title">💬 Mensaje de activación</div>'
-    +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Puedes editar el mensaje antes de enviarlo. Los cambios se aplican solo a este envío.</div>'
-    +'<textarea id="waMsgTA" class="in" style="min-height:200px;font-size:12px;resize:vertical;font-family:-apple-system,sans-serif;line-height:1.7">'+msg+'</textarea>'
-    +'<div style="display:flex;gap:8px;margin-top:10px">'
-    +'<button class="btn btn-wa" style="flex:2;font-size:13px;padding:12px" onclick="openWADirectEdited(window._lastWATel)">💬 Abrir WhatsApp</button>'
-    +'<button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsgEdited()">📋 Copiar</button>'
-    +'</div>'
-    +'<div style="font-size:9px;color:#aaa;margin-top:8px">IKSAN es una herramienta independiente. No somos parte de VitalHealth.</div>');
+  // Shorten URL first, then show modal
+  API.shorten(consultUrl).then(function(res){
+    var shortUrl=(res&&res.short)?res.short:consultUrl;
+    window._lastShortUrl=shortUrl;
+
+    // Different message for new vs renewal
+    var msgLines=isRenovacion?[
+      'Hola '+u.name+', tu suscripcion ha sido renovada en IKSAN Wellness VH.',
+      '',
+      'Tu enlace de acceso (actualizado):',
+      shortUrl,
+      '',
+      'Contrasena: '+u.pass,
+      'Acceso: '+exp,
+      modsActivos.length?'Modulos: '+modsActivos.map(function(m){return labelMap[m.id]||m.name;}).join(', '):'',
+      '',
+      'Abre el enlace para actualizar tu cuenta automaticamente.',
+      '',
+      'IKSAN - Herramienta de gestion para distribuidores VitalHealth. No somos parte de VitalHealth.'
+    ]:[
+      'Hola '+u.name+'! Bienvenido/a a IKSAN Wellness VH.',
+      '',
+      'Tu enlace de acceso:',
+      shortUrl,
+      '',
+      'Contrasena: '+u.pass,
+      'Acceso: '+exp,
+      modsActivos.length?'Modulos: '+modsActivos.map(function(m){return labelMap[m.id]||m.name;}).join(', '):'',
+      '',
+      'Abre el enlace en tu navegador. La primera vez tu cuenta se activa automaticamente.',
+      '',
+      'IKSAN es una herramienta independiente de gestion para distribuidores VitalHealth. No somos parte de VitalHealth.'
+    ];
+    var msgFinal=msgLines.filter(function(l){return l!==null&&l!==undefined;}).join('\n');
+    window._lastWAMsg=msgFinal;
+
+    openMo(2,'<div class="m-title">💬 '+(isRenovacion?'Renovación':'Nuevo acceso')+' — '+u.name+'</div>'
+      +'<div style="background:#f0faf0;border-radius:8px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;gap:8px">'
+        +'<div style="font-size:11px;font-family:monospace;color:#1a4a2a;flex:1;word-break:break-all">'+shortUrl+'</div>'
+        +'<button class="btn btn-o btn-sm" onclick="window._copyShortUrl()">📋</button>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Edita el mensaje si lo necesitas:</div>'
+      +'<textarea id="waMsgTA" class="in" style="min-height:180px;font-size:11px;resize:vertical;font-family:-apple-system,sans-serif;line-height:1.6">'+msgFinal+'</textarea>'
+      +'<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<button class="btn btn-wa" style="flex:2;font-size:13px;padding:11px" onclick="openWADirectEdited(window._lastWATel)">💬 Abrir WhatsApp</button>'
+      +'<button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsgEdited()">📋 Copiar</button>'
+      +'</div>');
+  }).catch(function(){
+    // Fallback without shortening
+    var msgFinal=[
+      'Hola '+u.name+(isRenovacion?', tu acceso ha sido renovado.':'! Bienvenido/a a IKSAN Wellness VH.'),
+      '','Tu enlace: '+consultUrl,'','Contrasena: '+u.pass
+    ].join('\n');
+    window._lastWAMsg=msgFinal;
+    window._lastShortUrl=consultUrl;
+    openMo(2,'<div class="m-title">💬 Mensaje</div>'
+      +'<textarea id="waMsgTA" class="in" style="min-height:160px;font-size:11px;resize:vertical">'+msgFinal+'</textarea>'
+      +'<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<button class="btn btn-wa" style="flex:2" onclick="openWADirectEdited(window._lastWATel)">💬 WhatsApp</button>'
+      +'<button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsgEdited()">📋</button>'
+      +'</div>');
+  });
 }
 
 function deleteUserFromEdit(uid){
