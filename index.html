@@ -753,40 +753,55 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 
   <!-- ADMIN: Suscripciones (usuarios) -->
   <div id="admin-subs" class="admin-view" style="display:block;padding-top:14px">
-    <div class="card">
-      <div class="card-title">➕ Nuevo distribuidor / consultor</div>
-      <div class="in-row">
+
+    <!-- NUEVO CONSULTOR -->
+    <div class="card" style="border-left:4px solid var(--mid)">
+      <div class="card-title">➕ Nuevo consultor</div>
+      <div class="in-row" style="margin-bottom:7px">
         <input class="in" id="nuName" placeholder="Nombre completo">
-        <input class="in" id="nuEmail" placeholder="Email / usuario" type="email">
+        <input class="in" id="nuPhone" placeholder="📱 WhatsApp" type="tel" style="flex:.7">
       </div>
-      <div class="in-row">
-        <input class="in" id="nuPass" placeholder="Contraseña" type="password">
+      <div class="in-row" style="margin-bottom:7px">
+        <input class="in" id="nuEmail" placeholder="Email / usuario" type="email">
+        <input class="in" id="nuPass" placeholder="Contraseña" style="flex:.7">
+      </div>
+      <div class="in-row" style="margin-bottom:7px">
         <select class="in" id="nuRole" onchange="onNuRoleChange(this.value)">
           <option value="paid">🌿 Consultor</option>
           <option value="consult">👁️ Consulta (1 día)</option>
         </select>
-      </div>
-      <div class="in-row">
-        <select class="in" id="nuPeriodo" onchange="setSusPeriodo(this.value)">
-          <option value="2d">🎁 Prueba 2 días (gratis · todos los módulos)</option>
-          <option value="30" selected>📅 1 mes (30 días)</option>
-          <option value="90">📅 3 meses (90 días)</option>
-          <option value="180">📅 6 meses (180 días)</option>
-          <option value="365">📅 1 año (365 días)</option>
-          <option value="custom">✏️ Personalizado</option>
+        <select class="in" id="nuPeriodo" onchange="setSusPeriodo(this.value)" style="flex:1.2">
+          <option value="2d">🎁 Prueba 2 días</option>
+          <option value="30" selected>📅 1 mes</option>
+          <option value="90">📅 3 meses</option>
+          <option value="180">📅 6 meses</option>
+          <option value="365">📅 1 año</option>
         </select>
+        <input class="in" id="nuPago" type="number" placeholder="Monto $" min="0" style="flex:.6">
       </div>
-      <div class="in-row" id="nuDaysRow">
-        <input class="in" id="nuDays" type="number" value="30" placeholder="Días">
-        <input class="in" id="nuPhone" placeholder="📱 WhatsApp" type="tel">
-        <input class="in" id="nuPago" type="number" placeholder="Monto pagado" min="0">
+      <input type="hidden" id="nuDays" value="30">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin:8px 0 6px">🧩 Módulos a activar</div>
+      <div id="nuModulos" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"></div>
+      <button class="btn btn-admin btn-full" onclick="createUser()" style="font-size:13px;padding:12px">
+        ✓ Crear consultor y generar enlace
+      </button>
+      <!-- Enlace generado -->
+      <div id="nuLinkBox" style="display:none;margin-top:12px;background:#f0faf0;border-radius:10px;padding:12px;border:1px solid #b8e0c0">
+        <div style="font-size:11px;font-weight:700;color:#1a7f3c;margin-bottom:6px">✅ Consultor creado — enlace de acceso generado</div>
+        <div id="nuLinkUrl" style="font-size:10px;font-family:monospace;color:#1a4a2a;word-break:break-all;background:#fff;padding:7px;border-radius:6px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:7px">
+          <button class="btn btn-wa" style="flex:1;font-size:12px" onclick="openWANewUser()">💬 Enviar por WhatsApp</button>
+          <button class="btn btn-o btn-sm" onclick="copyNewUserLink()">📋 Copiar</button>
+        </div>
       </div>
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin:8px 0 5px">Módulos incluidos</div>
-      <div id="nuModulos" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
-      <button class="btn btn-admin btn-sm" onclick="createUser()">Crear usuario</button>
     </div>
+
+    <!-- SUSCRIPTORES ACTIVOS -->
     <div class="card">
-      <div class="card-title">Suscripciones activas</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="flex:1;font-size:13px;font-weight:700;color:var(--deep)">Suscriptores activos</div>
+        <input class="in" id="usersSearch" placeholder="🔍 Buscar..." oninput="renderUsers()" style="flex:1;font-size:12px;padding:7px 10px">
+      </div>
       <div id="usersList"></div>
     </div>
   </div>
@@ -2058,44 +2073,185 @@ const QQ=[
 
 let qi=0,qa=[],qaOther=[];
 
+// ── SÍNTOMAS Y DIAGNÓSTICOS ────────────────────────────────
+var SINTOMAS_CATS=[
+  {cat:'Metabolismo & Peso',icon:'⚖️',items:['Sobrepeso','Obesidad','Metabolismo lento','Antojos frecuentes','Retención de líquidos','Tiroides lenta','Síndrome metabólico']},
+  {cat:'Glucosa & Diabetes',icon:'💙',items:['Diabetes tipo 2','Glucosa elevada','Resistencia a insulina','Ovario poliquístico','Pre-diabetes']},
+  {cat:'Hígado & Detox',icon:'🌿',items:['Hígado graso','Hepatitis','Colesterol alto','Cirrosis','Intoxicación / metales pesados','Alergias crónicas']},
+  {cat:'Riñones & Circulación',icon:'🫘',items:['Ácido úrico alto','Cálculos renales','Infección urinaria','Várices','Hemorroides','Hipertensión','Trombosis','Mala circulación']},
+  {cat:'Dolor & Articulaciones',icon:'🦴',items:['Artritis','Osteoartritis','Osteoporosis','Fibromialgia','Dolor de espalda','Migraña','Esclerosis múltiple','Gota']},
+  {cat:'Digestión & Intestino',icon:'⚫',items:['Colitis','Gastritis','Gases / distensión','Estreñimiento','Diarrea crónica','Acidez','Síndrome de intestino irritable']},
+  {cat:'Energía & Sexual',icon:'⚡',items:['Fatiga crónica','Bajo deseo sexual','Disfunción eréctil','Problemas de próstata','Menopausia','Desequilibrio hormonal','Bajo rendimiento físico']},
+  {cat:'Cerebro & Nervios',icon:'🧠',items:['Estrés crónico','Ansiedad','Insomnio','Depresión','TDA / TDAH','Alzheimer','Parkinson','Pérdida de memoria','Neuropatía']},
+  {cat:'Inmunidad & Infecciones',icon:'🛡️',items:['Defensas bajas','Alergias','Asma','Rinitis','Infecciones frecuentes','COVID (recuperación)','Cáncer (apoyo)']},
+  {cat:'Piel & Belleza',icon:'🌸',items:['Acné','Manchas','Estrías','Arrugas','Cabello débil','Uñas frágiles','Psoriasis','Eczema']},
+  {cat:'Niños & Familia',icon:'🧒',items:['Desarrollo infantil','TDA en niños','Sistema inmune débil en niños','Nutrición incompleta','Neurodesarrollo']},
+  {cat:'Nutrición & Deporte',icon:'💪',items:['Falta de nutrientes','Anemia','Dieta keto','Post-entrenamiento','Masa muscular','Recuperación muscular']},
+];
+
+var _sintomasSeleccionados=[];
+
 function openQuizModal(){
   const c=getActiveCon();if(!c){showT('Selecciona consultante primero');return;}
-  qi=0;qa=[];qaOther=[];
-  openMo(1,'<div class="m-title">🌿 Quiz BioCuántico · '+c.name+'</div><div id="quizBody"></div>');
-  renderQ();
+  _sintomasSeleccionados=[];
+  // Precargar síntomas del consultante si los tiene
+  if(c.conditions&&c.conditions.length){
+    _sintomasSeleccionados=[...c.conditions];
+  }
+  renderSintomasSelector();
 }
 
-function renderQ(){
-  const el=document.getElementById('quizBody');if(!el)return;
-  if(qi>=QQ.length){renderQRes();return;}
-  const q=QQ[qi];const pct=Math.round(qi/QQ.length*100);
-  el.innerHTML=`
-    <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
-    <div class="q-num">Pregunta ${qi+1} de ${QQ.length}</div>
-    <span class="q-emoji">${q.e}</span>
-    <div class="q-text">${q.q}</div>
-    <div class="opts">
-      ${q.o.map((o,i)=>`<div>
-        <button class="opt${qa[qi]===i?' sel':''}" onclick="pickQ(${i},${!!o.other})">${o.t}</button>
-        ${o.other?`<input class="opt-other${qa[qi]===i?' show':''}" id="qoi${qi}" placeholder="Describe..." value="${qaOther[qi]||''}" oninput="qaOther[${qi}]=this.value">`:''}
-      </div>`).join('')}
-    </div>
-    <div style="display:flex;gap:7px">
-      ${qi>0?`<button class="btn btn-o" onclick="prevQ()">← Atrás</button>`:''}
-      <button class="btn btn-p" id="qn" style="flex:1" onclick="nextQ()" ${qa[qi]==null?'disabled':''}>${qi===QQ.length-1?'Ver paquetes ✨':'Siguiente →'}</button>
-    </div>
-  `;
+function renderSintomasSelector(){
+  const c=getActiveCon();
+  let html='<div class="m-title">🌿 Evaluación · '+c.name+'</div>';
+  html+='<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Selecciona los síntomas o diagnósticos del consultante. Puedes elegir varios.</div>';
+
+  SINTOMAS_CATS.forEach(function(cat){
+    html+='<div style="margin-bottom:10px">';
+    html+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">'+cat.icon+' '+cat.cat+'</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
+    cat.items.forEach(function(item){
+      var sel=_sintomasSeleccionados.includes(item);
+            html+='<button onclick="toggleSintoma(this,this.dataset.item)" data-item="'+item+'" style="padding:5px 10px;border-radius:20px;border:1.5px solid '+(sel?'var(--mid)':'var(--border)')+';background:'+(sel?'var(--mid)':'#fff')+';color:'+(sel?'#fff':'var(--deep)')+';font-size:11px;font-weight:'+(sel?'700':'400')+';cursor:pointer;transition:.15s">'+item+'</button>';
+    });
+    html+='</div></div>';
+  });
+
+  html+='<div style="position:sticky;bottom:0;background:#fff;padding:10px 0 0;border-top:1px solid var(--border);margin-top:8px">';
+  html+='<div id="sintomasCount" style="font-size:11px;color:var(--muted);margin-bottom:8px">'+(_sintomasSeleccionados.length?_sintomasSeleccionados.length+' seleccionados':'Ninguno seleccionado aún')+'</div>';
+  html+='<button class="btn btn-p btn-full" onclick="generarRecomendacionSintomas()" '+(_sintomasSeleccionados.length===0?'disabled style="opacity:.5"':'')+'>✨ Ver recomendación personalizada</button>';
+  html+='</div>';
+
+  openMo(1,html);
 }
 
-function pickQ(i,isOther){
-  qa[qi]=i;
-  document.querySelectorAll('#quizBody .opt').forEach((b,x)=>b.classList.toggle('sel',x===i));
-  document.querySelectorAll('#quizBody .opt-other').forEach(inp=>inp.classList.remove('show'));
-  if(isOther){const inp=document.getElementById('qoi'+qi);if(inp){inp.classList.add('show');inp.focus();}}
-  document.getElementById('qn').disabled=false;
+function toggleSintoma(btn,item){
+  if(!item)item=btn.dataset.item||btn.textContent.trim();
+  var idx=_sintomasSeleccionados.indexOf(item);
+  if(idx>=0){
+    _sintomasSeleccionados.splice(idx,1);
+    btn.style.background='#fff';btn.style.color='var(--deep)';
+    btn.style.borderColor='var(--border)';btn.style.fontWeight='400';
+  } else {
+    _sintomasSeleccionados.push(item);
+    btn.style.background='var(--mid)';btn.style.color='#fff';
+    btn.style.borderColor='var(--mid)';btn.style.fontWeight='700';
+  }
+  var cnt=document.getElementById('sintomasCount');
+  if(cnt)cnt.textContent=_sintomasSeleccionados.length?_sintomasSeleccionados.length+' seleccionados':'Ninguno seleccionado aún';
 }
-function nextQ(){if(qa[qi]!=null){qi++;renderQ();}}
-function prevQ(){if(qi>0){qi--;renderQ();}}
+
+function generarRecomendacionSintomas(){
+  if(!_sintomasSeleccionados.length){showT('Selecciona al menos un síntoma');return;}
+  const c=getActiveCon();if(!c)return;
+
+  // Score products by selected symptoms
+  var sc={};
+  PP.forEach(function(p){sc[p.n]=0;});
+  _sintomasSeleccionados.forEach(function(sintoma){
+    PP.forEach(function(p){
+      var kwMatch=p.kw&&p.kw.some(function(k){
+        return sintoma.toLowerCase().includes(k.toLowerCase().slice(0,5))||
+               k.toLowerCase().includes(sintoma.toLowerCase().slice(0,5));
+      });
+      var paMatch=p.pa&&p.pa.some(function(pa){
+        return sintoma.toLowerCase().includes(pa.toLowerCase().slice(0,5))||
+               pa.toLowerCase().includes(sintoma.toLowerCase().slice(0,5));
+      });
+      if(kwMatch||paMatch)sc[p.n]+=2;
+      // Partial match
+      p.pa&&p.pa.forEach(function(pa){
+        sintoma.toLowerCase().split(' ').forEach(function(word){
+          if(word.length>4&&pa.toLowerCase().includes(word))sc[p.n]+=0.5;
+        });
+      });
+    });
+  });
+
+  // Age/sex bonus
+  var edad=parseInt(c.age)||0;
+  if(edad>60)['V-Glutation','V-Omega 3','V-Itadol','Glutatión Plus','V-Itax'].forEach(function(n){if(sc[n]!=null)sc[n]++;});
+  if(c.sex==='F')['V-Glucalose','Lovkafe','V-Collagen','Vitalage Collagen'].forEach(function(n){if(sc[n]!=null)sc[n]++;});
+  if(edad<18)['Genius Shake','D Fence','Smartbiotics'].forEach(function(n){if(sc[n]!=null)sc[n]+=3;});
+
+  var ranked=PP.filter(function(p){return sc[p.n]>0;}).sort(function(a,b){return sc[b.n]-sc[a.n];});
+  if(ranked.length<6)ranked.push(...PP.filter(function(p){return !ranked.find(function(x){return x.n===p.n;});}).slice(0,6-ranked.length));
+
+  // Determine max products by user module level
+  var maxProds=3; // basico default
+  if(currentUser){
+    var userMods=currentUser.modulosAsignados||[];
+    if(userMods.includes('m4')||userMods.includes('m3'))maxProds=5;
+    else if(userMods.includes('m2'))maxProds=4;
+    else maxProds=3;
+  }
+
+  // Price limit for top package: $5,555
+  var prices_local=prices||{};
+  function getPrecio(nombre){
+    var p=PP.find(function(x){return x.n===nombre;});
+    return prices_local[nombre]?.regular||p?.precio||650;
+  }
+
+  var basico=ranked.slice(0,2);
+  var intermedio=ranked.slice(0,Math.min(4,ranked.length));
+
+  // Completo: max maxProds, price limit $5,555
+  var completo=[];var totalComp=0;
+  for(var i=0;i<ranked.length&&completo.length<maxProds;i++){
+    var pr=getPrecio(ranked[i].n);
+    if(totalComp+pr<=5555){completo.push(ranked[i]);totalComp+=pr;}
+  }
+  if(!completo.length)completo=ranked.slice(0,maxProds);
+
+  var sintomasText=_sintomasSeleccionados.join(', ');
+  var resumenClinico='Evaluación basada en: '+sintomasText+'.';
+  if(edad>50)resumenClinico+=' Perfil de edad avanzada: prioridad antioxidación y articulaciones.';
+  if(c.sex==='F')resumenClinico+=' Perfil femenino: soporte hormonal incluido.';
+
+  function razonProd(p){
+    var motivos=[];
+    _sintomasSeleccionados.forEach(function(s){
+      if(p.pa&&p.pa.some(function(pa){return pa.toLowerCase().includes(s.toLowerCase().slice(0,6))||s.toLowerCase().includes(pa.toLowerCase().slice(0,6));}))
+        motivos.push('Apoya directamente: '+s);
+    });
+    return motivos.slice(0,2).join(' · ')||(p.b[0]||'Seleccionado por tu perfil de salud');
+  }
+
+  var result={
+    paciente:c.name,edad:c.age,sexo:sexLabel?sexLabel(c.sex):'',
+    fecha:new Date().toLocaleDateString('es-MX'),
+    tipo_analisis:'Evaluación por Síntomas',
+    resumen_clinico:resumenClinico,
+    paquetes:{
+      basico:{
+        productos:basico.map(function(p){return{nombre:p.n,razon_clinica:razonProd(p),dosis:p.d,resultado_esperado:p.b[1]||p.b[0]||''};}),
+        justificacion:'Inicio enfocado con los 2 productos más relevantes para tu perfil. Ideal para empezar sin saturar el organismo.'
+      },
+      esencial:{
+        productos:intermedio.map(function(p){return{nombre:p.n,razon_clinica:razonProd(p),dosis:p.d,resultado_esperado:p.b[1]||p.b[0]||''};}),
+        justificacion:'Protocolo de 4 productos que ataca las principales áreas de salud identificadas: '+_sintomasSeleccionados.slice(0,3).join(', ')+'.'
+      },
+      completo:{
+        productos:completo.map(function(p){return{nombre:p.n,razon_clinica:razonProd(p),dosis:p.d,resultado_esperado:p.b[1]||p.b[0]||''};}),
+        justificacion:'Protocolo integral de '+completo.length+' productos (máx $5,555). Resultados acelerados y protección completa.'
+      }
+    }
+  };
+  _lastResult=result;
+  // Save to history
+  addToHistory('quiz','🌿 Evaluación — '+_sintomasSeleccionados.length+' síntomas · '+ranked.length+' productos',result);
+  document.getElementById('m1c').innerHTML='';
+  openMo(1,'<div class="m-title">🌿 Recomendación · '+c.name+'</div><div id="quizBody">'+renderResult(result)+'</div>');
+}
+
+// Keep old quiz functions for compatibility
+function renderQ(){}
+function pickQ(){}
+function nextQ(){}
+function prevQ(){}
+function scoreProducts(){return {};}
+function renderQRes(){generarRecomendacionSintomas();}
 
 function scoreProducts(){
   const sc={};PP.forEach(p=>sc[p.n]=0);
@@ -3653,43 +3809,87 @@ function createUser(){
   }
   saveAll();
 
+  // Generate access link
+  const baseUrl='https://iksanwellness-boop.github.io/IksanVHApp/';
+  const tokenData={id:u.id,name:u.name,email:u.email,pass:u.pass,
+    role:'paid',phone:u.phone||'',days:u.days,
+    activatedAt:u.activatedAt,active:true,
+    createdAt:u.createdAt,modulosAsignados:modulosAsignados,
+    modulosSnapshot:modulosAsignados.map(function(mid){
+      var m=modulos.find(function(x){return x.id===mid;});
+      return m?{id:m.id,name:m.name,icon:m.icon,color:m.color,price:m.price}:{id:mid};
+    }),parentId:null};
+  const token=btoa(unescape(encodeURIComponent(JSON.stringify(tokenData))));
+  const consultLink=baseUrl+'?u='+encodeURIComponent(u.email)+'&t='+token;
+  window._lastCreatedUserLink=consultLink;
+  window._lastCreatedUser=u;
+
+  // Show link box
+  var lb=document.getElementById('nuLinkBox');
+  var lu=document.getElementById('nuLinkUrl');
+  if(lb)lb.style.display='block';
+  if(lu)lu.textContent=consultLink;
+
   // Save to Supabase
   API.createUsuario({
-    id:u.id, name:u.name, email:u.email, pass:u.pass,
-    role:u.role, phone:u.phone||null,
-    days:u.days, parent_id:u.parentId||null,
-    active:true, activated_at:u.activatedAt,
+    id:u.id,name:u.name,email:u.email,pass:u.pass,
+    role:u.role,phone:u.phone||null,
+    days:u.days,parent_id:null,
+    active:true,activated_at:u.activatedAt,
     modulosAsignados:modulosAsignados
   }).then(function(res){
     if(res&&res.ok){
-      showT('Consultor guardado en servidor');
-      // Save initial payment if any
+      showT('✓ Consultor guardado en servidor');
       if(pago>0){
-        API.createPago({
-          user_id:u.id, user_name:u.name,
+        API.createPago({user_id:u.id,user_name:u.name,
           concepto:'Suscripcion VitalHealth',
-          monto:pago, meses:Math.round(days/30),
-          fecha:new Date().toISOString().slice(0,10)
-        });
+          monto:pago,meses:Math.round(days/30),
+          fecha:new Date().toISOString().slice(0,10)});
       }
     } else {
-      showT('Guardado local (sin conexion al servidor)');
+      console.warn('Server save failed:',res);
+      showT('⚠️ Guardado local — verifica conexion');
     }
-  }).catch(function(){
-    showT('Guardado local (sin conexion al servidor)');
+  }).catch(function(e){
+    console.warn('API error:',e);
+    showT('⚠️ Guardado local — sin conexion');
   });
 
-  ['nuName','nuEmail','nuPass','nuPhone','nuPago'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  S.set('ik_lastCreatedUser',{name:u.name,email:u.email,pass:u.pass,days,modulosAsignados});
+  ['nuName','nuEmail','nuPass','nuPhone','nuPago'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
   renderUsers();renderModulos();renderNuModulos(false);
-  showT('Creando consultor...');
+}
+
+function openWANewUser(){
+  var u=window._lastCreatedUser;
+  var link=window._lastCreatedUserLink;
+  if(!u||!link)return;
+  var labelMap={m1:'Basico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+  var modsActivos=modulos.filter(function(m){return m.activatedFor&&m.activatedFor.includes(u.id);});
+  var exp=u.activatedAt&&u.days>0?new Date(new Date(u.activatedAt).getTime()+u.days*86400000).toLocaleDateString('es-MX'):'Sin limite';
+    var msg='Hola '+u.name+'! Bienvenido/a a IKSAN Wellness.\n\nTu enlace de acceso:\n'+link+'\n\nContrasena: '+u.pass+'\nAcceso hasta: '+exp+(modsActivos.length?'\nModulos: '+modsActivos.map(function(m){return labelMap[m.id]||m.name;}).join(', '):'')+'\n\nAbre el enlace en tu navegador. La primera vez tu cuenta se configura automaticamente.';
+  if(u.phone){
+    var tel=(u.phone||'').replace(/[^0-9]/g,'');
+    window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(msg),'_blank');
+  } else {
+    window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  }
 }
 
 function renderUsers(){
   const el=document.getElementById('usersList');if(!el)return;
   const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+  // Busqueda
+  const searchVal=(document.getElementById('usersSearch')?.value||'').toLowerCase().trim();
   // Solo mostrar usuarios principales, sin admin maestro
-  const mainUsers=users.filter(u=>!u.parentId&&u.id!=='u_admin');
+  const mainUsers=users.filter(u=>!u.parentId&&u.id!=='u_admin'&&(
+    !searchVal||
+    u.name.toLowerCase().includes(searchVal)||
+    u.email.toLowerCase().includes(searchVal)||
+    (u.phone||'').includes(searchVal)||
+    (u.id||'').toLowerCase().includes(searchVal)
+  ));
   if(!mainUsers.length){el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>Sin usuarios</div>';return;}
   el.innerHTML=mainUsers.map(u=>{
     const expired=!checkAccess(u)&&u.role!=='admin';
@@ -3702,8 +3902,11 @@ function renderUsers(){
     return `<div class="list-item" style="flex-wrap:wrap;align-items:flex-start;cursor:pointer" onclick="openUserEditModal('${u.id}')">
       <div class="li-avatar" style="background:${expired?'#ccc':u.role==='admin'?'#1a2a3e':u.role==='paid'?'#1a7f3c':'#6b4a6e'};color:#fff;flex-shrink:0">${roleIcon}</div>
       <div class="li-info" style="min-width:0">
-        <div class="li-name">${u.name}</div>
-        <div class="li-meta">${u.email}${u.phone?' · '+u.phone:''} · ${roleLbl}${u.parentId?(' · hijo de '+( users.find(x=>x.id===u.parentId)?.name||'?')):''}${!u.parentId&&(u.role==='paid'||u.role==='admin')?' · 🔧 '+countOperadores(u.id)+'/'+getMaxOperadores(u.id)+' operadores':''}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="li-name">${u.name}</div>
+          <span style="font-size:9px;background:var(--warm);color:var(--muted);padding:1px 6px;border-radius:5px;font-family:monospace">#${u.id.slice(-6).toUpperCase()}</span>
+        </div>
+        <div class="li-meta">${u.email}${u.phone?' · '+u.phone:''} · ${roleLbl}${!u.parentId&&(u.role==='paid'||u.role==='admin')?' · 🔧 '+countOperadores(u.id)+'/'+getMaxOperadores(u.id)+' ops':''}</div>
         <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">
           <span class="status-pill" style="background:${expired?'#f0f0f0':'#e6f4ea'};color:${expired?'#999':'#1a7f3c'}">${expired?'Expirado':'✅ Activo'}</span>
           ${daysLeft!=null?`<span class="status-pill" style="background:${daysLeft<7?'#fff5f5':'#fff8e8'};color:${daysLeft<7?'#c04040':'#b8960c'}">⏰ ${daysLeft}d</span>`:''}
