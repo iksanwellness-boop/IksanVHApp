@@ -987,6 +987,45 @@ const S={
   set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 };
 
+// ── API LAYER — Cloudflare Worker → Supabase ─────────────────
+const API_URL='https://iksanmastervh.iksanwellness.workers.dev';
+const ADMIN_KEY='iksan2024';
+const API={
+  async call(path,method='GET',body=null,isAdmin=false){
+    try{
+      const opts={method,headers:{'Content-Type':'application/json'}};
+      if(isAdmin)opts.headers['X-Admin-Key']=ADMIN_KEY;
+      if(body)opts.body=JSON.stringify(body);
+      const res=await fetch(API_URL+path,opts);
+      return await res.json();
+    }catch(e){console.warn('API error:',e);return null;}
+  },
+  async login(email,pass){return this.call('/auth/login','POST',{email,pass});},
+  async getUsuarios(){return this.call('/usuarios','GET',null,true);},
+  async createUsuario(data){return this.call('/usuarios','POST',data,true);},
+  async updateUsuario(id,data){return this.call('/usuarios/'+id,'PUT',data,true);},
+  async deleteUsuario(id){return this.call('/usuarios/'+id,'DELETE',null,true);},
+  async getConsultantes(cid){return this.call('/consultantes?consultor_id='+cid);},
+  async createConsultante(data){return this.call('/consultantes','POST',data);},
+  async updateConsultante(id,data){return this.call('/consultantes/'+id,'PUT',data);},
+  async deleteConsultante(id){return this.call('/consultantes/'+id,'DELETE');},
+  async getVentas(cid){return this.call('/ventas?consultor_id='+cid);},
+  async createVenta(data){return this.call('/ventas','POST',data);},
+  async deleteVenta(id){return this.call('/ventas/'+id,'DELETE');},
+  async getGastos(cid){return this.call('/gastos?consultor_id='+cid);},
+  async createGasto(data){return this.call('/gastos','POST',data);},
+  async deleteGasto(id){return this.call('/gastos/'+id,'DELETE');},
+  async getCitasBio(cid){return this.call('/citas_bio?consultor_id='+cid);},
+  async createCitaBio(data){return this.call('/citas_bio','POST',data);},
+  async deleteCitaBio(id){return this.call('/citas_bio/'+id,'DELETE');},
+  async getCitasDr(cid){return this.call('/citas_dr?consultor_id='+cid);},
+  async createCitaDr(data){return this.call('/citas_dr','POST',data);},
+  async deleteCitaDr(id){return this.call('/citas_dr/'+id,'DELETE');},
+  async getPagos(uid){return this.call('/pagos_suscripcion?user_id='+uid);},
+  async createPago(data){return this.call('/pagos_suscripcion','POST',data,true);},
+  async deletePago(id){return this.call('/pagos_suscripcion/'+id,'DELETE',null,true);},
+};
+
 let APP_CFG=S.get('ik_cfg',{appName:'IKSAN',appSub:'Wellness · VitalHealth',lang:'es'});
 let consultantes=S.get('ik_consultantes',[]);
 let prices=S.get('ik_prices',{});
@@ -1336,47 +1375,108 @@ function doLogin(){
   const errEl=document.getElementById('loginErr');
   errEl.textContent='';
   if(!uid){errEl.textContent='Selecciona un usuario primero';return;}
-  const u=users.find(x=>x.id===uid);
-  if(!u){errEl.textContent='Usuario no encontrado';return;}
-  if(u.pass!==pass){errEl.textContent='Contraseña incorrecta';return;}
-  if(!checkAccess(u)&&u.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
+  const uLocal=users.find(x=>x.id===uid);
+  if(!uLocal){errEl.textContent='Usuario no encontrado';return;}
+  if(uLocal.pass!==pass){errEl.textContent='Contrasena incorrecta';return;}
+  if(!checkAccess(uLocal)&&uLocal.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
 
-  currentUser=u;
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('mainApp').style.display='block';
+  const loginBtn=document.getElementById('loginBtn');
+  if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
 
-  // Reset ALL nav tabs first — applyModulosTabs will show correct ones
-  ['nt-consultantes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
-    var el=document.getElementById(id);if(el)el.style.display='none';
+  function finishLogin(u){
+    if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
+    currentUser=u;
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+
+    // Reset tabs
+    ['nt-consultantes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.style.display='none';
+    });
+
+    // User pill
+    const pill=document.getElementById('userPill');
+    pill.style.display='inline-block';
+    pill.textContent=u.role==='admin'?'Admin':u.role==='paid'||u.role==='socio'?'Consultor':u.role==='operador'?'Operador':'Consulta';
+    pill.classList.toggle('admin',u.role==='admin');
+
+    // Apply config
+    document.getElementById('appNameDisplay').textContent=APP_CFG.appName||'IKSAN';
+    document.getElementById('appSubDisplay').textContent=APP_CFG.appSub||'Wellness · VitalHealth';
+    setLang(APP_CFG.lang||'es');
+    try{document.getElementById('cfgAppName').value=APP_CFG.appName||'IKSAN';}catch(e){}
+    try{document.getElementById('cfgAppSub').value=APP_CFG.appSub||'Wellness · VitalHealth';}catch(e){}
+    try{document.getElementById('cfgLang').value=APP_CFG.lang||'es';}catch(e){}
+
+    const savedActive=S.get('ik_activeCon',null);
+    if(savedActive&&consultantes.find(c=>c.id===savedActive))setActiveConsultante(savedActive);
+    else renderConList();
+
+    refreshAllConSelects();
+    initCat();
+    if(u.role==='admin')safeCall(initPriceTable);
+    safeCall(applyModulosTabs,[u]);
+    const boCfg=S.get('ik_boconfig_'+u.id,null);
+    if(boCfg)applyBoConfig(boCfg);
+    showT('Bienvenido/a, '+u.name);
+  }
+
+  // Verify with server + sync data
+  API.login(uLocal.email, pass).then(function(res){
+    var u=uLocal;
+    if(res&&res.ok&&res.user){
+      u=Object.assign({},uLocal,res.user);
+      u.modulosAsignados=res.user.modulosAsignados||uLocal.modulosAsignados||[];
+      u.consultorId=res.user.parent_id||res.user.id;
+      const idx2=users.findIndex(function(x){return x.id===u.id;});
+      if(idx2>=0)users[idx2]=u;else users.push(u);
+      S.set('ik_users',users);
+    } else {
+      u.consultorId=uLocal.parent_id||uLocal.id;
+    }
+
+    // Load server data for this consultor
+    const cid=u.consultorId||u.id;
+    Promise.all([
+      API.getConsultantes(cid),
+      API.getVentas(cid),
+      API.getGastos(cid),
+      API.getCitasBio(cid),
+      API.getCitasDr(cid),
+    ]).then(function(results){
+      if(results[0]&&Array.isArray(results[0])){
+        consultantes=results[0].map(function(c){
+          return{id:c.id,name:c.nombre||c.name||'',phone:c.telefono||c.phone||'',
+            email:c.email||'',notas:c.notas||'',padecimientos:c.padecimientos||[],
+            consultor_id:c.consultor_id,created_at:c.created_at};
+        });
+        S.set('ik_consultantes',consultantes);
+      }
+      if(results[1]&&Array.isArray(results[1])){sales=results[1];S.set('ik_sales',sales);}
+      if(results[2]&&Array.isArray(results[2])){gastos=results[2];S.set('ik_gastos',gastos);}
+      if(results[3]&&Array.isArray(results[3])){citasBio=results[3];S.set('ik_citasBio',citasBio);}
+      if(results[4]&&Array.isArray(results[4])){citasDr=results[4];S.set('ik_citasDr',citasDr);}
+      renderConList();refreshAllConSelects();
+    }).catch(function(e){console.warn('Data load error:',e);});
+
+    // Admin: sync all users from server
+    if(u.role==='admin'){
+      API.getUsuarios().then(function(serverUsers){
+        if(serverUsers&&Array.isArray(serverUsers)){
+          var adminLocal=users.find(function(x){return x.id==='u_admin';});
+          users=serverUsers;
+          if(adminLocal&&!users.find(function(x){return x.id==='u_admin';}))users.unshift(adminLocal);
+          S.set('ik_users',users);
+          if(typeof renderUsers==='function')safeCall(renderUsers);
+        }
+      }).catch(function(){});
+    }
+
+    finishLogin(u);
+  }).catch(function(e){
+    console.warn('Server login error, using local:',e);
+    finishLogin(uLocal);
   });
-
-  // User pill
-  const pill=document.getElementById('userPill');
-  pill.style.display='inline-block';
-  pill.textContent=u.role==='admin'?'👑 Admin':u.role==='paid'?'🌿 Consultor':'👁️ Consulta';
-  pill.classList.toggle('admin',u.role==='admin');
-
-  // Apply config
-  document.getElementById('appNameDisplay').textContent=APP_CFG.appName||'IKSAN';
-  document.getElementById('appSubDisplay').textContent=APP_CFG.appSub||'Wellness · VitalHealth';
-  setLang(APP_CFG.lang||'es');
-  document.getElementById('cfgAppName').value=APP_CFG.appName||'IKSAN';
-  document.getElementById('cfgAppSub').value=APP_CFG.appSub||'Wellness · VitalHealth';
-  document.getElementById('cfgLang').value=APP_CFG.lang||'es';
-
-  // Restore active consultante
-  const savedActive=S.get('ik_activeCon',null);
-  if(savedActive&&consultantes.find(c=>c.id===savedActive))setActiveConsultante(savedActive);
-  else renderConList();
-
-  // Init all
-  refreshAllConSelects();
-  initCat();
-  if(u.role==='admin')safeCall(initPriceTable);
-  safeCall(applyModulosTabs,[u]);
-  const boCfg=S.get('ik_boconfig_'+u.id,null);
-  if(boCfg)applyBoConfig(boCfg);
-  showT('Bienvenido/a, '+u.name);
 }
 
 function doLogout(){
@@ -1577,6 +1677,16 @@ function createConsultante(){
     lastUpdate:new Date().toISOString()
   };
   consultantes.push(c);saveAll();
+  // Sync to server
+  const consultorId=currentUser?(currentUser.consultorId||currentUser.id):'';
+  if(consultorId){
+    API.createConsultante({
+      id:c.id, consultor_id:consultorId,
+      nombre:c.name, telefono:c.phone||null,
+      email:c.email||null, notas:c.notes||null,
+      padecimientos:c.conditions||[]
+    }).catch(function(){});
+  }
   document.getElementById('newConName').value='';
   document.getElementById('newConPhone').value='';
   document.getElementById('newConEmail').value='';
@@ -1834,6 +1944,7 @@ function deleteCon(id){
   consultantes=consultantes.filter(c=>c.id!==id);
   if(activeConId===id)clearActiveConsultante();
   saveAll();
+  API.deleteConsultante(id).catch(function(){});
   renderConList();
   renderConSelect();
   showT('Consultante eliminado');
@@ -3541,10 +3652,37 @@ function createUser(){
       fecha:new Date().toISOString().slice(0,10),createdAt:new Date().toISOString()});
   }
   saveAll();
+
+  // Save to Supabase
+  API.createUsuario({
+    id:u.id, name:u.name, email:u.email, pass:u.pass,
+    role:u.role, phone:u.phone||null,
+    days:u.days, parent_id:u.parentId||null,
+    active:true, activated_at:u.activatedAt,
+    modulosAsignados:modulosAsignados
+  }).then(function(res){
+    if(res&&res.ok){
+      showT('Consultor guardado en servidor');
+      // Save initial payment if any
+      if(pago>0){
+        API.createPago({
+          user_id:u.id, user_name:u.name,
+          concepto:'Suscripcion VitalHealth',
+          monto:pago, meses:Math.round(days/30),
+          fecha:new Date().toISOString().slice(0,10)
+        });
+      }
+    } else {
+      showT('Guardado local (sin conexion al servidor)');
+    }
+  }).catch(function(){
+    showT('Guardado local (sin conexion al servidor)');
+  });
+
   ['nuName','nuEmail','nuPass','nuPhone','nuPago'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   S.set('ik_lastCreatedUser',{name:u.name,email:u.email,pass:u.pass,days,modulosAsignados});
   renderUsers();renderModulos();renderNuModulos(false);
-  showT('Usuario creado · '+days+' dias · '+modulosAsignados.length+' modulos');
+  showT('Creando consultor...');
 }
 
 function renderUsers(){
@@ -3932,12 +4070,18 @@ function saveUserEdit(uid){
   if(role&&role!=='admin')u.role=role;
   if(pass1&&pass1.length>=4){u.pass=pass1;}
   else if(pass1&&pass1.length>0){showT('Contraseña mínimo 4 caracteres');return;}
-  // Sync modulosAsignados from activatedFor so applyModulosTabs works correctly
   u.modulosAsignados=modulos.filter(m=>m.activatedFor&&m.activatedFor.includes(u.id)).map(m=>m.id);
   saveAll();
+  // Sync to server
+  API.updateUsuario(u.id,{
+    name:u.name, email:u.email, pass:u.pass,
+    role:u.role, phone:u.phone||null,
+    modulosAsignados:u.modulosAsignados
+  }).catch(function(){});
   closeMo(1);
   renderUsers();
-  showT('✓ '+u.name+' actualizado');
+  showT('Guardando...');
+  setTimeout(function(){showT('✓ '+u.name+' actualizado');},800);
 }
 
 function renovarUserAcceso(uid){
@@ -3971,13 +4115,21 @@ function addUserPago(uid){
   const cuentas=S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}]);
   const cuenta=cuentas.find(c=>c.id===cuentaId);
   const cuentaNombre=cuenta?cuenta.nombre:(cuentaId||'');
-  subPayments.push({
+  const pagoObj={
     id:'sp_'+Date.now(),userId:u.id,userName:u.name,
     categoria:concepto,monto:monto,meses:0,
     cuentaId:cuentaId,cuentaNombre:cuentaNombre,
     fecha:fecha,createdAt:new Date().toISOString()
-  });
+  };
+  subPayments.push(pagoObj);
   saveAll();
+  // Sync to server
+  API.createPago({
+    user_id:u.id, user_name:u.name,
+    concepto:concepto, monto:monto,
+    cuenta_id:cuentaId||null, cuenta_nombre:cuentaNombre||null,
+    fecha:fecha
+  }).catch(function(){});
   showT('✓ $'+monto.toLocaleString()+' registrado'+(cuentaNombre?' · '+cuentaNombre:''));
   renderUserEditModal(uid);
   ueTab('pagos');
