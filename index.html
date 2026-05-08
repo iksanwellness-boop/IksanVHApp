@@ -203,7 +203,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 .prod-reason{font-size:11px;color:var(--muted);margin-top:1px}
 .prod-dose-tag{font-size:10px;color:var(--mid);margin-top:2px;background:linear-gradient(135deg,#f8f0fd,#f5eafa);padding:2px 7px;border-radius:6px;display:inline-block}
 .pkg-acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
-.pkg-add-btn{flex:1;padding:9px;border:none;border-radius:9px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:#fff;min-width:80px}
+.pkg-add-btn{flex:1;padding:9px;border:none;border-radius:9px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:#fff;min-width:80px;position:relative;z-index:10;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .pkg-add-btn.basic{background:var(--basic)}
 .pkg-add-btn.esencial{background:var(--esencial)}
 .pkg-add-btn.completo{background:var(--completo)}
@@ -735,6 +735,21 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
       <button class="btn btn-o btn-sm" onclick="previewBoConfig()">👁️ Vista previa</button>
     </div>
   </div>
+
+  <!-- BACKUP Y RESTAURACIÓN -->
+  <div class="card" style="border-left:4px solid #1a7f3c">
+    <div class="card-title">🛡️ Copia de seguridad de mis datos</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+      Descarga un archivo con todos tus datos: consultantes, ventas, gastos y citas. 
+      Úsalo como respaldo o para restaurar en caso de pérdida.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn btn-p btn-sm" style="flex:1" onclick="exportarDatosCSV()">⬇️ Exportar mis datos (CSV)</button>
+      <button class="btn btn-o btn-sm" style="flex:1" onclick="document.getElementById('importCSVFile').click()">⬆️ Restaurar desde CSV</button>
+      <input type="file" id="importCSVFile" accept=".csv,.json" style="display:none" onchange="importarDatosCSV(this)">
+    </div>
+    <div style="font-size:10px;color:var(--muted)">💡 Se recomienda hacer respaldo cada semana. El archivo incluye todos tus datos actuales.</div>
+  </div>
 </div>
 </div>
 
@@ -1059,6 +1074,11 @@ const API={
   async getPagos(uid){return this.call('/pagos_suscripcion?user_id='+uid);},
   async createPago(data){return this.call('/pagos_suscripcion','POST',data,true);},
   async deletePago(id){return this.call('/pagos_suscripcion/'+id,'DELETE',null,true);},
+  // Config y Precios
+  async getConfig(cid){return this.call('/config?consultor_id='+cid);},
+  async saveConfig(cid,cfg){return this.call('/config','POST',{consultor_id:cid,config_json:cfg});},
+  async getPrecios(cid){return this.call('/precios?consultor_id='+cid);},
+  async savePrecios(cid,precios){return this.call('/precios/batch','POST',{consultor_id:cid,precios:precios});},
 };
 
 let APP_CFG=S.get('ik_cfg',{appName:'IKSAN',appSub:'Wellness · VitalHealth',lang:'es'});
@@ -1109,17 +1129,83 @@ let modulos=(function(){
 let subPayments=S.get('ik_subPayments',[]);
 
 function saveAll(){
+  // Always save config/settings to localStorage (device-specific)
   S.set('ik_cfg',APP_CFG);
-  S.set('ik_consultantes',consultantes);
   S.set('ik_prices',prices);
-  S.set('ik_users',users);
-  S.set('ik_sales',sales);
   S.set('ik_locs',locations);
+  S.set('ik_modulos',modulos);
+  S.set('ik_users',users);
+  S.set('ik_subPayments',subPayments);
+  // Consultante data — also cache locally for speed
+  S.set('ik_consultantes',consultantes);
+  S.set('ik_sales',sales);
   S.set('ik_gastos',gastos);
   S.set('ik_citasBio',citasBio);
   S.set('ik_citasDr',citasDr);
-  S.set('ik_modulos',modulos);
-  S.set('ik_subPayments',subPayments);
+}
+
+// ── Supabase sync helpers ─────────────────────────────────────
+function getConsultorId(){
+  return currentUser?(currentUser.consultor_id||currentUser.id):'';
+}
+
+async function sbSaveConsultante(c){
+  if(!c||!c.id)return;
+  const cid=getConsultorId();if(!cid)return;
+  const payload={
+    id:c.id, consultor_id:cid,
+    nombre:c.name||'', telefono:c.phone||null,
+    email:c.email||null, notas:c.notes||null,
+    padecimientos:c.conditions||[],
+    updated_at:new Date().toISOString()
+  };
+  // Try update first, then insert
+  const r=await API.updateConsultante(c.id,payload);
+  if(!r||!r.ok){await API.createConsultante(payload);}
+}
+
+async function sbSaveVenta(sale){
+  if(!sale||!sale.id)return;
+  const cid=getConsultorId();if(!cid)return;
+  await API.createVenta({
+    id:sale.id, consultor_id:cid,
+    consultante_id:sale.cliId||null,
+    productos:sale.items||[],
+    total:sale.total||0,
+    cuenta_id:sale.payMethodId||null,
+    cuenta_nombre:sale.payMethod||null,
+    fecha:new Date().toISOString().slice(0,10),
+    notas:sale.nota||null
+  });
+}
+
+async function sbSaveGasto(g){
+  if(!g||!g.id)return;
+  const cid=getConsultorId();if(!cid)return;
+  await API.createGasto({
+    id:g.id, consultor_id:cid,
+    concepto:g.concepto||g.desc||'',
+    monto:g.monto||g.amount||0,
+    categoria:g.categoria||null,
+    cuenta_id:g.cuentaId||null,
+    fecha:g.fecha||new Date().toISOString().slice(0,10)
+  });
+}
+
+async function sbSaveCita(cita,tipo){
+  if(!cita||!cita.id)return;
+  const cid=getConsultorId();if(!cid)return;
+  const payload={
+    id:cita.id, consultor_id:cid,
+    consultante_id:cita.cliId||null,
+    consultante_nombre:cita.cliName||null,
+    fecha:cita.date||cita.fecha||null,
+    hora:cita.time||cita.hora||null,
+    notas:cita.notas||cita.notes||null,
+    status:cita.status||'pendiente'
+  };
+  if(tipo==='bio')await API.createCitaBio(payload);
+  else await API.createCitaDr(payload);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1479,17 +1565,22 @@ function doLogin(){
     // Load server data for this consultor
     const cid=u.consultorId||u.id;
     Promise.all([
-      API.getConsultantes(cid),
-      API.getVentas(cid),
-      API.getGastos(cid),
-      API.getCitasBio(cid),
-      API.getCitasDr(cid),
+      API.getConsultantes(cid),   // 0
+      API.getVentas(cid),         // 1
+      API.getGastos(cid),         // 2
+      API.getCitasBio(cid),       // 3
+      API.getCitasDr(cid),        // 4
+      API.getConfig(cid),         // 5
+      API.getPrecios(cid),        // 6
     ]).then(function(results){
+      // Consultantes
       if(results[0]&&Array.isArray(results[0])){
         consultantes=results[0].map(function(c){
           return{id:c.id,name:c.nombre||c.name||'',phone:c.telefono||c.phone||'',
             email:c.email||'',notas:c.notas||'',padecimientos:c.padecimientos||[],
-            consultor_id:c.consultor_id,created_at:c.created_at};
+            consultor_id:c.consultor_id,created_at:c.created_at,
+            status:c.status||'prospecto',conditions:c.padecimientos||[],
+            history:c.history||[],items:c.items||[]};
         });
         S.set('ik_consultantes',consultantes);
       }
@@ -1497,6 +1588,31 @@ function doLogin(){
       if(results[2]&&Array.isArray(results[2])){gastos=results[2];S.set('ik_gastos',gastos);}
       if(results[3]&&Array.isArray(results[3])){citasBio=results[3];S.set('ik_citasBio',citasBio);}
       if(results[4]&&Array.isArray(results[4])){citasDr=results[4];S.set('ik_citasDr',citasDr);}
+
+      // Config del consultor
+      if(results[5]&&typeof results[5]==='object'&&!Array.isArray(results[5])){
+        var cfg=results[5];
+        if(cfg.appName||cfg.appSub||cfg.lang){
+          // Merge with local APP_CFG
+          if(cfg.appName)APP_CFG.appName=cfg.appName;
+          if(cfg.appSub)APP_CFG.appSub=cfg.appSub;
+          if(cfg.lang)APP_CFG.lang=cfg.lang;
+          S.set('ik_cfg',APP_CFG);
+        }
+        // Apply BO config (colors, logo)
+        if(u.id!=='u_admin'){
+          S.set('ik_boconfig_'+u.id,cfg);
+          if(typeof applyBoConfig==='function')safeCall(applyBoConfig,[cfg]);
+        }
+      }
+
+      // Precios del catálogo
+      if(results[6]&&typeof results[6]==='object'&&!Array.isArray(results[6])&&Object.keys(results[6]).length){
+        prices=results[6];
+        S.set('ik_prices',prices);
+        if(typeof filterCat==='function')safeCall(filterCat);
+      }
+
       renderConList();refreshAllConSelects();
     }).catch(function(e){console.warn('Data load error:',e);});
 
@@ -1750,16 +1866,7 @@ function createConsultante(){
     lastUpdate:new Date().toISOString()
   };
   consultantes.push(c);saveAll();
-  // Sync to server
-  const consultorId=currentUser?(currentUser.consultorId||currentUser.id):'';
-  if(consultorId){
-    API.createConsultante({
-      id:c.id, consultor_id:consultorId,
-      nombre:c.name, telefono:c.phone||null,
-      email:c.email||null, notas:c.notes||null,
-      padecimientos:c.conditions||[]
-    }).catch(function(){});
-  }
+  sbSaveConsultante(c).catch(function(){});
   document.getElementById('newConName').value='';
   document.getElementById('newConPhone').value='';
   document.getElementById('newConEmail').value='';
@@ -1996,6 +2103,7 @@ function openConFichaModal(){
 
 function saveConFicha(){
   const c=getActiveCon();if(!c)return;
+  // Will sync to Supabase after saving locally
   c.name=document.getElementById('fName').value.trim()||c.name;
   c.age=document.getElementById('fAge').value;
   c.sex=document.getElementById('fSex').value;
@@ -2006,6 +2114,7 @@ function saveConFicha(){
   c.notes=document.getElementById('fNotes').value.trim();
   c.lastUpdate=new Date().toISOString();
   saveAll();
+  sbSaveConsultante(c).catch(function(){});
   closeMo(1);
   renderActiveConPanel();
   renderActiveBar();
@@ -2017,7 +2126,7 @@ function deleteCon(id){
   consultantes=consultantes.filter(c=>c.id!==id);
   if(activeConId===id)clearActiveConsultante();
   saveAll();
-  API.deleteConsultante(id).catch(function(){});
+  API.deleteConsultante(id).catch(function(){console.warn('delete consultante failed');});
   renderConList();
   renderConSelect();
   showT('Consultante eliminado');
@@ -2132,37 +2241,59 @@ const QQ=[
 let qi=0,qa=[],qaOther=[];
 
 // ── SÍNTOMAS Y DIAGNÓSTICOS ────────────────────────────────
-// SÍNTOMAS — cómo se siente el consultante
-var SINTOMAS_LIST=[
-  'Cansancio constante','No puedo dormir bien','Dolor muscular','Dolor de cabeza frecuente',
-  'Piel seca o apagada','Caída de cabello','Hinchazón abdominal','Gases frecuentes',
-  'Estreñimiento','Diarrea frecuente','Acidez o reflujo','Ansiedad o nerviosismo',
-  'Tristeza o bajo ánimo','Irritabilidad','Falta de concentración','Memoria débil',
-  'Sed excesiva','Orinar frecuentemente','Retención de líquidos','Sudoración excesiva',
-  'Frío en manos y pies','Palpitaciones','Falta de aire','Dolor articular',
-  'Rigidez en articulaciones','Bajo deseo sexual','Problemas de erección','Ciclo irregular',
-  'Bochornos / menopausia','Aumento de peso sin razón','Dificultad para bajar de peso',
-  'Antojos de azúcar','Visión borrosa','Zumbido en oídos','Manchas en la piel',
-  'Acné o granos','Uñas frágiles','Bajo rendimiento físico','Recuperación lenta',
-];
-
-// PADECIMIENTOS — diagnósticos médicos
-var PADECIMIENTOS_LIST=[
-  'Diabetes tipo 2','Pre-diabetes','Glucosa elevada','Hipotiroidismo','Hipertiroidismo',
-  'Colesterol alto','Triglicéridos altos','Hipertensión','Artritis reumatoide','Osteoartritis',
-  'Osteoporosis','Fibromialgia','Hígado graso','Hepatitis','Cirrosis','Colitis',
-  'Gastritis','Síndrome de intestino irritable','Ovario poliquístico','Endometriosis',
-  'Próstata inflamada','Cálculos renales','Ácido úrico elevado','Várices','Hemorroides',
-  'Migraña crónica','Esclerosis múltiple','Alzheimer / demencia','Parkinson',
-  'TDA / TDAH','Autismo','Depresión','Ansiedad crónica','Insomnio crónico',
-  'Asma','Rinitis alérgica','Alergias crónicas','Infecciones frecuentes',
-  'Cáncer (apoyo)','Obesidad','Sobrepeso','Síndrome metabólico',
-  'Anemia','Plaquetas bajas','Neuropatía diabética','Recuperación post-COVID',
-];
-
+// SÍNTOMAS organizados por sistema del cuerpo
 var SINTOMAS_CATS=[
-  {cat:'Síntomas',icon:'🩺',items:SINTOMAS_LIST},
-  {cat:'Padecimientos diagnosticados',icon:'📋',items:PADECIMIENTOS_LIST},
+  {cat:'Energía y Sueño',icon:'⚡',tipo:'sintoma',items:[
+    'Cansancio constante','Fatiga al despertar','No puedo dormir bien','Sueño poco reparador',
+    'Somnolencia durante el día','Falta de motivación','Me siento sin energía',
+  ]},
+  {cat:'Sistema Digestivo',icon:'🫃',tipo:'sintoma',items:[
+    'Hinchazón abdominal','Gases frecuentes','Estreñimiento','Diarrea frecuente',
+    'Acidez o reflujo','Náuseas','Dolor abdominal','Digestión lenta',
+  ]},
+  {cat:'Sistema Nervioso y Mental',icon:'🧠',tipo:'sintoma',items:[
+    'Ansiedad o nerviosismo','Tristeza o bajo ánimo','Irritabilidad frecuente',
+    'Falta de concentración','Memoria débil','Estrés crónico','Dolores de cabeza frecuentes',
+  ]},
+  {cat:'Sistema Cardiovascular',icon:'❤️',tipo:'sintoma',items:[
+    'Palpitaciones','Frío en manos y pies','Presión alta','Mala circulación',
+    'Retención de líquidos','Zumbido en oídos','Falta de aire al esfuerzo',
+  ]},
+  {cat:'Huesos, Músculos y Articulaciones',icon:'🦴',tipo:'sintoma',items:[
+    'Dolor articular','Rigidez al levantarse','Dolor muscular','Calambres frecuentes',
+    'Recuperación lenta post-ejercicio','Bajo rendimiento físico',
+  ]},
+  {cat:'Piel, Cabello y Uñas',icon:'🌸',tipo:'sintoma',items:[
+    'Piel seca o apagada','Caída de cabello','Acné o granos','Manchas en la piel',
+    'Uñas frágiles','Heridas que tardan en sanar',
+  ]},
+  {cat:'Sistema Hormonal y Sexual',icon:'⚖️',tipo:'sintoma',items:[
+    'Bajo deseo sexual','Ciclo irregular','Bochornos / menopausia','Problemas de erección',
+    'Aumento de peso sin razón','Antojos de azúcar o dulce','Sed excesiva',
+  ]},
+  {cat:'Sistema Renal y Urinario',icon:'🫘',tipo:'sintoma',items:[
+    'Orinar frecuentemente','Retención de líquidos','Ardor al orinar',
+    'Infecciones urinarias frecuentes','Espuma en la orina',
+  ]},
+  {cat:'Visión y Sentidos',icon:'👁️',tipo:'sintoma',items:[
+    'Visión borrosa','Ojos secos o irritados','Sensibilidad a la luz',
+    'Dificultad para ver de noche',
+  ]},
+
+  // PADECIMIENTOS — orden alfabético
+  {cat:'Padecimientos diagnosticados',icon:'📋',tipo:'padecimiento',items:[
+    'Ácido úrico elevado','Alzheimer / demencia','Anemia','Artritis reumatoide',
+    'Asma','Autismo','Cálculos renales','Cáncer (apoyo)',
+    'Cirrosis','Colesterol alto','Colitis','Depresión clínica',
+    'Diabetes tipo 2','Endometriosis','Esclerosis múltiple','Fibromialgia',
+    'Gastritis','Glucosa elevada','Hemorroides','Hepatitis',
+    'Hipertensión','Hipertiroidismo','Hipotiroidismo','Hígado graso',
+    'Infecciones frecuentes','Insomnio crónico','Migraña crónica','Neuropatía diabética',
+    'Obesidad','Osteoartritis','Osteoporosis','Ovario poliquístico',
+    'Parkinson','Plaquetas bajas','Pre-diabetes','Próstata inflamada',
+    'Recuperación post-COVID','Rinitis alérgica','Síndrome de intestino irritable',
+    'Síndrome metabólico','Sobrepeso','TDA / TDAH','Triglicéridos altos','Várices',
+  ]},
 ];
 
 var _sintomasSeleccionados=[];
@@ -2182,7 +2313,19 @@ function renderSintomasSelector(){
   let html='<div class="m-title">🌿 Evaluación · '+c.name+'</div>';
   html+='<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Selecciona los síntomas o diagnósticos del consultante. Puedes elegir varios.</div>';
 
+  // Separate sintomas from padecimientos
+  var hasSintomas=SINTOMAS_CATS.some(function(c){return c.tipo==='sintoma';});
+  var hasPad=SINTOMAS_CATS.some(function(c){return c.tipo==='padecimiento';});
+
+  if(hasSintomas){
+    html+='<div style="font-size:12px;font-weight:700;color:var(--deep);margin-bottom:8px;padding:8px 12px;background:linear-gradient(135deg,#f0f4ff,#e8eeff);border-radius:8px">🩺 Síntomas — ¿Cómo se siente?</div>';
+  }
+
   SINTOMAS_CATS.forEach(function(cat){
+    // Add section header before padecimientos
+    if(cat.tipo==='padecimiento'&&hasSintomas){
+      html+='<div style="font-size:12px;font-weight:700;color:var(--deep);margin-top:12px;margin-bottom:8px;padding:8px 12px;background:linear-gradient(135deg,#f5f0ff,#ede8ff);border-radius:8px">📋 Padecimientos diagnosticados</div>';
+    }
     html+='<div style="margin-bottom:10px">';
     html+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">'+cat.icon+' '+cat.cat+'</div>';
     html+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
@@ -2287,18 +2430,52 @@ function generarRecomendacionSintomas(){
   if(!completo.length)completo=ranked.slice(0,maxProds);
 
   var sintomasText=_sintomasSeleccionados.join(', ');
-  var resumenClinico='Evaluación basada en: '+sintomasText+'.';
-  if(edad>50)resumenClinico+=' Perfil de edad avanzada: prioridad antioxidación y articulaciones.';
-  if(c.sex==='F')resumenClinico+=' Perfil femenino: soporte hormonal incluido.';
+  var nombreConsultante=c.name.split(' ')[0]; // primer nombre
+
+  // Separate sintomas from padecimientos for explanation
+  var soloPadec=_sintomasSeleccionados.filter(function(s){
+    return SINTOMAS_CATS.some(function(cat){return cat.tipo==='padecimiento'&&cat.items.includes(s);});
+  });
+  var soloSint=_sintomasSeleccionados.filter(function(s){return !soloPadec.includes(s);});
+
+  var resumenClinico='Para '+nombreConsultante+': evaluación de '+_sintomasSeleccionados.length+' indicador(es).';
+  if(soloPadec.length)resumenClinico+=' Condiciones diagnosticadas: '+soloPadec.join(', ')+'.';
+  if(soloSint.length)resumenClinico+=' Síntomas reportados: '+soloSint.slice(0,4).join(', ')+(soloSint.length>4?' y más.':'.');
+  if(edad>50)resumenClinico+=' Perfil mayor de 50 años: priorizamos antioxidación celular y soporte articular.';
+  if(c.sex==='F')resumenClinico+=' Perfil femenino: incluimos soporte hormonal y de colágeno.';
 
   function razonProd(p){
     var motivos=[];
     _sintomasSeleccionados.forEach(function(s){
-      if(p.pa&&p.pa.some(function(pa){return pa.toLowerCase().includes(s.toLowerCase().slice(0,6))||s.toLowerCase().includes(pa.toLowerCase().slice(0,6));}))
-        motivos.push('Apoya directamente: '+s);
+      if(p.pa&&p.pa.some(function(pa){
+        return pa.toLowerCase().includes(s.toLowerCase().slice(0,6))||
+               s.toLowerCase().includes(pa.toLowerCase().slice(0,6));
+      })) motivos.push(s);
     });
-    return motivos.slice(0,2).join(' · ')||(p.b[0]||'Seleccionado por tu perfil de salud');
+    if(motivos.length){
+      return 'Recomendado específicamente para ayudar con: '+motivos.slice(0,2).join(' y ')+'. '+( p.b[0]||'');
+    }
+    return p.b[0]||'Complemento nutricional recomendado para tu perfil de salud.';
   }
+
+  // Doctor-style justifications
+  var mainSymptoms=_sintomasSeleccionados.slice(0,3).join(', ');
+  var basicProds=basico.map(function(p){return p.n;}).join(' y ');
+  var esencProds=intermedio.map(function(p){return p.n;}).join(', ');
+
+  var jBasico='Para '+(soloPadec.length?soloPadec[0]:soloSint[0]||'tu caso')+', lo más importante es empezar con los nutrientes clave. '
+    +basicProds+' te dan el soporte inicial que tu cuerpo necesita. '
+    +'Muchos de nuestros consultantes notan mejoría en 3 a 4 semanas con uso constante.';
+
+  var jEsencial='Este protocolo de 4 productos actúa en conjunto para abordar de raíz lo que nos describes: '+mainSymptoms+'. '
+    +'Cada producto tiene una función específica y se potencian entre sí. '
+    +'Es el balance ideal entre resultados y costo, sin saturar el organismo.';
+
+  var jCompleto='Protocolo integral diseñado para tu perfil completo. '
+    +(soloPadec.length?'Con '+soloPadec[0]+' es importante atacar desde varios frentes: inflamación, nutrición celular y apoyo al sistema afectado. ':'' )
+    +'Estos '+completo.length+' productos trabajan en sinergia. '
+    +'Los resultados son más rápidos y duraderos porque cubren todos los sistemas involucrados. '
+    +'Precio total dentro del presupuesto recomendado.';
 
   var result={
     paciente:c.name,edad:c.age,sexo:sexLabel?sexLabel(c.sex):'',
@@ -2308,15 +2485,15 @@ function generarRecomendacionSintomas(){
     paquetes:{
       basico:{
         productos:basico.map(function(p){return{nombre:p.n,razon_clinica:razonProd(p),dosis:p.d,resultado_esperado:p.b[1]||p.b[0]||''};}),
-        justificacion:'Inicio enfocado con los 2 productos más relevantes para tu perfil. Ideal para empezar sin saturar el organismo.'
+        justificacion:jBasico
       },
       esencial:{
         productos:intermedio.map(function(p){return{nombre:p.n,razon_clinica:razonProd(p),dosis:p.d,resultado_esperado:p.b[1]||p.b[0]||''};}),
-        justificacion:'Protocolo de 4 productos que ataca las principales áreas de salud identificadas: '+_sintomasSeleccionados.slice(0,3).join(', ')+'.'
+        justificacion:jEsencial
       },
       completo:{
         productos:completo.map(function(p){return{nombre:p.n,razon_clinica:razonProd(p),dosis:p.d,resultado_esperado:p.b[1]||p.b[0]||''};}),
-        justificacion:'Protocolo integral de '+completo.length+' productos (máx $5,555). Resultados acelerados y protección completa.'
+        justificacion:jCompleto
       }
     }
   };
@@ -2418,23 +2595,57 @@ function renderQRes(){
 }
 
 function renderResult(r){
+  _lastResult=r;
   const pks=r.paquetes||{};
   const af=r.hallazgos_criticos||[];
+  const pa=r.plan_alimenticio||null;
+  const boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
+  const logoHtml=boCfg?.logo?`<img src="${boCfg.logo}" style="height:36px;border-radius:6px;margin-bottom:4px">`:
+    `<div style="font-size:18px;font-weight:700;color:var(--mid)">${APP_CFG.appName||'IKSAN'}</div>`;
+
   return `
-    <div class="res-banner">
-      <div style="font-size:24px">🌿</div>
-      <div style="font-family:Georgia,serif;font-size:18px;font-weight:300;margin-top:4px">${r.tipo_analisis}</div>
-      <div style="font-size:11px;color:var(--muted)">${r.paciente} · ${r.fecha}</div>
+    <!-- HEADER CON LOGO DEL CONSULTOR -->
+    <div class="res-banner" style="position:relative">
+      <div style="position:absolute;top:10px;right:10px;text-align:right">${logoHtml}</div>
+      <div style="font-size:22px">🌿</div>
+      <div style="font-family:Georgia,serif;font-size:17px;font-weight:400;margin-top:4px">${r.tipo_analisis}</div>
+      <div style="font-size:11px;color:var(--muted)">${r.paciente}${r.edad?' · '+r.edad+' años':''}${r.sexo?' · '+r.sexo:''}</div>
+      <div style="font-size:10px;color:var(--muted)">${r.fecha}</div>
     </div>
-    ${r.resumen_clinico?`<div style="background:#f8f5ff;border-radius:9px;padding:11px;margin-bottom:10px;font-size:12.5px;line-height:1.6"><strong>Resumen:</strong> ${r.resumen_clinico}</div>`:''}
-    ${af.length?`<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Hallazgos (${af.length})</div>${af.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:3px;font-size:11px;${p.nivel==='alto'?'background:#fff5f5;color:#b04040':p.nivel==='medio'?'background:#fff8e8;color:#a06020':'background:#f0faf0;color:#308040'}"><span>${p.sistema} — ${p.hallazgo}</span><span>${p.nivel}</span></div>`).join('')}<br>`:''}
+
+    <!-- RESUMEN CLÍNICO -->
+    ${r.resumen_clinico?`<div style="background:#f8f5ff;border-radius:9px;padding:12px;margin-bottom:12px;font-size:12.5px;line-height:1.7;border-left:3px solid var(--mid)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">📋 Resumen clínico</div>
+      ${r.resumen_clinico}
+    </div>`:''}
+
+    <!-- HALLAZGOS -->
+    ${af.length?`<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">⚠️ Hallazgos (${af.length})</div>
+    ${af.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 9px;border-radius:7px;margin-bottom:3px;font-size:11px;${p.nivel==='alto'?'background:#fff5f5;color:#b04040;border-left:3px solid #dc2626':p.nivel==='medio'?'background:#fff8e8;color:#a06020;border-left:3px solid #d97706':'background:#f0faf0;color:#308040;border-left:3px solid #16a34a'}">
+      <span><b>${p.sistema}</b> — ${p.hallazgo}</span>
+      <span style="font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.08)">${p.nivel}</span>
+    </div>`).join('')}<br>`:''}
+
+    <!-- PAQUETES -->
     ${renderPkgBlock('basico',pks.basico,'BÁSICO','#1a56db')}
     ${renderPkgBlock('esencial',pks.esencial,'ESENCIAL','#1a7f3c')}
     ${renderPkgBlock('completo',pks.completo,'COMPLETO','#b8960c')}
-    <div style="display:flex;gap:7px;margin-top:11px">
-      <button class="btn btn-o" style="flex:1" onclick="closeMo(1);openQuizModal()">🔄 Repetir</button>
-      <button class="btn btn-wa" onclick="sendResultWA()">💬 WA</button>
+
+    <!-- PLAN ALIMENTICIO (si existe) -->
+    ${pa?`<div style="background:linear-gradient(135deg,#f0faf0,#e8f8e8);border-radius:10px;padding:13px;margin-top:10px;border:1px solid #b8e0c0">
+      <div style="font-size:11px;font-weight:700;color:#1a7f3c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🥗 Plan alimenticio personalizado</div>
+      ${pa.comer?.length?`<div style="margin-bottom:7px"><div style="font-size:10px;font-weight:700;color:#1a7f3c;margin-bottom:3px">✅ Incluir más</div>${pa.comer.map(a=>`<div style="font-size:12px;color:var(--deep);padding:2px 0">• ${a}</div>`).join('')}</div>`:''}
+      ${pa.evitar?.length?`<div style="margin-bottom:7px"><div style="font-size:10px;font-weight:700;color:#c04040;margin-bottom:3px">❌ Reducir o evitar</div>${pa.evitar.map(a=>`<div style="font-size:12px;color:var(--deep);padding:2px 0">• ${a}</div>`).join('')}</div>`:''}
+      ${pa.tips?.length?`<div><div style="font-size:10px;font-weight:700;color:#b8960c;margin-bottom:3px">💡 Consejos prácticos</div>${pa.tips.map(t=>`<div style="font-size:12px;color:var(--deep);padding:2px 0">• ${t}</div>`).join('')}</div>`:''}
+    </div>`:''}
+
+    <!-- ACCIONES -->
+    <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-wa" style="flex:1" onclick="sendResultWA()">💬 WhatsApp</button>
+      <button class="btn btn-p" style="flex:1" onclick="downloadReportePDF2()">📄 Descargar PDF</button>
+      <button class="btn btn-o btn-sm" onclick="closeMo(1);openQuizModal()">🔄 Nueva</button>
     </div>
+    <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:6px">El PDF incluye todos los paquetes, hallazgos y recomendaciones con logo de tu negocio</div>
   `;
 }
 
@@ -2460,7 +2671,7 @@ function renderPkgBlock(type,d,lbl,color){
         <div style="font-weight:700;color:var(--mid)">$${getEffPrice(p.nombre).toLocaleString()}</div>
       </div>`;}).join('')}
       <div class="pkg-acts">
-        <button class="pkg-add-btn ${cls}" data-ptype="${type}" onclick="addLastPkgToCart(this.dataset.ptype)">🛒 Agregar al carrito</button>
+        <button class="pkg-add-btn ${cls}" onclick="(function(t){addLastPkgToCart(t);}('${type}'));return false;" style="touch-action:manipulation;position:relative;z-index:10">🛒 Agregar paquete al carrito</button>
       </div>
     </div>
   </div>`;
@@ -2494,12 +2705,97 @@ function addPkgToCart(histIdx,type){
 
 function sendResultWA(){
   const c=getActiveCon();if(!c)return;
-  const h=(c.history||[]).slice(-1)[0];if(!h)return;
-  const r=h.data;const prods=r.paquetes?.esencial?.productos||[];
+  const r=_lastResult||(()=>{const h=(c.history||[]).slice(-1)[0];return h?h.data:null;})();
+  if(!r){showT('Sin reporte activo');return;}
+  const boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
+  const negocio=boCfg?.appName||APP_CFG.appName||'Iksan Wellness';
+  const wa=boCfg?.wa||(c.phone||'');
+  const prods=r.paquetes?.esencial?.productos||[];
   const tot=prods.reduce((s,p)=>s+getEffPrice(p.nombre),0);
-  const msg=encodeURIComponent(`🌿 *Iksan Wellness — ${r.tipo_analisis}*\n\n*${c.name}*\n\n*Paquete Esencial:*\n${prods.map(p=>'• '+p.nombre+' · $'+getEffPrice(p.nombre).toLocaleString()).join('\n')}\n\n*Total: $${tot.toLocaleString()} MXN*`);
-  window.open(`https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
+  const pa=r.plan_alimenticio||null;
+  let msg='*'+negocio+'*\n*'+r.tipo_analisis+'*\n\n';
+  msg+='*Paciente:* '+r.paciente+(r.edad?' · '+r.edad+' años':'')+'\n';
+  msg+='*Fecha:* '+r.fecha+'\n\n';
+  if(r.resumen_clinico)msg+='*Hallazgos:*\n'+r.resumen_clinico+'\n\n';
+  msg+='*Protocolo Esencial recomendado:*\n';
+  prods.forEach(p=>{msg+='• '+p.nombre+' ('+p.dosis+')\n  '+p.razon_clinica+'\n';});
+  msg+='\n*Total estimado: $'+tot.toLocaleString()+' MXN*\n';
+  if(pa?.comer?.length)msg+='\n*Alimentación:* Incluir más: '+pa.comer.slice(0,3).join(', ')+(pa.evitar?.length?'\nEvitar: '+pa.evitar.slice(0,3).join(', '):'');
+  msg+='\n\n_Reporte por '+negocio+'_';
+  const tel=wa.replace(/[^0-9]/g,'');
+  window.open('https://wa.me/'+(tel||'')+'?text='+encodeURIComponent(msg),'_blank');
 }
+
+function downloadReportePDF2(){
+  const c=getActiveCon();if(!c)return;
+  const r=_lastResult||(()=>{const h=(c.history||[]).slice(-1)[0];return h?h.data:null;})();
+  if(!r){showT('Sin reporte activo');return;}
+  const boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
+  const negocio=boCfg?.appName||APP_CFG.appName||'Iksan Wellness';
+  const pks=r.paquetes||{};
+  const af=r.hallazgos_criticos||[];
+  const pa=r.plan_alimenticio||null;
+
+  const pkgHtml=(tipo,lbl,color)=>{
+    const d=pks[tipo];if(!d?.productos?.length)return '';
+    const tot=d.productos.reduce((s,p)=>s+getEffPrice(p.nombre),0);
+    return `<div style="margin-bottom:14px;border:1.5px solid ${color};border-radius:8px;overflow:hidden">
+      <div style="background:${color};color:#fff;padding:8px 12px;font-weight:700;font-size:13px">${lbl} — $${tot.toLocaleString()} MXN</div>
+      <div style="padding:10px 12px">
+        <div style="font-size:11px;color:#555;margin-bottom:8px;line-height:1.6">${d.justificacion||''}</div>
+        ${d.productos.map(p=>`<div style="padding:6px 0;border-bottom:1px solid #eee">
+          <div style="font-weight:700;font-size:12px">${p.nombre} <span style="font-size:10px;color:${color};font-weight:400">$${getEffPrice(p.nombre).toLocaleString()}</span></div>
+          <div style="font-size:11px;color:#333;margin:2px 0">${p.razon_clinica||''}</div>
+          <div style="font-size:10px;color:#777">Dosis: ${p.dosis||''}${p.resultado_esperado?' · Resultado: '+p.resultado_esperado:''}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  };
+
+  const logoHTML=boCfg?.logo?`<img src="${boCfg.logo}" style="height:50px;margin-bottom:4px"><br>`:'';
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte ${r.paciente}</title>
+  <style>body{font-family:Georgia,serif;max-width:680px;margin:0 auto;padding:24px;color:#1a1a2e;font-size:13px}
+  @media print{body{padding:8px;max-width:100%}}</style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #6b2d82;padding-bottom:12px;margin-bottom:18px">
+    <div>${logoHTML}<b style="font-size:17px;color:#6b2d82">${negocio}</b></div>
+    <div style="text-align:right;font-size:11px;color:#666"><b>${r.tipo_analisis}</b><br>${r.fecha}</div>
+  </div>
+  <h2 style="color:#6b2d82;margin:0 0 3px">${r.paciente}</h2>
+  <p style="margin:0 0 14px;color:#666;font-size:11px">${r.edad?r.edad+' años':''} ${r.sexo||''}</p>
+  ${r.resumen_clinico?`<div style="background:#f8f5ff;border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.7;border-left:3px solid #6b2d82"><b>Resumen clínico:</b><br>${r.resumen_clinico}</div>`:''}
+  ${af.length?`<p style="font-weight:700;font-size:11px;text-transform:uppercase;color:#666;margin-bottom:6px">Hallazgos (${af.length})</p>
+  ${af.map(p=>{const bg=p.nivel==='alto'?'#fff5f5':p.nivel==='medio'?'#fff8e8':'#f0faf0';const col=p.nivel==='alto'?'#b04040':p.nivel==='medio'?'#a06020':'#308040';
+    return `<div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:5px;margin-bottom:3px;font-size:11px;background:${bg};color:${col}"><span><b>${p.sistema}</b> — ${p.hallazgo}</span><span>${p.nivel}</span></div>`;}).join('')}<br>`:''}
+  <p style="font-weight:700;font-size:12px;text-transform:uppercase;color:#1a7f3c;margin-bottom:10px">Protocolo de suplementación</p>
+  ${pkgHtml('basico','PAQUETE BÁSICO','#1a56db')}
+  ${pkgHtml('esencial','PAQUETE ESENCIAL','#1a7f3c')}
+  ${pkgHtml('completo','PAQUETE COMPLETO','#b8960c')}
+  ${pa?`<div style="background:#f0faf0;border-radius:8px;padding:12px;margin-top:12px;border:1px solid #b8e0c0">
+    <p style="font-weight:700;font-size:12px;color:#1a7f3c;margin:0 0 8px">Plan alimenticio personalizado</p>
+    ${pa.comer?.length?`<p style="font-weight:700;font-size:11px;color:#1a7f3c;margin:0 0 3px">Incluir más:</p><ul style="margin:0 0 8px;padding-left:18px">${pa.comer.map(a=>`<li style="font-size:11px">${a}</li>`).join('')}</ul>`:''}
+    ${pa.evitar?.length?`<p style="font-weight:700;font-size:11px;color:#c04040;margin:0 0 3px">Reducir o evitar:</p><ul style="margin:0 0 8px;padding-left:18px">${pa.evitar.map(a=>`<li style="font-size:11px">${a}</li>`).join('')}</ul>`:''}
+    ${pa.tips?.length?`<p style="font-weight:700;font-size:11px;color:#b8960c;margin:0 0 3px">Consejos:</p><ul style="margin:0;padding-left:18px">${pa.tips.map(t=>`<li style="font-size:11px">${t}</li>`).join('')}</ul>`:''}
+  </div>`:''}
+  <div style="margin-top:20px;padding-top:10px;border-top:1px solid #eee;font-size:10px;color:#999;text-align:center">
+    Reporte generado por ${negocio} · ${r.fecha}<br>
+    Este reporte es orientativo. Consulta con tu médico antes de iniciar cualquier suplementación.
+  </div></body></html>`;
+
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  if(isIOS){
+    const w=window.open('','_blank');
+    if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);}
+    else showT('Activa ventanas emergentes para imprimir');
+  } else {
+    const blob=new Blob([html],{type:'text/html'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='reporte_'+r.paciente.replace(/\s+/g,'_')+'.html';a.click();
+    URL.revokeObjectURL(url);
+    showT('Reporte descargado — ábrelo en el navegador para imprimir o guardar como PDF');
+  }
+}
+
 
 /* ═══════════════════════════════════════════════════
    ANALYSIS IA (labs + VH)
@@ -2518,28 +2814,56 @@ function openVHModal(){
 }
 
 function buildAnalysisModal(title,sub,src){
+  const c=getActiveCon();
   return `
     <div class="m-title">${title}</div>
     <div class="m-sub">${sub}</div>
     <div id="anaMain">
+      <!-- FILE UPLOAD -->
       <div class="upload-zone" id="upZone" onclick="document.getElementById('anaFile').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
         <div class="uz-icon">📎</div>
-        <div class="uz-title">Toca o arrastra el archivo</div>
-        <div class="uz-sub">PDF · imagen · texto</div>
-        <input type="file" id="anaFile" accept=".pdf,.txt,.jpg,.jpeg,.png" style="display:none" onchange="handleFile(this)">
+        <div class="uz-title">Toca para subir el reporte</div>
+        <div class="uz-sub">PDF · JPG · PNG — BioCuántico o Laboratorio</div>
+        <input type="file" id="anaFile" accept=".pdf,.jpg,.jpeg,.png,.txt" style="display:none" onchange="handleFile(this)">
       </div>
-      <div id="anaActions" style="display:none;margin:8px 0;text-align:center">
-        <span id="anaFileName" style="font-size:12px;color:var(--muted)"></span>
-        <button class="btn btn-d btn-sm" onclick="clearFile()" style="margin-left:8px">🗑️</button>
+      <div id="anaActions" style="display:none;margin:8px 0;display:flex;align-items:center;gap:8px">
+        <span id="anaFileName" style="font-size:12px;color:var(--muted);flex:1"></span>
+        <button class="btn btn-d btn-sm" onclick="clearFile()">🗑️</button>
       </div>
+
+      <!-- RECOMENDACIÓN ALIMENTICIA -->
+      <div style="background:#f8f5ff;border-radius:10px;padding:11px;margin:10px 0">
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:0" id="alimentLabel">
+          <input type="checkbox" id="chkAliment" onchange="toggleAlimentSection()" style="width:17px;height:17px;accent-color:var(--mid)">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--deep)">🥗 Incluir recomendación alimenticia</div>
+            <div style="font-size:10px;color:var(--muted)">Claude sugerirá qué comer y qué evitar según el análisis</div>
+          </div>
+        </label>
+        <div id="alimentSection" style="display:none;margin-top:10px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">¿Qué suele comer? ¿Tiene restricciones? ¿Qué le gusta?</div>
+          <textarea id="alimentHabitos" class="in" style="min-height:70px;resize:vertical;font-size:12px" placeholder="Ej: Come mucho pan y refrescos. Le gustan las sopas. No le gusta el pescado. Es vegetariano. Tiene intolerancia a la lactosa..."></textarea>
+        </div>
+      </div>
+
       <div style="display:flex;gap:7px">
         <button class="btn btn-p" style="flex:1" onclick="runAnalysis()">🔬 Analizar con IA</button>
         <button class="btn btn-o btn-sm" onclick="runDemo()">Demo</button>
       </div>
     </div>
-    <div id="anaSpin" style="display:none;text-align:center;padding:30px"><div class="spin"></div><div style="font-family:Georgia,serif;font-size:16px">Analizando con IA...</div><div style="font-size:11px;color:var(--muted)">Identificando parámetros · Preparando protocolo</div></div>
+    <div id="anaSpin" style="display:none;text-align:center;padding:30px">
+      <div class="spin"></div>
+      <div style="font-family:Georgia,serif;font-size:16px;margin-top:12px">Analizando con IA...</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Leyendo reporte · Identificando hallazgos · Preparando protocolo personalizado</div>
+    </div>
     <div id="anaRes"></div>
   `;
+}
+
+function toggleAlimentSection(){
+  var chk=document.getElementById('chkAliment');
+  var sec=document.getElementById('alimentSection');
+  if(sec)sec.style.display=chk&&chk.checked?'block':'none';
 }
 
 function handleDrop(e){e.preventDefault();document.getElementById('upZone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)loadFile(f);}
@@ -2579,30 +2903,80 @@ async function runAnalysis(){
   const c=getActiveCon();if(!c)return;
   document.getElementById('anaMain').style.display='none';
   document.getElementById('anaSpin').style.display='block';
-  const pl=PP.map(p=>p.n+' ('+p.cat+')').join(', ');
-  const patInfo=`${c.name}, ${c.age||'?'} años, ${sexLabel(c.sex)||'?'}`;
+  const edad=parseInt(c.age)||0;
+  const esNino=edad>0&&edad<18;
   const langInstr=getLangPrompt();
-  const sysPrompt='Eres un experto en salud integrativa y nutrición funcional. Analizas reportes médicos (laboratorios, biocuánticos, VitalHealth) y recomiendas suplementos VitalHealth. Personalizas según edad, sexo y condiciones. Responde SIEMPRE con JSON válido sin texto adicional. '+langInstr;
-  const userPrompt=`Analiza el reporte del paciente: ${patInfo}. ${langInstr}
+
+  // Age-appropriate product filter
+  const PRODS_NINOS=['Genius Shake','D Fence','Smartbiotics'];
+  const PRODS_ADULTOS=PP.filter(p=>!PRODS_NINOS.includes(p.n)).map(p=>p.n+' ('+p.cat+')');
+  const PRODS_NINOS_LIST=PP.filter(p=>PRODS_NINOS.includes(p.n)).map(p=>p.n+' ('+p.cat+')');
+  const plAdultos=PRODS_ADULTOS.join(', ');
+  const plNinos=PRODS_NINOS_LIST.join(', ');
+  const pl=esNino?plNinos:plAdultos;
+
+  const patInfo=`${c.name}, ${edad||'?'} años, ${sexLabel(c.sex)||'?'}`;
+  const esSexF=c.sex==='F'||c.sex==='female';
+
+  // Food habits
+  const chkAliment=document.getElementById('chkAliment');
+  const alimentHabitos=document.getElementById('alimentHabitos');
+  const incluirAliment=chkAliment&&chkAliment.checked;
+  const habitosText=incluirAliment&&alimentHabitos?alimentHabitos.value.trim():'';
+
+  const sysPrompt=`Eres un especialista en salud integrativa, nutrición funcional y suplementación natural. 
+Analizas reportes médicos (laboratorios clínicos, escaneos biocuánticos, reportes VitalHealth) y generas recomendaciones personalizadas usando únicamente el catálogo de productos VitalHealth proporcionado.
+
+REGLAS CRÍTICAS:
+- NUNCA recomendes productos para niños (Genius Shake, D Fence, Smartbiotics) a pacientes adultos (18+ años)
+- NUNCA recomendes productos para adultos a pacientes menores de 18 años
+- Usa SOLO productos del catálogo proporcionado — no inventes productos
+- Personaliza según edad, sexo y condiciones específicas del paciente
+- Usa lenguaje claro y empático, como si hablaras directamente con el paciente
+- Responde SIEMPRE con JSON válido sin texto adicional ni backticks
+${langInstr}`;
+
+  // Max products by module
+  var maxProds=3;
+  if(currentUser){
+    var userMods=currentUser.modulosAsignados||[];
+    if(userMods.includes('m4')||userMods.includes('m3'))maxProds=5;
+    else if(userMods.includes('m2'))maxProds=4;
+    else maxProds=3;
+  }
+
+  const userPrompt=`Analiza el siguiente reporte médico del paciente: ${patInfo}${esSexF?' (Sexo femenino: considera soporte hormonal si aplica)':''}.
+${esNino?'PACIENTE MENOR DE EDAD ('+edad+' años): usar SOLO productos infantiles del catálogo.':'PACIENTE ADULTO: NO usar productos para niños.'}
+
+${habitosText?`HÁBITOS ALIMENTICIOS DEL PACIENTE:
+${habitosText}
+
+Con esta información, incluye en el JSON un campo "plan_alimenticio" con recomendaciones específicas de qué comer, qué evitar y sugerencias prácticas adaptadas a sus gustos.`:''}
+
+CATÁLOGO DISPONIBLE (${esNino?'productos infantiles':'productos para adultos'}):
+${pl}
 
 INSTRUCCIONES:
-1. Identifica TODOS los parámetros alterados con nivel (alto/medio/bajo)
-2. Recomienda 3 paquetes: básico (2-3 productos), esencial (4-5), completo (6-10)
-3. Para cada producto explica POR QUÉ y la dosis
+1. Lee e interpreta todos los parámetros del reporte — identifica los alterados con su nivel de urgencia
+2. Genera 3 paquetes de productos: básico (2-3 productos), esencial (4 productos máx), completo (${maxProds} productos máx, precio total máximo $5,555 MXN)
+3. Para CADA producto explica en lenguaje claro POR QUÉ le beneficia a ESTE paciente específicamente
+4. La justificación de cada paquete debe sonar como un médico explicándole al paciente el beneficio
 
-Catálogo: ${pl}
-
-Responde SOLO con este JSON:
+Responde SOLO con este JSON (sin texto extra, sin backticks):
 {
-"paciente":"${c.name}","edad":"${c.age||''}","sexo":"${sexLabel(c.sex)||''}","fecha":"${new Date().toLocaleDateString('es-MX')}",
-"tipo_analisis":"Laboratorio / BioCuántico / VitalHealth",
-"hallazgos_criticos":[{"sistema":"...","hallazgo":"...","nivel":"alto|medio|bajo"}],
-"resumen_clinico":"...",
-"paquetes":{
-  "basico":{"productos":[{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],"justificacion":"..."},
-  "esencial":{"productos":[{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],"justificacion":"..."},
-  "completo":{"productos":[{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],"justificacion":"..."}
-}
+  "paciente":"${c.name}",
+  "edad":"${c.age||''}",
+  "sexo":"${sexLabel(c.sex)||''}",
+  "fecha":"${new Date().toLocaleDateString('es-MX')}",
+  "tipo_analisis":"${_fileSource==='labs'?'Análisis de Laboratorio':'Reporte BioCuántico / VitalHealth'}",
+  "hallazgos_criticos":[{"sistema":"nombre del sistema","hallazgo":"descripción clara","nivel":"alto|medio|bajo"}],
+  "resumen_clinico":"Párrafo explicando en lenguaje sencillo qué encontró el análisis y por qué es importante atenderlo",
+  ${habitosText?'"plan_alimenticio":{"comer":["alimento1","alimento2"],"evitar":["alimento1","alimento2"],"tips":["consejo práctico 1","consejo práctico 2"]},':""}
+  "paquetes":{
+    "basico":{"productos":[{"nombre":"exacto del catálogo","razon_clinica":"Por qué le ayuda a ESTE paciente","dosis":"dosis específica","resultado_esperado":"qué notará el paciente"}],"justificacion":"Párrafo explicando el paquete básico para este caso específico"},
+    "esencial":{"productos":[{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],"justificacion":"..."},
+    "completo":{"productos":[{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],"justificacion":"..."}
+  }
 }`;
   const parts=[];
   const extraHeaders={};
@@ -2831,7 +3205,18 @@ function getCartTotals(){
 function openPayModal(){
   const c=getActiveCon();if(!c||!c.items.length)return;
   const {bruto,desc,final,promo}=getCartTotals();
-  const cuentas=S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}]);
+  const cuentasGuardadas=S.get('ik_cuentas',[]);
+  const defaultMethods=[
+    {id:'ef',nombre:'💵 Efectivo'},
+    {id:'tr',nombre:'🏦 Transferencia bancaria'},
+    {id:'dep',nombre:'🏧 Depósito bancario'},
+    {id:'tc',nombre:'💳 Tarjeta de crédito'},
+    {id:'td',nombre:'💳 Tarjeta de débito'},
+  ];
+  // Merge: default methods + custom accounts from BO
+  const cuentas=[...defaultMethods,...cuentasGuardadas.filter(function(c){
+    return !defaultMethods.find(function(d){return d.id===c.id;});
+  })];
   openMo(2,`
     <div class="m-title">💰 Registrar pago</div>
     <div class="m-sub">${c.name} · ${c.items.length} producto(s)</div>
@@ -2916,7 +3301,11 @@ function confirmSale(){
   addToHistory('sale','Venta $'+final.toLocaleString()+' · '+methodLabel+(promo?' · Promo: '+promo:''),{items:sale.items,total:final,bruto,desc,promo,payMethod:methodLabel,comprobante:sale.comprobante});
   c.items=[];
   if(c.status==='prospecto')c.status='activo';
-  saveAll();closeMo(1);closeMo(2);renderActiveConPanel();
+  saveAll();
+  // Sync to Supabase
+  sbSaveVenta(sale).catch(function(){});
+  sbSaveConsultante(c).catch(function(){});
+  closeMo(1);closeMo(2);renderActiveConPanel();
   showT('Venta registrada $'+final.toLocaleString()+' · '+methodLabel+(sale.comprobante?' · Con comprobante':''));
 }
 
@@ -3068,7 +3457,12 @@ function savePriceEdit(){
   if(!prices[name])prices[name]={};
   prices[name].regular=reg;
   prices[name].promo=promo||null;
-  saveAll();closeMo(3);initCat();showT('✓ Precio guardado');
+  saveAll();closeMo(3);initCat();
+  if(currentUser){
+    var cid=currentUser.consultor_id||currentUser.id;
+    API.savePrecios(cid,[{producto_id:name,precio_regular:reg,precio_promo:promo||null,oculto:(prices[name]&&prices[name].hidden)||false}]).catch(function(){});
+  }
+  showT('✓ Precio guardado');
 }
 
 function toggleProdHidden(hide){
@@ -3078,6 +3472,10 @@ function toggleProdHidden(hide){
   if(!prices[name])prices[name]={};
   prices[name].hidden=!!hide;
   saveAll();closeMo(3);initCat();
+  if(currentUser){
+    var cid=currentUser.consultor_id||currentUser.id;
+    API.savePrecios(cid,[{producto_id:name,precio_regular:prices[name].regular||null,precio_promo:prices[name].promo||null,oculto:!!hide}]).catch(function(){});
+  }
   showT(hide?'Producto ocultado del catálogo':'Producto visible en catálogo');
 }
 
@@ -3388,14 +3786,16 @@ function saveGasto(){
   const cuentas=getBoCuentasGasto();
   const rubroLbl=rubros.find(r=>r.id===rubro)?.lbl||rubro;
   const cuentaLbl=cuentas.find(c=>c.id===quienPago)?.lbl||quienPago;
-  gastos.push({
+  const gastoObj={
     id:'g_'+Date.now(),
     fecha,rubro,rubroLbl,concepto,monto,
     quienPago,quienPagoLbl:cuentaLbl,
     pendiente,
     createdAt:new Date().toISOString()
-  });
+  };
+  gastos.push(gastoObj);
   saveAll();
+  sbSaveGasto(gastoObj).catch(function(){});
   document.getElementById('gastoConcepto').value='';
   document.getElementById('gastoMonto').value='';
   if(document.getElementById('gastoPendiente'))document.getElementById('gastoPendiente').checked=false;
@@ -3579,7 +3979,10 @@ function saveCitaBio(){
     createdAt:new Date().toISOString()
   });
   if(c){c.status='agendado';c.lastUpdate=new Date().toISOString();}
+  const citaBioObj=citasBio[citasBio.length-1];
   saveAll();
+  sbSaveCita(citaBioObj,'bio').catch(function(){});
+  if(c)sbSaveConsultante(c).catch(function(){});
   document.getElementById('citaBioNota').value='';
   renderCitasBio();
   if(c)addToHistoryFor(cliId,'cita','📅 Cita BioCuántico agendada · '+fecha+' '+hora,{fecha,hora,nota});
@@ -3620,7 +4023,7 @@ function renderCitasBio(){
   `;
 }
 
-function deleteCitaBio(id){citasBio=citasBio.filter(c=>c.id!==id);saveAll();renderCitasBio();}
+function deleteCitaBio(id){citasBio=citasBio.filter(c=>c.id!==id);saveAll();API.deleteCitaBio(id).catch(function(){});renderCitasBio();}
 
 function sendCitaBioWA(id){
   const a=citasBio.find(x=>x.id===id);if(!a)return;
@@ -3650,7 +4053,10 @@ function saveCitaDr(){
     createdAt:new Date().toISOString()
   });
   if(c){c.status='derivado';c.lastUpdate=new Date().toISOString();}
+  const citaDrObj=citasDr[citasDr.length-1];
   saveAll();
+  sbSaveCita(citaDrObj,'dr').catch(function(){});
+  if(c)sbSaveConsultante(c).catch(function(){});
   ['citaDrDoctor','citaDrEspecialidad','citaDrComision','citaDrNota'].forEach(id=>document.getElementById(id).value='');
   renderCitasDr();
   if(c)addToHistoryFor(cliId,'cita','👨‍⚕️ Derivado a Dr. '+doctor+' · '+fecha,{doctor,especialidad,fecha,hora,comision,nota});
@@ -5091,7 +5497,29 @@ function savePrices(){
     const promo=parseFloat(row.querySelector('[data-type=promo]').value)||0;
     prices[prod]={regular:reg,promo:promo||null};
   });
-  saveAll();initCat();showT('✓ Precios guardados');
+  saveAll();initCat();
+  // Sync to Supabase
+  if(currentUser){
+    const cid=currentUser.consultor_id||currentUser.id;
+    const preciosArr=Object.keys(prices).map(function(prod){
+      return{
+        producto_id:prod,
+        precio_regular:prices[prod].regular||null,
+        precio_promo:prices[prod].promo||null,
+        oculto:prices[prod].hidden||false
+      };
+    });
+    if(preciosArr.length){
+      API.savePrecios(cid,preciosArr).then(function(r){
+        if(r&&r.ok)showT('✓ Precios guardados en servidor');
+        else showT('✓ Precios guardados localmente');
+      }).catch(function(){showT('✓ Precios guardados localmente');});
+    } else {
+      showT('✓ Precios guardados');
+    }
+  } else {
+    showT('✓ Precios guardados');
+  }
 }
 
 function resetPrices(){
@@ -5272,7 +5700,16 @@ function saveBoConfig(){
   };
   S.set(getBoConfigKey(),cfg);
   applyBoConfig(cfg);
-  showT('✓ Config guardada y aplicada');
+  // Sync to Supabase
+  if(currentUser){
+    const cid=currentUser.consultor_id||currentUser.id;
+    API.saveConfig(cid,cfg).then(function(r){
+      if(r&&r.ok)showT('✓ Config guardada en servidor');
+      else showT('✓ Config guardada localmente');
+    }).catch(function(){showT('✓ Config guardada localmente');});
+  } else {
+    showT('✓ Config guardada y aplicada');
+  }
 }
 
 function applyBoConfig(cfg){
@@ -6162,6 +6599,82 @@ function openCatalogoViewer(dataUrl,filename,pageCount){
 
   overlay.appendChild(scroll);
   document.body.appendChild(overlay);
+}
+
+// ── BACKUP / RESTORE ─────────────────────────────────────────
+function exportarDatosCSV(){
+  var cid=currentUser?(currentUser.consultor_id||currentUser.id):'';
+  var fecha=new Date().toISOString().slice(0,10);
+  var nombre=currentUser?currentUser.name.replace(/\s+/g,'_'):'consultor';
+
+  // Build CSV for each data type
+  function toCSV(arr,cols){
+    var lines=[cols.join(',')];
+    arr.forEach(function(row){
+      lines.push(cols.map(function(c){
+        var v=row[c]||'';
+        if(typeof v==='object')v=JSON.stringify(v);
+        return '"'+String(v).replace(/"/g,'""')+'"';
+      }).join(','));
+    });
+    return lines.join('\n');
+  }
+
+  var backup={
+    version:'1.0',
+    fecha:fecha,
+    consultor:currentUser?{id:currentUser.id,name:currentUser.name,email:currentUser.email}:{},
+    consultantes:consultantes,
+    ventas:sales,
+    gastos:gastos,
+    citasBio:citasBio,
+    citasDr:citasDr,
+  };
+
+  // Download as JSON (more complete than CSV)
+  var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='iksan_backup_'+nombre+'_'+fecha+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showT('✓ Respaldo descargado: '+a.download);
+
+  // Also download consultantes as CSV separately
+  if(consultantes.length){
+    var csvBlob=new Blob([toCSV(consultantes,['id','name','phone','email','notes','status','createdAt'])],{type:'text/csv'});
+    var csvUrl=URL.createObjectURL(csvBlob);
+    var a2=document.createElement('a');
+    a2.href=csvUrl;
+    a2.download='iksan_consultantes_'+nombre+'_'+fecha+'.csv';
+    setTimeout(function(){a2.click();URL.revokeObjectURL(csvUrl);},500);
+  }
+}
+
+function importarDatosCSV(input){
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(!data.version||!data.consultantes){showT('Archivo no válido');return;}
+      if(!confirm('¿Restaurar datos de respaldo?\nSe reemplazarán los datos actuales con los del archivo del '+data.fecha+'.\n\nConsultantes: '+data.consultantes.length+' | Ventas: '+(data.ventas||[]).length))return;
+      consultantes=data.consultantes||[];
+      sales=data.ventas||[];
+      gastos=data.gastos||[];
+      citasBio=data.citasBio||[];
+      citasDr=data.citasDr||[];
+      saveAll();
+      renderConList();
+      refreshAllConSelects();
+      showT('✓ Datos restaurados: '+consultantes.length+' consultantes, '+(sales.length)+' ventas');
+    }catch(err){
+      showT('Error al leer el archivo: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
 }
 
 function showLicenseError(){
