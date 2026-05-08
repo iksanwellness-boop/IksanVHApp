@@ -1420,10 +1420,27 @@ function setLang(l){
    LOGIN
    ═══════════════════════════════════════════════════ */
 function checkAccess(u){
-  if(u.days<0)return true;
-  if(!u.activatedAt)return false;
-  const exp=new Date(u.activatedAt);exp.setDate(exp.getDate()+u.days);
-  return new Date()<exp;
+  if(!u)return false;
+  if(u.role==='admin')return true;
+  if(u.days<0||u.days===undefined)return true; // sin limite
+  // Handle both camelCase and snake_case from Supabase
+  const actAt=u.activatedAt||u.activated_at||null;
+  if(!actAt)return !!(u.active); // si no hay fecha pero está activo, permitir
+  const exp=new Date(actAt).getTime()+(u.days||30)*86400000;
+  return Date.now()<exp;
+}
+
+// Normalize user fields from Supabase snake_case to camelCase
+function normalizeUser(u){
+  if(!u)return u;
+  if(u.activated_at&&!u.activatedAt)u.activatedAt=u.activated_at;
+  if(u.created_at&&!u.createdAt)u.createdAt=u.created_at;
+  if(u.parent_id&&!u.parentId)u.parentId=u.parent_id;
+  if(u.modulos_asignados&&!u.modulosAsignados)u.modulosAsignados=u.modulos_asignados;
+  // Ensure days is a number
+  if(u.days===null||u.days===undefined)u.days=-1;
+  u.days=parseInt(u.days);
+  return u;
 }
 
 function initLogin(){
@@ -1552,9 +1569,10 @@ function doLogin(){
   API.login(uLocal.email, pass).then(function(res){
     var u=uLocal;
     if(res&&res.ok&&res.user){
-      u=Object.assign({},uLocal,res.user);
+      u=normalizeUser(Object.assign({},uLocal,res.user));
       u.modulosAsignados=res.user.modulosAsignados||uLocal.modulosAsignados||[];
-      u.consultorId=res.user.parent_id||res.user.id;
+      u.consultor_id=res.user.parent_id||res.user.id;
+      u.consultorId=u.consultor_id;
       const idx2=users.findIndex(function(x){return x.id===u.id;});
       if(idx2>=0)users[idx2]=u;else users.push(u);
       S.set('ik_users',users);
@@ -1621,7 +1639,8 @@ function doLogin(){
       API.getUsuarios().then(function(serverUsers){
         if(serverUsers&&Array.isArray(serverUsers)){
           var adminLocal=users.find(function(x){return x.id==='u_admin';});
-          users=serverUsers;
+          // Normalize all users from Supabase
+          users=serverUsers.map(normalizeUser);
           if(adminLocal&&!users.find(function(x){return x.id==='u_admin';}))users.unshift(adminLocal);
           S.set('ik_users',users);
           if(typeof renderUsers==='function')safeCall(renderUsers);
@@ -4398,11 +4417,13 @@ function renderUsers(){
   ));
   if(!mainUsers.length){el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>Sin usuarios</div>';return;}
   el.innerHTML=mainUsers.map(u=>{
-    const expired=!checkAccess(u)&&u.role!=='admin';
-    const exp=u.activatedAt&&u.days>0?new Date(new Date(u.activatedAt).getTime()+u.days*86400000).toLocaleDateString('es-MX'):'∞';
+    const uN2=normalizeUser(Object.assign({},u));
+    const expired=!checkAccess(uN2);
+    const actAt3=uN2.activatedAt||uN2.activated_at||null;
+    const exp=actAt3&&uN2.days>0?new Date(new Date(actAt3).getTime()+uN2.days*86400000).toLocaleDateString('es-MX'):'Sin límite';
     const roleIcon=u.id==='u_admin'?'👑':u.role==='paid'||u.role==='admin'?'🌿':u.role==='operador'?'🔧':u.role==='socio'?'🤝':'👁️';
     const roleLbl=u.id==='u_admin'?'Admin Maestro':u.role==='paid'||u.role==='admin'?'Consultor':u.role==='operador'?'Operador':u.role==='socio'?'Consultor Socio':'Consulta';
-    const daysLeft=u.activatedAt&&u.days>0?Math.max(0,Math.round((new Date(u.activatedAt).getTime()+u.days*86400000-Date.now())/86400000)):null;
+    const daysLeft=actAt3&&uN2.days>0?Math.max(0,Math.round((new Date(actAt3).getTime()+uN2.days*86400000-Date.now())/86400000)):null;
     // Módulos activos para este usuario
     const modsActivos=modulos.filter(m=>m.activatedFor?.includes(u.id));
     return `<div class="list-item" style="flex-wrap:wrap;align-items:flex-start;cursor:pointer" onclick="openUserEditModal('${u.id}')">
@@ -4438,9 +4459,11 @@ var _ueUid=null;
 function renderUserEditModal(uid){
   const u=users.find(x=>x.id===uid);if(!u)return;
   const roleIcon=u.id==='u_admin'?'👑':u.role==='paid'||u.role==='admin'?'🌿':u.role==='operador'?'🔧':u.role==='socio'?'🤝':'👁️';
-  const expired=!checkAccess(u)&&u.role!=='admin';
-  const exp=u.activatedAt&&u.days>0?new Date(new Date(u.activatedAt).getTime()+u.days*86400000).toLocaleDateString('es-MX'):'∞';
-  const daysLeft=u.activatedAt&&u.days>0?Math.max(0,Math.round((new Date(u.activatedAt).getTime()+u.days*86400000-Date.now())/86400000)):null;
+  const uN=normalizeUser(Object.assign({},u));
+  const expired=!checkAccess(uN);
+  const actAt=uN.activatedAt||uN.activated_at||null;
+  const exp=actAt&&uN.days>0?new Date(new Date(actAt).getTime()+uN.days*86400000).toLocaleDateString('es-MX'):'Sin límite';
+  const daysLeft=actAt&&uN.days>0?Math.max(0,Math.round((new Date(actAt).getTime()+uN.days*86400000-Date.now())/86400000)):null;
   const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
   const modsActivos=modulos.filter(m=>m.activatedFor?.includes(u.id));
 
@@ -4461,8 +4484,8 @@ function renderUserEditModal(uid){
   <div style="background:${expired?'#fff5f5':'#f0faf0'};border-radius:10px;padding:10px 13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <div style="font-size:24px">${expired?'⚠️':'✅'}</div>
     <div style="flex:1;min-width:120px">
-      <div style="font-size:13px;font-weight:700;color:${expired?'#c04040':'#1a7f3c'}">${expired?'Acceso expirado':'Acceso activo'}</div>
-      <div style="font-size:11px;color:var(--muted)">Vence: ${exp}${daysLeft!=null?' · '+daysLeft+' días restantes':''}</div>
+      <div style="font-size:13px;font-weight:700;color:${expired?'#c04040':'#1a7f3c'}">${expired?'⚠️ Sin acceso activo — registra pago para activar':'✅ Acceso activo'}</div>
+      <div style="font-size:11px;color:var(--muted)">${exp==='Sin límite'||exp==='∞'?'Sin fecha límite':'Vence: '+exp+(daysLeft!=null?' · '+daysLeft+' días':'')} · Oficina Virtual VH</div>
     </div>
     ${modsActivos.length?`<div style="display:flex;flex-wrap:wrap;gap:4px">
       ${modsActivos.map(m=>`<span style="background:${m.color};color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px">${m.icon} ${labelMap[m.id]||m.name}</span>`).join('')}
@@ -4471,8 +4494,8 @@ function renderUserEditModal(uid){
 
   <!-- TABS -->
   <div style="display:flex;gap:3px;background:var(--warm);border-radius:9px;padding:3px;margin-bottom:14px">
-    ${['info','modulos','pagos','acceso','subusers'].map((tab,i)=>{
-      const labels=['✏️ Info','🧩 Módulos','💰 Pagos','📅 Acceso','🔧 Operadores'];
+    ${['info','modulos','pago-acceso','subusers'].map((tab,i)=>{
+      const labels=['✏️ Info','🧩 Módulos','💰 Pago & Acceso','🔧 Operadores'];
       return `<button onclick="ueTab('${tab}')" id="ueTab_${tab}" style="flex:1;padding:7px 2px;border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;background:${tab==='info'?'#fff':'none'};color:${tab==='info'?'var(--deep)':'var(--muted)'};font-family:-apple-system,sans-serif;box-shadow:${tab==='info'?'0 1px 4px rgba(0,0,0,.1)':'none'}">${labels[i]}</button>`;
     }).join('')}
   </div>
@@ -4534,11 +4557,13 @@ function renderUserEditModal(uid){
     :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Admin maestro — acceso completo</div>'}
   </div>
 
-  <!-- TAB: PAGOS -->
-  <div id="ueTabPagos" style="display:none">
+  <!-- TAB: PAGO & ACCESO (fusionado) -->
+  <div id="ueTabPagoAcceso" style="display:none">
 
-    <!-- Resumen total -->
-    <div style="background:linear-gradient(135deg,#f0faf0,#e6f8ea);border-radius:10px;padding:12px 15px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+    <!-- SECCIÓN PAGO -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Pagos de suscripción</div>
+
+    <div style="background:linear-gradient(135deg,#f0faf0,#e6f8ea);border-radius:10px;padding:12px 15px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
       <div style="font-size:28px">💰</div>
       <div style="flex:1">
         <div style="font-size:22px;font-weight:700;color:#1a7f3c">$${totalPagado.toLocaleString()} MXN</div>
@@ -4546,46 +4571,54 @@ function renderUserEditModal(uid){
       </div>
     </div>
 
-    <!-- Formulario nuevo pago -->
     <div style="background:#f8f5ff;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px">➕ Registrar nuevo pago</div>
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px">➕ Registrar pago</div>
       <div class="in-row" style="margin-bottom:7px">
-        <input class="in" id="ueNuevoPagoMonto" type="number" placeholder="Monto $" min="0" style="flex:.5">
-        <input class="in" id="ueNuevoPagoFecha" type="date" value="${new Date().toISOString().slice(0,10)}" style="flex:.6">
+        <input class="in" id="ueNuevoPagoMonto" type="number" placeholder="Monto $" min="0" style="flex:.45">
+        <input class="in" id="ueNuevoPagoFecha" type="date" value="${new Date().toISOString().slice(0,10)}" style="flex:.55">
       </div>
+      <input class="in" id="ueNuevoPagoConcepto" placeholder="Concepto (ej: Suscripción Oficina Virtual VH)" style="margin-bottom:7px;width:100%;box-sizing:border-box">
       <div class="in-row" style="margin-bottom:7px">
-        <input class="in" id="ueNuevoPagoConcepto" placeholder="Concepto (ej: Módulo Avanzado, Renovación)">
+        <select class="in" id="ueNuevoPagoForma" style="flex:1">
+          <option value="">— Forma de pago —</option>
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="transferencia">🏦 Transferencia bancaria</option>
+          <option value="deposito">🏧 Depósito bancario</option>
+          <option value="tc">💳 Tarjeta de crédito</option>
+          <option value="td">💳 Tarjeta de débito</option>
+        </select>
       </div>
       <div class="in-row" style="margin-bottom:10px">
         <select class="in" id="ueNuevoPagoCuenta">
-          <option value="">— Cuenta / depósito —</option>
-          ${(S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}])).map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}
+          <option value="">— Destino / cuenta que lo recibe —</option>
+          ${(S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo caja'},{id:'tr',nombre:'Transferencia SPEI'}])).map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}
         </select>
-        <button class="btn btn-p btn-sm" style="flex:.4" onclick="addUserPago('${uid}')">✓ Añadir</button>
+        <button class="btn btn-p btn-sm" style="flex:.35" onclick="addUserPago('${uid}')">✓ Añadir</button>
       </div>
-      <div style="font-size:10px;color:var(--muted)">💡 Las cuentas se configuran en Admin BO → Configuración → Cuentas de cobro</div>
     </div>
 
-    <!-- Lista de pagos con scroll -->
     <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Historial de pagos</div>
-    <div style="overflow-y:auto;max-height:260px;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:5px;padding-right:4px">
+    <div style="overflow-y:auto;max-height:200px;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:5px;padding-right:4px;margin-bottom:16px">
       ${pagos.length?pagos.map(p=>`
-      <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:9px">
-        <div style="width:32px;height:32px;border-radius:50%;background:#e6f4ea;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">💳</div>
+      <div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:#fff;border:1px solid var(--border);border-radius:9px">
+        <div style="width:30px;height:30px;border-radius:50%;background:#e6f4ea;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💳</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;color:var(--deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.categoria||'Pago'}</div>
-          <div style="font-size:10px;color:var(--muted)">${p.fecha}${p.cuentaNombre?' · '+p.cuentaNombre:p.meses?' · '+p.meses+' mes(es)':''}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--deep)">${p.categoria||'Pago'}</div>
+          <div style="font-size:10px;color:var(--muted)">${p.fecha}${p.formaPago?' · Forma: '+p.formaPago:''}${p.cuentaNombre?' · Destino: '+p.cuentaNombre:''}</div>
         </div>
         <div style="font-weight:700;color:#1a7f3c;font-size:14px;flex-shrink:0">$${p.monto.toLocaleString()}</div>
         <button class="btn btn-d btn-sm" style="padding:3px 8px;font-size:10px;flex-shrink:0" onclick="deleteUserPago('${uid}','${p.id}')">✕</button>
       </div>`).join('')
-      :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px">Sin pagos registrados aún</div>'}
+      :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Sin pagos registrados aún</div>'}
     </div>
-  </div>
 
-  <!-- TAB: ACCESO (renovar + link/archivo) -->
-  <div id="ueTabAcceso" style="display:none">
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Renovar acceso</div>
+    <!-- DIVIDER -->
+    <div style="border-top:2px dashed var(--border);margin-bottom:14px"></div>
+
+    <!-- SECCIÓN ACCESO -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📅 Activación y acceso</div>
+
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Renovar período</div>
     <div class="in-row" style="margin-bottom:14px">
       <select class="in" id="ueRenovar">
         <option value="">— No cambiar —</option>
@@ -4595,51 +4628,37 @@ function renderUserEditModal(uid){
         <option value="180">6 meses · 180 días</option>
         <option value="365">1 año · 365 días</option>
       </select>
-      <input class="in" id="uePago" type="number" placeholder="Monto pagado $" min="0" style="flex:.6">
-    </div>
-    <button class="btn btn-p btn-full" style="margin-bottom:16px" onclick="renovarUserAcceso('${uid}')">↻ Renovar acceso</button>
-
-    <!-- Qué compartir -->
-    <div style="background:linear-gradient(135deg,#f0f4ff,#e8eeff);border-radius:10px;padding:13px;margin-bottom:10px;border:1px solid #c8d4f8">
-      <div style="font-size:12px;font-weight:700;color:#1a2a3e;margin-bottom:8px">📦 ¿Qué debes compartirle al consultor?</div>
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
-        <div style="width:22px;height:22px;border-radius:50%;background:#1a2a3e;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-        <div style="font-size:12px;color:var(--deep);line-height:1.6"><b>Este mismo archivo HTML</b> — es el que estás usando ahora.<br>
-        <span style="font-size:11px;color:var(--muted)">Compártelo por WhatsApp, email, AirDrop o Google Drive.</span></div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:8px">
-        <div style="width:22px;height:22px;border-radius:50%;background:#1a2a3e;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-        <div style="font-size:12px;color:var(--deep);line-height:1.6"><b>Sus credenciales</b> — usuario y contraseña de abajo.<br>
-        <span style="font-size:11px;color:var(--muted)">Al abrirlo verá solo los módulos que le activaste.</span></div>
-      </div>
+      <button class="btn btn-p btn-sm" style="flex:.5" onclick="renovarUserAcceso('${uid}')">↻ Renovar</button>
     </div>
 
-    <!-- Credenciales + link con token -->
     <div style="background:#fff;border:2px solid #e0d4ec;border-radius:10px;padding:13px;margin-bottom:12px">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📋 Resumen de acceso</div>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:13px;margin-bottom:10px">
-        <span style="color:var(--muted);font-size:11px">🔑 Contraseña</span>
-        <span style="font-family:monospace;font-weight:700;color:var(--deep);background:var(--warm);padding:3px 10px;border-radius:6px">${u.pass}</span>
-        <span style="color:var(--muted);font-size:11px">⏳ Acceso</span>
-        <span style="font-size:12px;color:var(--deep)">${exp}${daysLeft!=null?' ('+daysLeft+' días)':''}</span>
-        <span style="color:var(--muted);font-size:11px">🧩 Módulos</span>
-        <span style="font-size:12px;color:var(--deep)">${modsActivos.length?modsActivos.map(m=>m.icon+' '+(labelMap[m.id]||m.name)).join(', '):'<span style="color:#bbb">Sin módulos — actívalos en pestaña Módulos</span>'}</span>
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📲 Qué compartir al consultor</div>
+      <div style="background:#e8f5e9;border-radius:8px;padding:10px;margin-bottom:10px;border-left:3px solid #1a7f3c">
+        <div style="font-size:11px;font-weight:700;color:#1a7f3c;margin-bottom:4px">⚡ Enlace con activación automática</div>
+        <div style="font-size:11px;color:#2d4a2d;line-height:1.6">Comparte el archivo HTML + el botón de WhatsApp de abajo. Al abrir el enlace su cuenta se activa automáticamente con sus módulos.</div>
       </div>
-      <div style="background:#e8f5e9;border-radius:8px;padding:10px;border-left:3px solid #1a7f3c">
-        <div style="font-size:11px;font-weight:700;color:#1a7f3c;margin-bottom:4px">⚡ Enlace inteligente con activación automática</div>
-        <div style="font-size:11px;color:#2d4a2d;line-height:1.6">
-          El botón de WhatsApp genera un enlace que cuando el consultor lo abre por primera vez,
-          <b>crea su cuenta automáticamente</b> en su dispositivo con sus módulos ya activados.
-          Solo necesita ingresar su contraseña.
-        </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:5px 10px;align-items:center;font-size:12px;margin-bottom:12px">
+        <span style="color:var(--muted);font-size:11px">🔑 Contraseña</span>
+        <span style="font-family:monospace;font-weight:700;color:var(--deep);background:var(--warm);padding:2px 9px;border-radius:6px">${u.pass}</span>
+        <span style="color:var(--muted);font-size:11px">⏳ Acceso</span>
+        <span style="font-size:11px;color:var(--deep)">${exp}${daysLeft!=null?' ('+daysLeft+' días)':''}</span>
+        <span style="color:var(--muted);font-size:11px">🧩 Módulos</span>
+        <span style="font-size:11px;color:var(--deep)">${modsActivos.length?modsActivos.map(m=>m.icon+' '+(labelMap[m.id]||m.name)).join(', '):'<span style="color:#bbb">Sin módulos</span>'}</span>
       </div>
     </div>
 
-    <button class="btn btn-wa btn-full" style="margin-bottom:8px" onclick="copiarAccesoWA('${uid}')">💬 Generar y copiar enlace de activación para WhatsApp</button>
-    <div style="font-size:10px;color:var(--muted);text-align:center">Incluye enlace con token · cuenta · módulos · contraseña</div>
+    <button class="btn btn-wa btn-full" style="margin-bottom:6px" onclick="copiarAccesoWA('${uid}')">💬 Generar y abrir WhatsApp con enlace de activación</button>
+    <div style="font-size:10px;color:var(--muted);text-align:center;margin-bottom:8px">Abre WhatsApp directo con el mensaje y enlace de activación</div>
+
+    <!-- DISCLAIMER -->
+    <div style="background:#f5f5f0;border-radius:8px;padding:10px 12px;border:1px solid #ddd">
+      <div style="font-size:9px;color:#888;line-height:1.6">
+        <b style="color:#555">Aviso Legal:</b> IKSAN Wellness es una herramienta tecnológica independiente de gestión y organización comercial para distribuidores y afiliados de VitalHealth. IKSAN no es parte de VitalHealth, no representa a la empresa ni tiene afiliación oficial con ella. Los productos mostrados pertenecen a VitalHealth y sus marcas registradas. El uso de esta herramienta no implica relación laboral ni comercial directa con VitalHealth.
+      </div>
+    </div>
   </div>
 
-  <!-- TAB: OPERADORES / SOCIOS -->
+    <!-- TAB: OPERADORES / SOCIOS -->
   <div id="ueTabSubusers" style="display:none">
 
     <!-- Límite de operadores info -->
@@ -4719,8 +4738,9 @@ function renderUserEditModal(uid){
 }
 
 function ueTab(tab){
-  ['info','modulos','pagos','acceso','subusers'].forEach(function(t){
-    var panel=document.getElementById('ueTab'+t.charAt(0).toUpperCase()+t.slice(1));
+  ['info','modulos','pago-acceso','subusers'].forEach(function(t){
+    var panelId='ueTab'+t.split('-').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1);}).join('');
+    var panel=document.getElementById(panelId);
     var btn=document.getElementById('ueTab_'+t);
     if(panel)panel.style.display=t===tab?'block':'none';
     if(btn){
@@ -4729,6 +4749,10 @@ function ueTab(tab){
       btn.style.boxShadow=t===tab?'0 1px 4px rgba(0,0,0,.1)':'none';
     }
   });
+  // Also hide old separate tabs if they exist
+  ['ueTabPagos','ueTabAcceso'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
 }
 
 function toggleUeMod(uid,modId,btn){
@@ -4736,22 +4760,27 @@ function toggleUeMod(uid,modId,btn){
   if(!m.activatedFor)m.activatedFor=[];
   const idx=m.activatedFor.indexOf(uid);
   const labelMap={m1:'Básico',m2:'Intermedio',m3:'Avanzado',m4:'Plus'};
+  var card=btn.closest('div[style*="border:2px solid"]')||btn.closest('div[style*="border:2px"]');
   if(idx>=0){
+    // DEACTIVATE — restore to inactive style
     m.activatedFor.splice(idx,1);
-    // Update button appearance
-    btn.style.background='var(--warm)';btn.style.color='var(--muted)';btn.style.border='none';
+    btn.style.cssText='background:'+m.color+';color:#fff;border:none;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:-apple-system,sans-serif';
     btn.textContent='✓ Activar';
-    // Hide body row
-    var parent=btn.closest('div[style*="border:2px"]');
-    if(parent){parent.style.borderColor='var(--border)';var hdr=parent.querySelector('div');if(hdr)hdr.style.background=m.color+'18';var lbl=hdr?hdr.querySelector('div div'):null;if(lbl)lbl.style.color=m.color;}
-    var bodyRow=btn.closest('div[style*="border:2px"]')?.querySelector('div:last-child[style*="background:#fff"]');
-    if(bodyRow)bodyRow.style.display='none';
+    if(card){
+      card.style.borderColor='var(--border)';
+      var hdr=card.querySelector('div');
+      if(hdr){hdr.style.background=m.color+'18';}
+    }
   } else {
+    // ACTIVATE — apply active color style
     m.activatedFor.push(uid);
-    btn.style.background='rgba(255,255,255,.2)';btn.style.color='#fff';btn.style.border='1px solid rgba(255,255,255,.4)';
+    btn.style.cssText='background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.5);font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:-apple-system,sans-serif';
     btn.textContent='✕ Quitar';
-    var parent2=btn.closest('div[style*="border:2px"]');
-    if(parent2){parent2.style.borderColor=m.color;var hdr2=parent2.querySelector('div');if(hdr2)hdr2.style.background=m.color;}
+    if(card){
+      card.style.borderColor=m.color;
+      var hdr2=card.querySelector('div');
+      if(hdr2){hdr2.style.background=m.color;}
+    }
   }
   // Sync modulosAsignados so applyModulosTabs works when user logs in
   var targetUser=users.find(function(x){return x.id===uid;});
@@ -4814,19 +4843,30 @@ function renovarUserAcceso(uid){
 function addUserPago(uid){
   const u=users.find(x=>x.id===uid);if(!u)return;
   const monto=parseFloat(document.getElementById('ueNuevoPagoMonto')?.value)||0;
-  const concepto=document.getElementById('ueNuevoPagoConcepto')?.value.trim()||'Pago';
+  const concepto=document.getElementById('ueNuevoPagoConcepto')?.value.trim()||'Suscripción Oficina Virtual VH';
   const fechaEl=document.getElementById('ueNuevoPagoFecha');
   const fecha=fechaEl?.value||new Date().toISOString().slice(0,10);
   const cuentaId=document.getElementById('ueNuevoPagoCuenta')?.value||'';
+  const formaId=document.getElementById('ueNuevoPagoForma')?.value||'';
+  const formaLabels={efectivo:'Efectivo',transferencia:'Transferencia bancaria',deposito:'Depósito bancario',tc:'Tarjeta crédito',td:'Tarjeta débito'};
+  const formaPago=formaLabels[formaId]||formaId||'';
   if(!monto){showT('Escribe el monto');return;}
-  if(!concepto){showT('Escribe el concepto');return;}
-  // Get cuenta name
-  const cuentas=S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}]);
+  // Auto-activate user if not active when payment is recorded
+  if(!u.active||!checkAccess(u)){
+    const periodo=document.getElementById('ueRenovar')?.value||'30';
+    const days=parseInt(periodo)||30;
+    u.active=true;u.days=days;u.activatedAt=new Date().toISOString();
+    saveAll();
+    API.updateUsuario(u.id,{active:true,days:days,activated_at:u.activatedAt}).catch(function(){});
+    showT('✓ Usuario activado automáticamente por '+days+' días');
+  }
+  const cuentas=S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo caja'},{id:'tr',nombre:'Transferencia SPEI'}]);
   const cuenta=cuentas.find(c=>c.id===cuentaId);
   const cuentaNombre=cuenta?cuenta.nombre:(cuentaId||'');
   const pagoObj={
     id:'sp_'+Date.now(),userId:u.id,userName:u.name,
     categoria:concepto,monto:monto,meses:0,
+    formaPago:formaPago,
     cuentaId:cuentaId,cuentaNombre:cuentaNombre,
     fecha:fecha,createdAt:new Date().toISOString()
   };
@@ -4949,13 +4989,14 @@ function copiarAccesoWA(uid){
   // Store msg for WhatsApp direct open
   window._lastWAMsg=msg;
   // Always show modal — clipboard API unreliable on iOS/Safari
-  openMo(2,'<div class="m-title">💬 Mensaje de activación</div>'
-    +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Toca el texto → selecciona todo → copia → pega en WhatsApp</div>'
-    +'<textarea id="waMsgTA" class="in" style="min-height:220px;font-size:12px;resize:vertical;font-family:-apple-system,sans-serif;line-height:1.6" onclick="this.select()" readonly>'+msg+'</textarea>'
+  openMo(2,'<div class="m-title">💬 Enlace de activación</div>'
+    +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Al abrir este enlace, el consultor se activa automáticamente en su dispositivo con sus módulos.</div>'
+    +'<textarea id="waMsgTA" class="in" style="min-height:160px;font-size:11px;resize:vertical;font-family:-apple-system,sans-serif;line-height:1.6" onclick="this.select()" readonly>'+msg+'</textarea>'
     +'<div style="display:flex;gap:8px;margin-top:10px">'
-    +'<button class="btn btn-p" style="flex:1" onclick="copyWAMsg()">📋 Copiar todo</button>'
-    +'<button class="btn btn-wa" style="flex:1" onclick="openWADirect()">💬 Abrir WhatsApp</button>'
-    +'</div>');
+    +'<button class="btn btn-wa" style="flex:2;font-size:13px;padding:12px" onclick="openWADirect()">💬 Abrir WhatsApp</button>'
+    +'<button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsg()">📋 Copiar</button>'
+    +'</div>'
+    +'<div style="font-size:9px;color:#aaa;margin-top:8px;line-height:1.5">IKSAN Wellness es una herramienta independiente de gestión para distribuidores VitalHealth. No somos parte ni representantes oficiales de VitalHealth.</div>');
 }
 
 function deleteUserFromEdit(uid){
@@ -6827,5 +6868,10 @@ window.addEventListener('load',function(){
 
 
 </script>
+<div style="text-align:center;padding:12px 16px 20px;font-size:9px;color:#aaa;line-height:1.6;background:#faf8f5;border-top:1px solid var(--border)">
+  <b style="color:#bbb">IKSAN Wellness VH App</b> — Herramienta tecnológica independiente de gestión y organización comercial para distribuidores y afiliados VitalHealth.<br>
+  IKSAN no es parte de VitalHealth, no representa a la empresa ni tiene afiliación oficial. Los productos y marcas registradas pertenecen a sus respectivos propietarios.<br>
+  El uso de esta herramienta no implica relación laboral, comercial ni jurídica con VitalHealth o sus empresas relacionadas.
+</div>
 </body>
 </html>
