@@ -4559,20 +4559,22 @@ function renderUserEditModal(uid){
 
     <!-- MÓDULOS a activar con el pago -->
     <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">🧩 Módulos a incluir en este pago</div>
-    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
       ${modulos.map(m=>{
         const active=m.activatedFor?.includes(u.id);
         return `<label style="display:flex;align-items:center;gap:6px;padding:6px 10px;border:2px solid ${active?m.color:'var(--border)'};border-radius:9px;cursor:pointer;background:${active?m.color+'15':'#fff'}">
-          <input type="checkbox" class="paModCheck" value="${m.id}" ${active?'checked':''} style="accent-color:${m.color};width:14px;height:14px">
+          <input type="checkbox" class="paModCheck" value="${m.id}" data-price="${m.price}" ${active?'checked':''} onchange="recalcMontoSub()" style="accent-color:${m.color};width:14px;height:14px">
           <span style="font-size:11px;font-weight:700;color:${active?m.color:'var(--muted)'}">${m.icon} ${labelMap[m.id]||m.name} <span style="font-weight:400;font-size:9px">$${m.price}/mes</span></span>
         </label>`;
       }).join('')}
     </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:12px">💡 El monto es el precio del módulo más alto seleccionado — no se acumulan</div>
 
     <!-- PERÍODO -->
     <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">📅 Período</div>
     <div class="in-row" style="margin-bottom:12px">
-      <select class="in" id="ueRenovar">
+      <select class="in" id="ueRenovar" onchange="recalcMontoSub()">
+        <option value="-1">♾️ Cortesía indefinida (sin cobro)</option>
         <option value="3">🎁 Cortesía 3 días (sin cobro)</option>
         <option value="30" selected>📅 Mensual (1 mes)</option>
       </select>
@@ -4718,24 +4720,59 @@ function ueTab(tab){
   });
 }
 
+function recalcMontoSub(){
+  var periodo=parseInt(document.getElementById('ueRenovar')?.value)||30;
+  var esCortesia=periodo<=0||periodo===-1||periodo===3;
+  var montoEl=document.getElementById('ueNuevoPagoMonto');
+  if(!montoEl)return;
+  if(esCortesia){
+    montoEl.value='';
+    montoEl.placeholder='Sin costo (cortesía)';
+    montoEl.disabled=true;
+    return;
+  }
+  montoEl.disabled=false;
+  // Get highest checked module price
+  var maxPrice=0;
+  var priceMap={m1:199,m2:349,m3:549,m4:799};
+  document.querySelectorAll('.paModCheck:checked').forEach(function(cb){
+    var price=parseInt(cb.dataset.price)||priceMap[cb.value]||0;
+    if(price>maxPrice)maxPrice=price;
+  });
+  if(maxPrice>0){
+    montoEl.value=maxPrice;
+    montoEl.placeholder='Monto $';
+  } else {
+    montoEl.value='';
+    montoEl.placeholder='Monto $';
+  }
+}
+
 function toggleUserAcceso(uid, currentlyExpired){
   const u=users.find(x=>x.id===uid);if(!u)return;
   if(currentlyExpired){
-    // Activate manually
     u.active=true;
     u.activatedAt=new Date().toISOString();
-    if(!u.days||u.days<=0)u.days=30;
-    showT('✓ Acceso activado manualmente');
+    if(!u.days||u.days===0)u.days=30;
   } else {
-    // Deactivate
     u.active=false;
-    showT('Acceso desactivado');
+    // Force expiry in past
+    u.activatedAt=new Date(Date.now()-999*86400000).toISOString();
   }
   saveAll();
-  API.updateUsuario(u.id,{active:u.active,activated_at:u.activatedAt,days:u.days}).catch(function(){});
-  renderUserEditModal(uid);
-  ueTab('pago-acceso');
+  API.updateUsuario(u.id,{
+    active:u.active,
+    activated_at:u.activatedAt,
+    days:u.days
+  }).catch(function(){});
+  // Re-render modal and stay on pago-acceso tab
+  closeMo(1);
+  setTimeout(function(){
+    openUserEditModal(uid);
+    setTimeout(function(){ueTab('pago-acceso');},100);
+  },50);
   renderUsers();
+  showT(currentlyExpired?'✓ Acceso activado':'Acceso desactivado');
 }
 
 function addUserPagoYActiva(uid){
@@ -4746,7 +4783,7 @@ function addUserPagoYActiva(uid){
   const formaId=document.getElementById('ueNuevoPagoForma')?.value||'';
   const cuentaId=document.getElementById('ueNuevoPagoCuenta')?.value||'';
   const periodo=parseInt(document.getElementById('ueRenovar')?.value)||30;
-  const esCortes=periodo===3;
+  const esCortes=periodo<=0||periodo===-1||periodo===3;
 
   if(!esCortes&&!monto){showT('Escribe el monto o selecciona Cortesía');return;}
 
@@ -4776,7 +4813,7 @@ function addUserPagoYActiva(uid){
 
   // Activate user with selected modules and period
   u.active=true;
-  u.days=periodo;
+  u.days=periodo<=0||periodo===-1?-1:periodo;  // -1 = indefinite
   u.activatedAt=new Date().toISOString();
 
   // Update modules
@@ -5049,6 +5086,21 @@ function copyWAMsg(){
     ta.select();document.execCommand('copy');showT('✓ Copiado');
   }
 }
+function openWADirectEdited(tel){
+  var ta=document.getElementById('waMsgTA');
+  var msg=ta?ta.value:window._lastWAMsg||'';
+  var t=(tel||'').replace(/[^0-9]/g,'');
+  window.open('https://wa.me/'+(t||'')+'?text='+encodeURIComponent(msg),'_blank');
+}
+function copyWAMsgEdited(){
+  var ta=document.getElementById('waMsgTA');
+  var msg=ta?ta.value:window._lastWAMsg||'';
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(msg).then(function(){showT('✓ Copiado');});
+  } else {
+    if(ta){ta.select();document.execCommand('copy');showT('✓ Copiado');}
+  }
+}
 function openWADirect(){
   var msg=window._lastWAMsg||'';
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
@@ -5072,6 +5124,8 @@ function copiarAccesoWA(uid){
     parentId:null
   };
   const token=btoa(JSON.stringify(tokenData));
+  const tel=(u.phone||'').replace(/[^0-9]/g,'');
+  window._lastWATel=tel;
   const consultUrl=baseUrl+'?u='+encodeURIComponent(u.email)+'&t='+token;
   const msg='Hola '+u.name+' 👋\n\n'
     +'Bienvenido/a a *IKSAN Wellness* — tu herramienta de gestión y ventas VitalHealth.\n\n'
@@ -5085,14 +5139,15 @@ function copiarAccesoWA(uid){
   // Store msg for WhatsApp direct open
   window._lastWAMsg=msg;
   // Always show modal — clipboard API unreliable on iOS/Safari
-  openMo(2,'<div class="m-title">💬 Enlace de activación</div>'
-    +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Al abrir este enlace, el consultor se activa automáticamente en su dispositivo con sus módulos.</div>'
-    +'<textarea id="waMsgTA" class="in" style="min-height:160px;font-size:11px;resize:vertical;font-family:-apple-system,sans-serif;line-height:1.6" onclick="this.select()" readonly>'+msg+'</textarea>'
+  // Show editable message modal
+  openMo(2,'<div class="m-title">💬 Mensaje de activación</div>'
+    +'<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Puedes editar el mensaje antes de enviarlo. Los cambios se aplican solo a este envío.</div>'
+    +'<textarea id="waMsgTA" class="in" style="min-height:200px;font-size:12px;resize:vertical;font-family:-apple-system,sans-serif;line-height:1.7">'+msg+'</textarea>'
     +'<div style="display:flex;gap:8px;margin-top:10px">'
-    +'<button class="btn btn-wa" style="flex:2;font-size:13px;padding:12px" onclick="openWADirect()">💬 Abrir WhatsApp</button>'
-    +'<button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsg()">📋 Copiar</button>'
+    +'<button class="btn btn-wa" style="flex:2;font-size:13px;padding:12px" onclick="openWADirectEdited(window._lastWATel)">💬 Abrir WhatsApp</button>'
+    +'<button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsgEdited()">📋 Copiar</button>'
     +'</div>'
-    +'<div style="font-size:9px;color:#aaa;margin-top:8px;line-height:1.5">IKSAN Wellness es una herramienta independiente de gestión para distribuidores VitalHealth. No somos parte ni representantes oficiales de VitalHealth.</div>');
+    +'<div style="font-size:9px;color:#aaa;margin-top:8px">IKSAN es una herramienta independiente. No somos parte de VitalHealth.</div>');
 }
 
 function deleteUserFromEdit(uid){
