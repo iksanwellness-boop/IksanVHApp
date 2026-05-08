@@ -223,7 +223,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 .pt-cat{font-size:10px;color:var(--muted);margin-bottom:4px}
 .pt-price{font-size:13px;font-weight:700;color:var(--mid)}
 .pt-orig{font-size:11px;color:#bbb;text-decoration:line-through;margin-left:5px}
-.pt-add{width:100%;padding:6px;border:none;border-radius:6px;background:linear-gradient(135deg,#c991b0,#9b6fbf);color:#fff;font-size:11px;font-weight:600;cursor:pointer;margin-top:5px}
+.pt-add{width:100%;padding:6px;border:none;border-radius:6px;background:linear-gradient(135deg,#c991b0,#9b6fbf);color:#fff;font-size:11px;font-weight:600;cursor:pointer;margin-top:5px;position:relative;z-index:10;touch-action:manipulation}
 
 /* UPLOAD ZONE */
 .upload-zone{border:2px dashed var(--border);border-radius:13px;padding:22px;text-align:center;cursor:pointer;background:#fdf9ff;margin-bottom:10px;transition:.2s}
@@ -301,6 +301,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
       <button class="lang-btn" id="btnEN" onclick="setLang('en')">EN</button>
     </div>
     <button class="icon-btn" onclick="doLogout()" title="Cerrar sesión">🚪</button>
+    <button class="icon-btn" onclick="if(currentUser&&currentUser.role==='admin')loginAsTestOperator()" title="Simular Operador" style="display:none" id="testOpBtn">🔧</button>
   </div>
 </div>
 
@@ -747,7 +748,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <button class="subnav-tab on" onclick="goAdminView('subs')" id="sa-subs">💳 Suscripciones</button>
     <button class="subnav-tab" onclick="goAdminView('ingresos')" id="sa-ingresos">💰 Ingresos App</button>
     <button class="subnav-tab" onclick="goAdminView('modulos')" id="sa-modulos">🧩 Módulos / Apps</button>
-    <button class="subnav-tab" onclick="goAdminView('onboarding')" id="sa-onboarding">🚀 Nuevo Consultor</button>
+
     <button class="subnav-tab" onclick="goAdminView('config')" id="sa-config">⚙️ Configuración</button>
   </div>
 
@@ -780,6 +781,14 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
         <input class="in" id="nuPago" type="number" placeholder="Monto $" min="0" style="flex:.6">
       </div>
       <input type="hidden" id="nuDays" value="30">
+      <div class="in-row" style="margin-bottom:7px">
+        <select class="in" id="nuCuentaPago">
+          <option value="">— Cuenta donde se recibe el pago —</option>
+          ${(S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}])).map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}
+        </select>
+        <input class="in" id="nuFechaPago" type="date" value="${new Date().toISOString().slice(0,10)}" style="flex:.6">
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px">💡 Sin monto o cuenta: se crea pero queda <b>inactivo</b> hasta registrar pago</div>
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin:8px 0 6px">🧩 Módulos a activar</div>
       <div id="nuModulos" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px"></div>
       <button class="btn btn-admin btn-full" onclick="createUser()" style="font-size:13px;padding:12px">
@@ -1004,17 +1013,28 @@ const S={
 
 // ── API LAYER — Cloudflare Worker → Supabase ─────────────────
 const API_URL='https://iksanmastervh.iksanwellness.workers.dev';
-const ADMIN_KEY='iksan2024';
+const ADMIN_KEY='iksan2024_master';
 const API={
   async call(path,method='GET',body=null,isAdmin=false){
     try{
       const opts={method,headers:{'Content-Type':'application/json'}};
       if(isAdmin)opts.headers['X-Admin-Key']=ADMIN_KEY;
+      // Always send current user context
+      if(currentUser){
+        opts.headers['X-User-Id']=currentUser.id;
+        opts.headers['X-Consultor-Id']=currentUser.consultor_id||currentUser.id;
+      }
       if(body)opts.body=JSON.stringify(body);
       const res=await fetch(API_URL+path,opts);
+      if(!res.ok&&res.status===403){
+        const d=await res.json();
+        if(d.error&&d.error.includes('no autorizado'))showLicenseError();
+        return null;
+      }
       return await res.json();
     }catch(e){console.warn('API error:',e);return null;}
   },
+  async shorten(longUrl){return this.call('/shorten','POST',{url:longUrl});},
   async login(email,pass){return this.call('/auth/login','POST',{email,pass});},
   async getUsuarios(){return this.call('/usuarios','GET',null,true);},
   async createUsuario(data){return this.call('/usuarios','POST',data,true);},
@@ -1400,7 +1420,13 @@ function doLogin(){
 
   function finishLogin(u){
     if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
+    // Set consultor_id properly
+    u.consultor_id = u.parent_id || u.id;
     currentUser=u;
+    // Clear stale consultantes/sales from previous session
+    consultantes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
+    S.set('ik_consultantes',[]);S.set('ik_sales',[]);
+    S.set('ik_gastos',[]);S.set('ik_citasBio',[]);S.set('ik_citasDr',[]);
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
 
@@ -1498,12 +1524,44 @@ function doLogout(){
   if(!confirm('¿Cerrar sesión?'))return;
   currentUser=null;
   activeConId=null;
+  consultantes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
   S.set('ik_activeCon',null);
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginPass').value='';
   document.getElementById('loginPass').dataset.uid='';
   initLogin();
+}
+
+// Admin: simular sesión como operador de pruebas
+function loginAsTestOperator(){
+  if(!currentUser||currentUser.role!=='admin'){showT('Solo el admin puede hacer esto');return;}
+  // Find or create test operator
+  var testUser=users.find(function(u){return u.id==='u_test_op';});
+  if(!testUser){
+    testUser={
+      id:'u_test_op',name:'Operador de Prueba',email:'test@iksan',pass:'test123',
+      role:'operador',parentId:'u_admin',parent_id:'u_admin',
+      consultor_id:'u_admin',
+      modulosAsignados:['m1','m2','m3','m4'],
+      days:365,activatedAt:new Date().toISOString(),active:true,
+      createdAt:new Date().toISOString()
+    };
+    users.push(testUser);
+    modulos.forEach(function(m){
+      if(!m.activatedFor)m.activatedFor=[];
+      if(!m.activatedFor.includes('u_test_op'))m.activatedFor.push('u_test_op');
+    });
+    saveAll();
+  }
+  // Switch to test operator view
+  if(!confirm('Simular vista de Operador? Para volver: cierra sesion y entra de nuevo como Admin.'))return;
+  currentUser=testUser;
+  consultantes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
+  document.getElementById('userPill').textContent='Operador de Prueba';
+  safeCall(applyModulosTabs,[testUser]);
+  renderConList();
+  showT('Vista: Operador de Prueba — todos los módulos activos');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2074,19 +2132,37 @@ const QQ=[
 let qi=0,qa=[],qaOther=[];
 
 // ── SÍNTOMAS Y DIAGNÓSTICOS ────────────────────────────────
+// SÍNTOMAS — cómo se siente el consultante
+var SINTOMAS_LIST=[
+  'Cansancio constante','No puedo dormir bien','Dolor muscular','Dolor de cabeza frecuente',
+  'Piel seca o apagada','Caída de cabello','Hinchazón abdominal','Gases frecuentes',
+  'Estreñimiento','Diarrea frecuente','Acidez o reflujo','Ansiedad o nerviosismo',
+  'Tristeza o bajo ánimo','Irritabilidad','Falta de concentración','Memoria débil',
+  'Sed excesiva','Orinar frecuentemente','Retención de líquidos','Sudoración excesiva',
+  'Frío en manos y pies','Palpitaciones','Falta de aire','Dolor articular',
+  'Rigidez en articulaciones','Bajo deseo sexual','Problemas de erección','Ciclo irregular',
+  'Bochornos / menopausia','Aumento de peso sin razón','Dificultad para bajar de peso',
+  'Antojos de azúcar','Visión borrosa','Zumbido en oídos','Manchas en la piel',
+  'Acné o granos','Uñas frágiles','Bajo rendimiento físico','Recuperación lenta',
+];
+
+// PADECIMIENTOS — diagnósticos médicos
+var PADECIMIENTOS_LIST=[
+  'Diabetes tipo 2','Pre-diabetes','Glucosa elevada','Hipotiroidismo','Hipertiroidismo',
+  'Colesterol alto','Triglicéridos altos','Hipertensión','Artritis reumatoide','Osteoartritis',
+  'Osteoporosis','Fibromialgia','Hígado graso','Hepatitis','Cirrosis','Colitis',
+  'Gastritis','Síndrome de intestino irritable','Ovario poliquístico','Endometriosis',
+  'Próstata inflamada','Cálculos renales','Ácido úrico elevado','Várices','Hemorroides',
+  'Migraña crónica','Esclerosis múltiple','Alzheimer / demencia','Parkinson',
+  'TDA / TDAH','Autismo','Depresión','Ansiedad crónica','Insomnio crónico',
+  'Asma','Rinitis alérgica','Alergias crónicas','Infecciones frecuentes',
+  'Cáncer (apoyo)','Obesidad','Sobrepeso','Síndrome metabólico',
+  'Anemia','Plaquetas bajas','Neuropatía diabética','Recuperación post-COVID',
+];
+
 var SINTOMAS_CATS=[
-  {cat:'Metabolismo & Peso',icon:'⚖️',items:['Sobrepeso','Obesidad','Metabolismo lento','Antojos frecuentes','Retención de líquidos','Tiroides lenta','Síndrome metabólico']},
-  {cat:'Glucosa & Diabetes',icon:'💙',items:['Diabetes tipo 2','Glucosa elevada','Resistencia a insulina','Ovario poliquístico','Pre-diabetes']},
-  {cat:'Hígado & Detox',icon:'🌿',items:['Hígado graso','Hepatitis','Colesterol alto','Cirrosis','Intoxicación / metales pesados','Alergias crónicas']},
-  {cat:'Riñones & Circulación',icon:'🫘',items:['Ácido úrico alto','Cálculos renales','Infección urinaria','Várices','Hemorroides','Hipertensión','Trombosis','Mala circulación']},
-  {cat:'Dolor & Articulaciones',icon:'🦴',items:['Artritis','Osteoartritis','Osteoporosis','Fibromialgia','Dolor de espalda','Migraña','Esclerosis múltiple','Gota']},
-  {cat:'Digestión & Intestino',icon:'⚫',items:['Colitis','Gastritis','Gases / distensión','Estreñimiento','Diarrea crónica','Acidez','Síndrome de intestino irritable']},
-  {cat:'Energía & Sexual',icon:'⚡',items:['Fatiga crónica','Bajo deseo sexual','Disfunción eréctil','Problemas de próstata','Menopausia','Desequilibrio hormonal','Bajo rendimiento físico']},
-  {cat:'Cerebro & Nervios',icon:'🧠',items:['Estrés crónico','Ansiedad','Insomnio','Depresión','TDA / TDAH','Alzheimer','Parkinson','Pérdida de memoria','Neuropatía']},
-  {cat:'Inmunidad & Infecciones',icon:'🛡️',items:['Defensas bajas','Alergias','Asma','Rinitis','Infecciones frecuentes','COVID (recuperación)','Cáncer (apoyo)']},
-  {cat:'Piel & Belleza',icon:'🌸',items:['Acné','Manchas','Estrías','Arrugas','Cabello débil','Uñas frágiles','Psoriasis','Eczema']},
-  {cat:'Niños & Familia',icon:'🧒',items:['Desarrollo infantil','TDA en niños','Sistema inmune débil en niños','Nutrición incompleta','Neurodesarrollo']},
-  {cat:'Nutrición & Deporte',icon:'💪',items:['Falta de nutrientes','Anemia','Dieta keto','Post-entrenamiento','Masa muscular','Recuperación muscular']},
+  {cat:'Síntomas',icon:'🩺',items:SINTOMAS_LIST},
+  {cat:'Padecimientos diagnosticados',icon:'📋',items:PADECIMIENTOS_LIST},
 ];
 
 var _sintomasSeleccionados=[];
@@ -2118,8 +2194,9 @@ function renderSintomasSelector(){
   });
 
   html+='<div style="position:sticky;bottom:0;background:#fff;padding:10px 0 0;border-top:1px solid var(--border);margin-top:8px">';
-  html+='<div id="sintomasCount" style="font-size:11px;color:var(--muted);margin-bottom:8px">'+(_sintomasSeleccionados.length?_sintomasSeleccionados.length+' seleccionados':'Ninguno seleccionado aún')+'</div>';
-  html+='<button class="btn btn-p btn-full" onclick="generarRecomendacionSintomas()" '+(_sintomasSeleccionados.length===0?'disabled style="opacity:.5"':'')+'>✨ Ver recomendación personalizada</button>';
+  html+='<div id="sintomasCount" style="font-size:11px;color:var(--muted);margin-bottom:8px">'+(_sintomasSeleccionados.length?_sintomasSeleccionados.length+' síntoma/padecimiento(s) seleccionado(s)':'Selecciona al menos uno para continuar')+'</div>';
+  html+='<button class="btn btn-p btn-full" id="btnGenerar" onclick="generarRecomendacionSintomas()" style="'
+    +(_sintomasSeleccionados.length===0?'opacity:.45;pointer-events:none':'')+'">✨ Ver recomendación personalizada</button>';
   html+='</div>';
 
   openMo(1,html);
@@ -2138,7 +2215,12 @@ function toggleSintoma(btn,item){
     btn.style.borderColor='var(--mid)';btn.style.fontWeight='700';
   }
   var cnt=document.getElementById('sintomasCount');
-  if(cnt)cnt.textContent=_sintomasSeleccionados.length?_sintomasSeleccionados.length+' seleccionados':'Ninguno seleccionado aún';
+  if(cnt)cnt.textContent=_sintomasSeleccionados.length?_sintomasSeleccionados.length+' síntoma/padecimiento(s) seleccionado(s)':'Selecciona al menos uno para continuar';
+  var btn=document.getElementById('btnGenerar');
+  if(btn){
+    if(_sintomasSeleccionados.length>0){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+    else{btn.style.opacity='.45';btn.style.pointerEvents='none';}
+  }
 }
 
 function generarRecomendacionSintomas(){
@@ -2884,7 +2966,7 @@ function filterCat(){
         +'<div class="pt-name">'+p.n+'</div>'
         +'<div class="pt-cat">'+p.cat+'</div>'
         +'<div style="display:flex;align-items:center;gap:4px">'+priceHtml+editBtn+'</div>'
-        +'<button class="pt-add" onclick="event.stopPropagation();quickAdd(this.dataset.n)" data-n="'+p.n+'">+ Agregar</button>'
+        +'<button class="pt-add" onclick="event.stopPropagation();event.preventDefault();quickAdd(this.dataset.n);return false;" data-n="'+p.n+'">+ Agregar</button>'
       +'</div>'
     +'</div>';
   }).join('');
@@ -3769,6 +3851,10 @@ function createUser(){
   const days=periodo==='2d'?2:(parseInt(document.getElementById('nuDays').value)||30);
   const phone=document.getElementById('nuPhone').value.trim();
   const pago=periodo==='2d'?0:(parseFloat(document.getElementById('nuPago').value)||0);
+  const cuentaPagoId=document.getElementById('nuCuentaPago')?.value||'';
+  const fechaPago=document.getElementById('nuFechaPago')?.value||new Date().toISOString().slice(0,10);
+  // Activate only if pago > 0 (or prueba period)
+  const activar=periodo==='2d'||(pago>0);
   // Módulos seleccionados
   const modChecks=[...document.querySelectorAll('#nuModulos input[type=checkbox]:checked')].map(cb=>cb.value);
   const modulosAsignados=periodo==='2d'?modulos.map(m=>m.id):modChecks;
@@ -3792,8 +3878,8 @@ function createUser(){
     days:role==='consult'?1:days,
     phone,modulosAsignados,
     parentId:parentIdVal||null,
-    active:true,
-    activatedAt:new Date().toISOString(),
+    active:activar,
+    activatedAt:activar?new Date().toISOString():null,
     createdAt:new Date().toISOString()
   };
   users.push(u);
@@ -3824,27 +3910,41 @@ function createUser(){
   window._lastCreatedUserLink=consultLink;
   window._lastCreatedUser=u;
 
-  // Show link box
+  // Show link box immediately with long URL
   var lb=document.getElementById('nuLinkBox');
   var lu=document.getElementById('nuLinkUrl');
   if(lb)lb.style.display='block';
-  if(lu)lu.textContent=consultLink;
+  if(lu)lu.textContent='Generando enlace corto...';
+
+  // Shorten URL via Worker/TinyURL
+  API.shorten(consultLink).then(function(res){
+    var short=(res&&res.short)?res.short:consultLink;
+    window._lastCreatedUserLink=short;
+    if(lu)lu.textContent=short;
+  }).catch(function(){
+    window._lastCreatedUserLink=consultLink;
+    if(lu)lu.textContent=consultLink;
+  });
 
   // Save to Supabase
   API.createUsuario({
     id:u.id,name:u.name,email:u.email,pass:u.pass,
     role:u.role,phone:u.phone||null,
     days:u.days,parent_id:null,
-    active:true,activated_at:u.activatedAt,
+    active:u.active,activated_at:u.activatedAt,
     modulosAsignados:modulosAsignados
   }).then(function(res){
     if(res&&res.ok){
-      showT('✓ Consultor guardado en servidor');
+      showT(u.active?'✓ Consultor activado en servidor':'⏳ Consultor creado — pendiente de pago');
       if(pago>0){
+        const cuentas=S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}]);
+        const cuenta=cuentas.find(function(c){return c.id===cuentaPagoId;});
         API.createPago({user_id:u.id,user_name:u.name,
           concepto:'Suscripcion VitalHealth',
           monto:pago,meses:Math.round(days/30),
-          fecha:new Date().toISOString().slice(0,10)});
+          cuenta_id:cuentaPagoId||null,
+          cuenta_nombre:cuenta?cuenta.nombre:null,
+          fecha:fechaPago});
       }
     } else {
       console.warn('Server save failed:',res);
@@ -6064,6 +6164,13 @@ function openCatalogoViewer(dataUrl,filename,pageCount){
   document.body.appendChild(overlay);
 }
 
+function showLicenseError(){
+  document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:-apple-system,sans-serif;background:#0d0818;color:#fff;text-align:center;padding:20px">'
+    +'<div><div style="font-size:48px;margin-bottom:16px">⚠️</div>'
+    +'<div style="font-size:22px;font-weight:700;margin-bottom:8px">Licencia no válida</div>'
+    +'<div style="font-size:14px;color:#a090c0">Esta copia no está autorizada. Contacta a IKSAN Wellness para activar tu licencia.</div></div></div>';
+}
+
 // Fallback: watch when admin-modulos div becomes visible and auto-render
 (function(){
   var checked=false;
@@ -6081,6 +6188,21 @@ function openCatalogoViewer(dataUrl,filename,pageCount){
 })();
 
 window.addEventListener('load',function(){
+  // ── DOMAIN SECURITY CHECK ────────────────────────────────────────────
+  (function(){
+    var host=window.location.hostname;
+    var allowed=['iksanwellness-boop.github.io','localhost','127.0.0.1',''];
+    var isLocal=host===''||host==='localhost'||host==='127.0.0.1';
+    var isAllowed=allowed.some(function(a){return host===a||host.endsWith('.github.io');});
+    if(!isAllowed){
+      document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:-apple-system,sans-serif;background:#0d0818;color:#fff;text-align:center;padding:20px">'
+        +'<div><div style="font-size:48px;margin-bottom:16px">🔒</div>'
+        +'<div style="font-size:22px;font-weight:700;margin-bottom:8px">Acceso no autorizado</div>'
+        +'<div style="font-size:14px;color:#a090c0;max-width:320px">Esta aplicación solo puede ejecutarse desde su dominio autorizado.<br><br>© IKSAN Wellness — Herramienta propietaria</div></div></div>';
+      throw new Error('Unauthorized domain');
+    }
+  })();
+
   // ── URL PARAMETERS ────────────────────────────────────────────────────
   (function(){
     var params=new URLSearchParams(window.location.search);
