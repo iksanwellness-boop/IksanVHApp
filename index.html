@@ -1425,28 +1425,43 @@ function initLogin(){
   if(!loginUsers.length){ul.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px">Sin usuarios — usa <strong>admin / iksan2024</strong></div>';return;}
 
   if(urlUser){
-    // ── MODO CONSULTOR: solo mostrar el usuario de la URL ──
-    const target=loginUsers.find(u=>
-      u.email.toLowerCase()===urlUser ||
-      u.id.toLowerCase()===urlUser ||
-      u.name.toLowerCase().replace(/\s+/g,'')===urlUser.replace(/\s+/g,'')
-    );
-    if(target&&target.id!=='u_admin'){
-      // Ocultar selector — mostrar solo su nombre
-      ul.innerHTML=`<div style="background:linear-gradient(135deg,#f8f5ff,#f0eaff);border:1.5px solid var(--border);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:10px;margin-bottom:4px">
-        <span style="font-size:22px">🌿</span>
-        <div>
-          <div style="font-size:14px;font-weight:700;color:var(--deep)">${target.name}</div>
-          <div style="font-size:11px;color:var(--muted)">Consultor · Iksan Wellness</div>
-        </div>
-      </div>`;
-      // Hide login subtitle, pre-select user
-      const sub=document.getElementById('loginSub');
-      if(sub)sub.textContent='Ingresa tu contraseña para continuar';
-      selectLoginUser(target.id);
-      return;
+    // ── MODO CONSULTOR: URL tiene ?u= — mostrar SOLO ese usuario ──
+    // Check localStorage first
+    var target=loginUsers.find(function(u){
+      return u.email.toLowerCase()===urlUser||
+             u.id.toLowerCase()===urlUser;
+    });
+
+    // If not in localStorage, try to get from token data stored in sessionStorage
+    if(!target){
+      try{
+        var tokenStr=sessionStorage.getItem('ik_token_user');
+        if(tokenStr){target=JSON.parse(tokenStr);}
+      }catch(e){}
     }
-    // Si el usuario URL no existe o es admin, mostrar login normal
+
+    // Always show ONLY this user's card — never show admin in consultant URL
+    var displayName=target?target.name:urlUser;
+    var displayId=target?target.id:'';
+    ul.innerHTML='<div style="background:linear-gradient(135deg,#f8f5ff,#f0eaff);border:1.5px solid var(--mid);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:10px;margin-bottom:4px">'
+      +'<span style="font-size:22px">🌿</span>'
+      +'<div><div style="font-size:14px;font-weight:700;color:var(--deep)">'+displayName+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">Consultor · Iksan Wellness VH App</div></div>'
+      +'</div>';
+
+    var sub=document.getElementById('loginSub');
+    if(sub)sub.textContent='Ingresa tu contraseña para continuar';
+
+    if(target&&target.id){
+      selectLoginUser(target.id);
+    } else {
+      // User not in localStorage — will verify via Supabase on login
+      sessionStorage.setItem('ik_pending_login_email',urlUser);
+      // Set a dummy uid so doLogin can intercept
+      var passEl=document.getElementById('loginPass');
+      if(passEl)passEl.dataset.uid='_pending_'+urlUser;
+    }
+    return;
   }
 
   // ── MODO NORMAL: mostrar todos los usuarios ──
@@ -1484,9 +1499,33 @@ function doLogin(){
   const errEl=document.getElementById('loginErr');
   errEl.textContent='';
   if(!uid){errEl.textContent='Selecciona un usuario primero';return;}
+  // Handle pending login (user from URL not yet in localStorage)
+  if(uid.startsWith('_pending_')){
+    const pendingEmail=uid.replace('_pending_','');
+    if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
+    API.login(pendingEmail,pass).then(function(res){
+      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
+      if(!res||!res.ok){
+        errEl.textContent=res&&res.error?res.error:'Contraseña incorrecta';
+        return;
+      }
+      const u=normalizeUser(res.user);
+      u.consultor_id=u.parent_id||u.id;
+      // Save to localStorage for future logins
+      const existIdx=users.findIndex(function(x){return x.id===u.id;});
+      if(existIdx>=0)users[existIdx]=u;else users.push(u);
+      S.set('ik_users',users);
+      finishLogin(u);
+    }).catch(function(){
+      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
+      errEl.textContent='Error de conexión. Verifica tu internet.';
+    });
+    return;
+  }
+
   const uLocal=users.find(x=>x.id===uid);
   if(!uLocal){errEl.textContent='Usuario no encontrado';return;}
-  if(uLocal.pass!==pass){errEl.textContent='Contrasena incorrecta';return;}
+  if(uLocal.pass!==pass){errEl.textContent='Contraseña incorrecta';return;}
   if(!checkAccess(uLocal)&&uLocal.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
 
   const loginBtn=document.getElementById('loginBtn');
@@ -6993,6 +7032,8 @@ window.addEventListener('load',function(){
           }
           // Guardar el usuario en sessionStorage para auto-seleccionarlo
           sessionStorage.setItem('ik_url_user', decoded.email.toLowerCase());
+          // Save full user data for login screen display
+          sessionStorage.setItem('ik_token_user', JSON.stringify(decoded));
           // Limpiar URL para que no se vea el token (seguridad)
           window.history.replaceState({},'',window.location.pathname+'?u='+encodeURIComponent(decoded.email));
         }
