@@ -972,9 +972,9 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <div class="card">
       <div class="card-title">💾 Datos</div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <button class="btn btn-o btn-sm" onclick="exportData()">📥 Exportar todo</button>
-        <button class="btn btn-o btn-sm" onclick="document.getElementById('importFile').click()">📤 Importar</button>
-        <button class="btn btn-d btn-sm" onclick="if(confirm('⚠️ Esto borrará TODO. ¿Continuar?'))resetAll()">🗑️ Resetear</button>
+        <button id="btnExportData" class="btn btn-o btn-sm" onclick="exportData()">📥 Exportar todo</button>
+        <button id="btnImportData" class="btn btn-o btn-sm" onclick="document.getElementById('importFile').click()">📤 Importar</button>
+        <button id="btnResetData" class="btn btn-d btn-sm" onclick="if(confirm('⚠️ Esto borrará TODO. ¿Continuar?'))resetAll()">🗑️ Resetear</button>
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
       </div>
     </div>
@@ -1811,19 +1811,29 @@ function applyModulosTabs(u){
   if(!u)return;
 
   // ── ADMIN: todas las pestañas ──
-  if(u.role==='admin'){
+  if(u.role==='admin'||u.role==='admin_op'){
     ['nt-consultantes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
       var el=document.getElementById(id);if(el)el.style.display='flex';
     });
-    // BO subnav: todas visibles para admin
     ['sb-ventas','sb-gastos','sb-agenda','sb-citas-bio','sb-citas-dr',
      'sb-todos-con','sb-whatsapp','sb-mi-config'].forEach(function(id){
       var el=document.getElementById(id);if(el)el.style.display='';
     });
-    // Precios separado: oculto (va en catálogo)
     var sp=document.getElementById('sb-precios');if(sp)sp.style.display='none';
-    // Admin BO siempre visible
     var ntAdmin=document.getElementById('nt-admin');if(ntAdmin)ntAdmin.style.display='flex';
+
+    // ── ADMIN_OP: hide restricted actions in config tab ──
+    if(u.role==='admin_op'){
+      // Hide export/import/reset buttons and password change
+      setTimeout(function(){
+        ['btnExportData','btnImportData','btnResetData','btnChangePass'].forEach(function(id){
+          var el=document.getElementById(id);if(el)el.style.display='none';
+        });
+        // Also hide admin-config tab entirely
+        var saConfig=document.getElementById('sa-config');
+        if(saConfig)saConfig.style.display='none';
+      },300);
+    }
     return;
   }
 
