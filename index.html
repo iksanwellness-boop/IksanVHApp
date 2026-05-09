@@ -271,7 +271,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <div class="login-user-select" id="userSelect"></div>
     <div class="login-field">
       <label class="login-label">Contraseña</label>
-      <input class="login-input" id="loginPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <input class="login-input" id="loginPass" type="password" placeholder="" onkeydown="if(event.key==='Enter')doLogin()" oninput="flashPassChar(this)" style="letter-spacing:3px">
     </div>
     <button class="login-btn" onclick="doLogin()">Entrar</button>
     <div class="login-err" id="loginErr"></div>
@@ -1435,6 +1435,17 @@ function setLang(l){
 /* ═══════════════════════════════════════════════════
    LOGIN
    ═══════════════════════════════════════════════════ */
+// Flash last typed char briefly in password field
+function flashPassChar(input){
+  clearTimeout(input._flashTimer);
+  // Temporarily show as text to reveal last char
+  input.type='text';
+  input.style.letterSpacing='3px';
+  input._flashTimer=setTimeout(function(){
+    input.type='password';
+  },600);
+}
+
 function checkAccess(u){
   if(!u)return false;
   if(u.role==='admin')return true;
@@ -1571,7 +1582,8 @@ function doLogin(){
     var tokenUser=null;
     try{var ts=sessionStorage.getItem('ik_token_user');if(ts)tokenUser=JSON.parse(ts);}catch(e){}
 
-    if(tokenUser&&(tokenUser.pass===pass||tokenUser.email===pendingEmail)){
+    if(tokenUser){
+      // Verify password
       if(tokenUser.pass!==pass){
         if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
         errEl.textContent='Contraseña incorrecta';return;
@@ -1617,12 +1629,10 @@ function doLogin(){
   function finishLogin(u){
     if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
     // Set consultor_id properly
-    u.consultor_id = u.parent_id || u.id;
+    u.consultor_id = u.parent_id || u.consultor_id || u.id;
     currentUser=u;
-    // Clear stale consultantes/sales from previous session
-    consultantes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
-    S.set('ik_consultantes',[]);S.set('ik_sales',[]);
-    S.set('ik_gastos',[]);S.set('ik_citasBio',[]);S.set('ik_citasDr',[]);
+    // Don't clear localStorage here — keep as fallback until Supabase responds
+    // Data will be overwritten by Supabase results in Promise.all below
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
 
@@ -1674,10 +1684,10 @@ function doLogin(){
     }
 
     // Load server data
-    const cid=u.consultor_id||u.consultorId||u.id;
-    const isAdminU=(u.id==='u_admin'||u.role==='admin');
+    const cid=u.consultor_id||u.consultorId||u.parent_id||u.id;
+    const isAdminU=(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op');
     Promise.all([
-      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid), // 0 — admin gets all
+      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid), // 0
       isAdminU?Promise.resolve([]):API.getVentas(cid),         // 1
       isAdminU?Promise.resolve([]):API.getGastos(cid),         // 2
       isAdminU?Promise.resolve([]):API.getCitasBio(cid),       // 3
@@ -1685,8 +1695,8 @@ function doLogin(){
       API.getConfig(cid),         // 5
       API.getPrecios(cid),        // 6
     ]).then(function(results){
-      // Consultantes
-      if(results[0]&&Array.isArray(results[0])){
+      // Only update if Supabase returned actual data
+      if(results[0]&&Array.isArray(results[0])&&results[0].length>=0){
         consultantes=results[0].map(function(c){
           return{id:c.id,name:c.nombre||c.name||'',phone:c.telefono||c.phone||'',
             email:c.email||'',notas:c.notas||'',padecimientos:c.padecimientos||[],
@@ -1696,10 +1706,11 @@ function doLogin(){
         });
         S.set('ik_consultantes',consultantes);
       }
-      if(results[1]&&Array.isArray(results[1])){sales=results[1];S.set('ik_sales',sales);}
-      if(results[2]&&Array.isArray(results[2])){gastos=results[2];S.set('ik_gastos',gastos);}
-      if(results[3]&&Array.isArray(results[3])){citasBio=results[3];S.set('ik_citasBio',citasBio);}
-      if(results[4]&&Array.isArray(results[4])){citasDr=results[4];S.set('ik_citasDr',citasDr);}
+      // Only overwrite local data if server returned something
+      if(results[1]&&Array.isArray(results[1])&&results[1].length>0){sales=results[1];S.set('ik_sales',sales);}
+      if(results[2]&&Array.isArray(results[2])&&results[2].length>0){gastos=results[2];S.set('ik_gastos',gastos);}
+      if(results[3]&&Array.isArray(results[3])&&results[3].length>0){citasBio=results[3];S.set('ik_citasBio',citasBio);}
+      if(results[4]&&Array.isArray(results[4])&&results[4].length>0){citasDr=results[4];S.set('ik_citasDr',citasDr);}
 
       // Config del consultor
       if(results[5]&&typeof results[5]==='object'&&!Array.isArray(results[5])){
@@ -2941,11 +2952,16 @@ function openVHModal(){
 }
 
 function buildVHTextModal(){
+  var c=getActiveCon();
+  var savedText=c?S.get('ik_vhtext_'+c.id,''):'';
   var h='';
   h+='<div class="m-title">🔬 Escaner BioCuantico VH</div>';
-  h+='<div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.6">Pega el texto del reporte. Claude identificara los sistemas alterados y creara el carrito automaticamente.</div>';
-  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Texto del reporte BioCuantico VH</div>';
-  h+='<textarea id="vhTextoReporte" class="in" style="min-height:150px;resize:vertical;font-size:11px;line-height:1.5" placeholder="Pega aqui el texto del reporte VitalHealth...&#10;&#10;Funcion hepatica: 0.723 (normal 0.097-0.419)&#10;V-ORGANEX, TE DETOX, CURCUMAX&#10;&#10;Obesidad..."></textarea>';
+  if(c){h+='<div style="font-size:11px;background:#f0faf0;border-radius:7px;padding:7px 10px;margin-bottom:10px;color:#1a7f3c">👤 '+c.name+(c.age?' · '+c.age+' años':'')+(c.sex?' · '+(c.sex==='F'?'Femenino':'Masculino'):'')+'</div>';}
+  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📋 Texto del reporte BioCuantico</div>';
+  h+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Pega el texto del reporte. Se guarda automaticamente para este consultante.</div>';
+  h+='<textarea id="vhTextoReporte" class="in" style="min-height:160px;resize:vertical;font-size:11px;line-height:1.5" '
+    +'oninput="saveVHText(this.value)" '
+    +'placeholder="Pega aqui el texto del reporte VitalHealth...">'+savedText+'</textarea>';
   h+='<div style="background:#f8f5ff;border-radius:10px;padding:11px;margin:10px 0">';
   h+='<label style="display:flex;align-items:center;gap:9px;cursor:pointer">';
   h+='<input type="checkbox" id="chkAliment" onchange="toggleAlimentSection()" style="width:17px;height:17px;accent-color:var(--mid)">';
@@ -2972,113 +2988,284 @@ async function parseAnalysisJSON(raw){
   return JSON.parse(s);
 }
 
-async function runVHTextAnalysis(){
+function saveVHText(texto){
+  var c=getActiveCon();if(!c)return;
+  S.set('ik_vhtext_'+c.id,texto);
+}
+
+function runVHTextAnalysis(){
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
   const c=getActiveCon();if(!c){showT('Selecciona consultante primero');return;}
 
-  document.querySelector('#m1 .m-title') && (document.querySelector('#m1 .m-title').style.display='none');
   var spinEl=document.getElementById('anaSpin');
   var resEl=document.getElementById('anaRes');
   if(spinEl)spinEl.style.display='block';
   if(resEl)resEl.innerHTML='';
 
-  const edad=parseInt(c.age)||0;
-  const esNino=edad>0&&edad<18;
-  const PRODS_NINOS=['Genius Shake','D Fence','Smartbiotics'];
-  const pl=esNino
-    ? PP.filter(p=>PRODS_NINOS.includes(p.n)).map(p=>p.n).join(', ')
-    : PP.filter(p=>!PRODS_NINOS.includes(p.n)).map(p=>p.n+' ('+p.cat+')').join(', ');
+  // ── LOCAL PARSER — no API needed ──
+  setTimeout(function(){
+    try{
+      var result=parsearReporteBiocuantico(texto,c);
+      if(spinEl)spinEl.style.display='none';
+      _lastResult=result;
+      _fileSource='vh';
+      if(resEl)resEl.innerHTML=renderResult(result);
 
-  const chkAliment=document.getElementById('chkAliment');
-  const incluirAliment=chkAliment&&chkAliment.checked;
-  const habitosText=(document.getElementById('alimentHabitos')?.value||'').trim();
+      // Food plan
+      const chkAliment=document.getElementById('chkAliment');
+      if(chkAliment&&chkAliment.checked&&result.plan_alimenticio){
+        var planEl=document.createElement('div');
+        planEl.innerHTML=renderPlanAlimenticio(result.plan_alimenticio);
+        if(resEl)resEl.appendChild(planEl);
+      }
 
-  const sysPrompt='Eres un especialista en salud integrativa y nutricion funcional para VitalHealth. '
-    +'Analizas reportes del Escaner BioCuantico VitalHealth y generas protocolos personalizados. '
-    +'REGLAS: Usa SOLO productos del catalogo. '
-    +(esNino?'PACIENTE MENOR: usar SOLO productos infantiles.':'PACIENTE ADULTO: NO usar Genius Shake, D Fence ni Smartbiotics. ')
-    +'El reporte ya menciona productos — usalos como guia principal si estan en el catalogo. '
-    +'Responde SOLO con JSON valido sin texto adicional ni backticks.';
-
-  const alimentPrompt=incluirAliment
-    ?'\n\nPLAN ALIMENTICIO MENSUAL: Genera un plan detallado de 4 semanas considerando:\n- Los sistemas alterados del reporte\n- Los hábitos del consultante: '+(habitosText||'no especificados')+'\nIncluye: qué comer cada semana, qué evitar, consejos prácticos adaptados a sus gustos y restricciones.'
-    :'';
-
-  var sexLabel2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':'No especificado';
-  var userPrompt='Analiza este reporte del Escaner BioCuantico VitalHealth del paciente: '+c.name+', '+(edad||'?')+' anos, '+sexLabel2+'.'
-    +'\n\nREPORTE COMPLETO:\n'+texto.slice(0,6000)
-    +(incluirAliment?'\n\nPLAN ALIMENTICIO MENSUAL: Genera un plan de 4 semanas considerando los sistemas alterados del reporte y los habitos del consultante: '+(habitosText||'no especificados')+'. Incluye desayuno, comida, cena y qué evitar por semana.':'')
-    +'\n\nCATALOGO DISPONIBLE ('+(esNino?'infantil':'adultos')+'): '+pl
-    +'\n\nINSTRUCCIONES:\n1. Lee TODOS los sistemas y sus valores fuera de rango\n2. Extrae los productos que el reporte recomienda (si estan en el catalogo)\n3. Resume en lenguaje simple y empatico dirigido al consultante\n4. Crea 3 paquetes de suplementacion por prioridad'
-    +'\n\nResponde SOLO con este JSON:'
-    +'\n{'
-    +'\n  "paciente":"'+c.name+'","edad":"'+(c.age||'')+'","sexo":"'+sexLabel2+'",'
-    +'\n  "fecha":"'+new Date().toLocaleDateString('es-MX')+'","tipo_analisis":"Escaner BioCuantico VitalHealth",'
-    +'\n  "hallazgos_criticos":[{"sistema":"nombre","hallazgo":"valor obtenido vs normal — que significa","nivel":"alto|medio|bajo"}],'
-    +'\n  "resumen_clinico":"Explicacion empatica de los hallazgos principales y por que es importante atenderlos",'
-    +'\n  "sistemas_carrito":[{"sistema":"nombre","descripcion_corta":"que significa para el paciente","nivel":"alto|medio|bajo","productos_recomendados":["nombre exacto del catalogo"]}],'
-    +(incluirAliment?'"plan_alimenticio_mensual":{"semana1":{"desayuno":"...","comida":"...","cena":"...","evitar":["..."]},"semana2":{"desayuno":"...","comida":"...","cena":"...","evitar":["..."]},"semana3":{"desayuno":"...","comida":"...","cena":"...","evitar":["..."]},"semana4":{"desayuno":"...","comida":"...","cena":"...","evitar":["..."]},"consejos_generales":["consejo1","consejo2"]},':'')
-    +'\n  "paquetes":{'
-    +'\n    "basico":{"productos":[{"nombre":"exacto catalogo","razon_clinica":"por que ayuda a este paciente","dosis":"dosis y frecuencia","resultado_esperado":"que notara"}],"justificacion":"explicacion simple"},'
-    +'\n    "esencial":{"productos":[{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],"justificacion":"..."},'
-    +'\n    "completo":{"productos":[{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],"justificacion":"..."}'
-    +'\n  }'
-    +'\n}';
-
-  try{
-    const controller=new AbortController();
-    const timeoutId=setTimeout(function(){controller.abort();},90000);
-    const res=await fetch('https://iksanmastervh.iksanwellness.workers.dev/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-5',
-        max_tokens:4000,
-        system:sysPrompt,
-        messages:[{role:'user',content:userPrompt}]
-      }),
-      signal:controller.signal
-    });
-    clearTimeout(timeoutId);
-    if(!res.ok){const t=await res.text();throw new Error(t||res.statusText);}
-    const d=await res.json();
-    const raw=(d.content||[]).map(x=>x.text||'').join('').trim();
-    let result;
-    try{result=parseAnalysisJSON(raw);}
-    catch(e){result=fallbackAnalysis(c);}
-    if(!result||!result.paciente)result=fallbackAnalysis(c);
-
-    if(spinEl)spinEl.style.display='none';
-    _lastResult=result;
-    _fileSource='vh';
-
-    // Render result
-    if(resEl)resEl.innerHTML=renderResult(result);
-
-    // Render food plan if present
-    if(incluirAliment&&result.plan_alimenticio_mensual){
-      var planEl=document.createElement('div');
-      planEl.innerHTML=renderPlanAlimenticio(result.plan_alimenticio_mensual);
-      if(resEl)resEl.appendChild(planEl);
+      if(result.sistemas_carrito&&result.sistemas_carrito.length){
+        generarCarritoBiocuantico(result);
+      }
+      addToHistory('vh','🔬 BioCuántico — '+result.hallazgos_criticos.length+' hallazgos',result);
+    }catch(err){
+      if(spinEl)spinEl.style.display='none';
+      if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5">'
+        +'<div style="font-weight:700;color:#c04040;margin-bottom:6px">Error al procesar</div>'
+        +'<div style="font-size:12px;color:#7f1d1d">'+err.message+'</div></div>';
     }
-
-    // Auto-generate cart from sistemas
-    if(result.sistemas_carrito&&result.sistemas_carrito.length){
-      generarCarritoBiocuantico(result);
-    }
-    addToHistory('vh','🔬 BioCuántico — '+( result.hallazgos_criticos?.length||0)+' hallazgos',result);
-
-  }catch(err){
-    if(spinEl)spinEl.style.display='none';
-    var msg=err.message||'Error desconocido';
-    if(err.name==='AbortError')msg='Tiempo agotado (90s). Reduce el texto e intenta de nuevo.';
-    else if(msg.includes('credit')||msg.includes('balance'))msg='Sin créditos en la API de Anthropic. Recarga en console.anthropic.com';
-    if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5;margin-top:10px">'
-      +'<div style="font-weight:700;color:#c04040;margin-bottom:6px">⚠️ Error</div>'
-      +'<div style="font-size:12px;color:#7f1d1d">'+msg+'</div></div>';
-  }
+  },300);
 }
+
+// ── PARSER LOCAL DEL REPORTE BIOCUÁNTICO ──────────────────────────────
+function parsearReporteBiocuantico(texto,c){
+  // Normalize product names from report to match catalog
+  var productMap={
+    'V-ORGANEX':'V-Organex','ORGANEX':'V-Organex',
+    'TÉ DETOX':'Té Detox','TE DETOX':'Té Detox','TEDETOX':'Té Detox','V-TEDETOX':'V-Tedetox',
+    'CURCUMAX':'V-Curcumax','V-CURCUMAX':'V-Curcumax',
+    'OMEGA':'V-Omega 3','V-OMEGA 3':'V-Omega 3','V-OMEGA3':'V-Omega 3',
+    'V-ASCULAX':'V-Asculax','V-ITALIX':'V-Italix','NITRO':'V-Nitro','VITAREN':'V-Itaren',
+    'V-FORTIFLORA':'V-Fortiflora','FORTYFLORA':'V-Fortiflora','FORTIFLORA':'V-Fortiflora',
+    'V-CONTROL':'V-Control','V-ITALPRO':'V-Italpro','VITALPRO':'V-Italpro',
+    'V-THERMOKAFE':'V-Thermokafe','KETOCAFÉ':'Ketocafé','KETOCAFE':'Ketocafé',
+    'V-ITAX':'V-Itax','VITAX':'V-Itax',
+    'V-NEUROKAFE':'V-Neurokafe','V-ITALAY':'V-Italay',
+    'V-COLLAGEN':'V-Collagen','VITALAGE COLLAGEN':'Vitalage Collagen',
+    'V-TARLY':'V-Tarly','VNRGY':'V-Nrgy','V-NRGY':'V-Nrgy',
+    'V-CURCUMAX':'V-Curcumax',
+    'V-GLUTATION':'V-Glutatión','GLUTATION':'V-Glutatión','V-GLUTATION':'V-Glutatión',
+    'V-GLUCALOSE':'V-Glucalose',
+    'V-ITALBOOST':'V-Italboost','V-TALBOOST':'V-Italboost',
+    'V-ITALIX':'V-Italix','V-ITAREN':'V-Itaren',
+    'V-TALPRO':'V-Italpro','V-NITRO':'V-Nitro',
+    'V-TADOL':'V-Itadol','VITADOL':'V-Itadol',
+    'V-COLLAGEN':'V-Collagen',
+  };
+
+  // Match product names against catalog
+  function matchProd(nombre){
+    // First try productMap
+    var upper=nombre.trim().toUpperCase().replace(/[,.\s]+$/,'');
+    if(productMap[upper])return productMap[upper];
+    // Try direct catalog match
+    var found=PP.find(function(p){
+      return p.n.toUpperCase()===upper||
+             p.n.toUpperCase().replace(/[^A-Z0-9]/g,'')===upper.replace(/[^A-Z0-9]/g,'');
+    });
+    return found?found.n:null;
+  }
+
+  // Extract systems and their products from report text
+  // Pattern: system name → values → "V-PROD1, PROD2, PROD3"
+  var sistemas=[];
+  var hallazgos=[];
+
+  // Split by sections — look for product recommendations
+  var lineas=texto.split('\n');
+  var sistemaActual='';
+  var descripcionActual='';
+  var valorActual='';
+
+  // Known system names in Spanish
+  var sistemasConocidos=[
+    'Función hepática','Función Hepática','hepática',
+    'Obesidad','obesidad',
+    'Cardiovasculares','cardiovascular','Cerebrovasculares',
+    'Función Gastrointestinal','Gastrointestinal','gastrointestinal',
+    'Vesícula Biliar','vesícula',
+    'Función Pulmonar','Pulmonar','pulmonar',
+    'Nervio Cerebral','Cerebral','cerebral',
+    'Densidad Mineral Ósea','ósea','Ósea',
+    'Hueso Reumatoide','Reumatoide','reumatoide',
+    'crecimiento óseo',
+    'Glucosa','glucosa',
+    'Oligoelementos','oligoelementos',
+    'Coenzima','coenzima',
+    'Toxina Humana','toxina',
+    'Metales Pesados','metales',
+    'Condición Física','condición','pH','PH',
+    'Alergias','alergia',
+    'Piel','piel',
+    'Ojo','ojo','visual',
+    'Colágeno','colágeno',
+  ];
+
+  // Extract products from a line like "V-ORGANEX, TÉ DETOX, CURCUMAX"
+  function extraerProductos(linea){
+    var prods=[];
+    // Split by comma or space
+    var partes=linea.split(/[,;]+/);
+    partes.forEach(function(parte){
+      var p=parte.trim().replace(/^V[,.]$/i,'').trim();
+      if(p.length<2)return;
+      // Check if it looks like a product (starts with V- or is all caps)
+      if(/^V[-\s]|^[A-ZÁÉÍÓÚÑ\s]{3,}$/.test(p)){
+        var matched=matchProd(p);
+        if(matched)prods.push(matched);
+      }
+    });
+    return prods;
+  }
+
+  // Detect system changes
+  function detectarSistema(linea){
+    for(var i=0;i<sistemasConocidos.length;i++){
+      if(linea.includes(sistemasConocidos[i])){
+        return sistemasConocidos[i];
+      }
+    }
+    return null;
+  }
+
+  // Process lines
+  var sistemaProds={};
+  var sistemaDesc={};
+  var sistemaValores={};
+  var currentSis='General';
+
+  lineas.forEach(function(linea){
+    linea=linea.trim();
+    if(!linea)return;
+
+    // Detect system
+    var nuevoSis=detectarSistema(linea);
+    if(nuevoSis&&linea.length<60){
+      currentSis=nuevoSis;
+      if(!sistemaProds[currentSis])sistemaProds[currentSis]=[];
+      if(!sistemaDesc[currentSis])sistemaDesc[currentSis]='';
+      return;
+    }
+
+    // Detect product recommendations (lines with V- patterns)
+    if(/V[-\s][A-Z]|[A-ZÁÉÍÓÚÑ]{3,}/.test(linea)){
+      var prods=extraerProductos(linea);
+      if(prods.length>0){
+        if(!sistemaProds[currentSis])sistemaProds[currentSis]=[];
+        prods.forEach(function(p){
+          if(!sistemaProds[currentSis].includes(p))sistemaProds[currentSis].push(p);
+        });
+      }
+    }
+
+    // Detect values (numbers like 0.723 or 71.59)
+    var valorMatch=linea.match(/([0-9]+[.,][0-9]+)/g);
+    if(valorMatch&&valorMatch.length>=2&&!sistemaValores[currentSis]){
+      sistemaValores[currentSis]=valorMatch.join(' / ');
+    }
+  });
+
+  // Build sistemas_carrito and hallazgos
+  var todosProds=[];
+  Object.keys(sistemaProds).forEach(function(sis){
+    var prods=sistemaProds[sis];
+    if(!prods||prods.length===0)return;
+
+    sistemas.push({
+      sistema:sis,
+      descripcion_corta:sistemaDesc[sis]||'Parámetros fuera del rango normal',
+      nivel:'medio',
+      productos_recomendados:prods
+    });
+
+    hallazgos.push({
+      sistema:sis,
+      hallazgo:sistemaValores[sis]?'Valor: '+sistemaValores[sis]:'Parámetros alterados',
+      nivel:'medio'
+    });
+
+    prods.forEach(function(p){if(!todosProds.includes(p))todosProds.push(p);});
+  });
+
+  // Build 3 packages by priority
+  var edad=parseInt(c.age)||0;
+  var esNino=edad>0&&edad<18;
+  var PRODS_NINOS=['Genius Shake','D Fence','Smartbiotics'];
+  var prodsValidos=todosProds.filter(function(n){
+    return esNino?PRODS_NINOS.includes(n):!PRODS_NINOS.includes(n);
+  });
+
+  function makeProds(lista){
+    return lista.map(function(nombre){
+      var p=PP.find(function(x){return x.n===nombre;});
+      return{
+        nombre:nombre,
+        razon_clinica:p?p.b[0]||'Recomendado por el escáner BioCuántico':'Recomendado por el escáner',
+        dosis:p?p.d||'Según indicaciones':'Según indicaciones',
+        resultado_esperado:p?(p.b[1]||p.b[0]||'Mejoría progresiva'):'Mejoría progresiva'
+      };
+    });
+  }
+
+  var basico=prodsValidos.slice(0,3);
+  var esencial=prodsValidos.slice(0,Math.min(5,prodsValidos.length));
+  var completo=prodsValidos.slice(0,Math.min(8,prodsValidos.length));
+
+  // Food plan from checkbox
+  var chkAliment=document.getElementById('chkAliment');
+  var alimentHabitos=document.getElementById('alimentHabitos');
+  var incluirAliment=chkAliment&&chkAliment.checked;
+  var habitosText=incluirAliment&&alimentHabitos?alimentHabitos.value.trim():'';
+
+  var planAlim=null;
+  if(incluirAliment){
+    planAlim={
+      comer:['Verduras frescas variadas','Proteína magra (pollo, pescado)','Frutas ricas en vitamina C','Cereales integrales','Frutos secos'],
+      evitar:['Alimentos fritos','Azúcares refinados','Alcohol y tabaco','Alimentos procesados y enlatados','Exceso de grasas saturadas'],
+      tips:[
+        habitosText?'Considerando tus preferencias: '+habitosText:'Mantén 3 comidas principales y 2 colaciones',
+        'Toma al menos 2 litros de agua al día',
+        'Mastica bien los alimentos — favorece la absorción de nutrientes',
+        'Prefiere alimentos orgánicos cuando sea posible'
+      ]
+    };
+  }
+
+  return{
+    paciente:c.name,
+    edad:c.age||'',
+    sexo:c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':'',
+    fecha:new Date().toLocaleDateString('es-MX'),
+    tipo_analisis:'Escáner BioCuántico VitalHealth',
+    hallazgos_criticos:hallazgos.length?hallazgos:[{sistema:'General',hallazgo:'Reporte procesado',nivel:'medio'}],
+    resumen_clinico:'Se identificaron '+sistemas.length+' sistemas con parámetros fuera del rango normal. '
+      +'Los productos recomendados han sido seleccionados directamente del reporte BioCuántico VitalHealth. '
+      +(sistemas.length?'Sistemas afectados: '+sistemas.map(function(s){return s.sistema;}).join(', ')+'.':''),
+    sistemas_carrito:sistemas,
+    plan_alimenticio:planAlim,
+    paquetes:{
+      basico:{
+        productos:makeProds(basico),
+        justificacion:'Los '+basico.length+' productos más prioritarios según el escáner. Ideal para comenzar el protocolo.'
+      },
+      esencial:{
+        productos:makeProds(esencial),
+        justificacion:'Protocolo completo que cubre los principales sistemas afectados identificados en el escáner.'
+      },
+      completo:{
+        productos:makeProds(completo),
+        justificacion:'Protocolo integral para todos los sistemas afectados. Máxima cobertura según el escáner BioCuántico.'
+      }
+    }
+  };
+}
+
 
 function renderPlanAlimenticio(plan){
   if(!plan)return '';
