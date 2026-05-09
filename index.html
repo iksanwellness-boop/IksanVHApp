@@ -698,12 +698,21 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
   <!-- BO: Inventario -->
   <div id="bo-inventario" class="bo-view" style="display:none;padding-top:14px">
     <div class="card">
-      <div class="card-title">📦 Inventario de productos</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Lleva el control de tu stock. Al registrar una venta, el inventario se actualiza automáticamente.</div>
-      <!-- Search -->
-      <div class="in-row" style="margin-bottom:10px">
-        <input class="in" id="invSearch" placeholder="🔍 Buscar producto..." oninput="renderInventario()">
-        <button class="btn btn-p btn-sm" onclick="addInvProduct()">+ Agregar</button>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="font-size:14px;font-weight:700;color:var(--deep);flex:1">📦 Inventario</div>
+        <input class="in" id="invSearch" placeholder="🔍 Buscar..." oninput="renderInventario()" style="flex:1;font-size:12px;padding:7px 10px">
+        <button class="btn btn-p btn-sm" onclick="openCargarInventario()">+ Cargar inventario</button>
+        <button class="btn btn-o btn-sm" onclick="exportarInventarioExcel()">📊 Excel</button>
+        <button class="btn btn-o btn-sm" onclick="exportarInventarioPDF()">📄 PDF</button>
+      </div>
+      <!-- Table header -->
+      <div style="display:grid;grid-template-columns:1fr 70px 90px 90px 80px 70px;gap:4px;padding:6px 8px;background:var(--warm);border-radius:7px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">
+        <div>Producto</div>
+        <div style="text-align:center">Stock</div>
+        <div style="text-align:center">F. Registro</div>
+        <div style="text-align:center">Caducidad</div>
+        <div style="text-align:center">Pedido</div>
+        <div></div>
       </div>
       <div id="invList"></div>
     </div>
@@ -1089,6 +1098,9 @@ const API={
   async createPago(data){return this.call('/pagos_suscripcion','POST',data,true);},
   async deletePago(id){return this.call('/pagos_suscripcion/'+id,'DELETE',null,true);},
   // Config y Precios
+  async getInventario(cid){return this.call('/inventario?consultor_id='+cid);},
+  async saveInventarioItem(data){return this.call('/inventario','POST',data);},
+  async deleteInventarioItem(cid,prod){return this.call('/inventario/'+encodeURIComponent(cid)+'/'+encodeURIComponent(prod),'DELETE');},
   async getConfig(cid){return this.call('/config?consultor_id='+cid);},
   async saveConfig(cid,cfg){return this.call('/config','POST',{consultor_id:cid,config_json:cfg});},
   async getPrecios(cid){return this.call('/precios?consultor_id='+cid);},
@@ -1694,6 +1706,7 @@ function doLogin(){
       isAdminU?Promise.resolve([]):API.getCitasDr(cid),        // 4
       API.getConfig(cid),         // 5
       API.getPrecios(cid),        // 6
+      API.getInventario(cid),     // 7
     ]).then(function(results){
       // Only update if Supabase returned actual data
       if(results[0]&&Array.isArray(results[0])&&results[0].length>=0){
@@ -3053,31 +3066,59 @@ function runVHTextAnalysis(){
 // ── PARSER LOCAL DEL REPORTE BIOCUÁNTICO ──────────────────────────────
 function parsearReporteBiocuantico(texto,c){
   // ── Normalize product names to catalog names ──
+  // productMap: report name → exact PP catalog name
   var productMap={
+    // Organex
     'V-ORGANEX':'V-Organex','ORGANEX':'V-Organex',
-    'V-TEDETOX':'V-Tedetox','TÉ DETOX':'V-Tedetox','TE DETOX':'V-Tedetox','TEDETOX':'V-Tedetox',
+    // Té Detox
+    'V-TEDETOX':'Té Detox','TÉ DETOX':'Té Detox','TE DETOX':'Té Detox','TEDETOX':'Té Detox','TÉ DETOX':'Té Detox',
+    // Curcumax
     'CURCUMAX':'V-Curcumax','V-CURCUMAX':'V-Curcumax',
+    // Omega
     'OMEGA':'V-Omega 3','V-OMEGA 3':'V-Omega 3','V-OMEGA3':'V-Omega 3','OMEGA 3':'V-Omega 3',
+    // Asculax, Italix
     'V-ASCULAX':'V-Asculax','V-ITALIX':'V-Italix',
+    // Nitro
     'NITRO':'V-Nitro','V-NITRO':'V-Nitro',
+    // Itaren
     'VITAREN':'V-Itaren','V-ITAREN':'V-Itaren',
-    'V-FORTIFLORA':'V-Fortiflora','FORTYFLORA':'V-Fortiflora','FORTIFLORA':'V-Fortiflora',
+    // FortyFlora
+    'V-FORTIFLORA':'V-FortyFlora','FORTYFLORA':'V-FortyFlora','FORTIFLORA':'V-FortyFlora','V-FORTYFLORA':'V-FortyFlora',
+    // Control
     'V-CONTROL':'V-Control',
-    'V-ITALPRO':'V-Italpro','VITALPRO':'V-Italpro','V-TALPRO':'V-Italpro',
-    'V-THERMOKAFE':'V-Thermokafe',
-    'KETOCAFÉ':'Ketocafé','KETOCAFE':'Ketocafé',
+    // VitalPro (Italpro en reportes)
+    'V-ITALPRO':'VitalPro','VITALPRO':'VitalPro','V-TALPRO':'VitalPro','VITALPRO':'VitalPro',
+    // Thermokafe
+    'V-THERMOKAFE':'Thermokafe','THERMOKAFE':'Thermokafe',
+    // Ketokafe
+    'KETOCAFÉ':'Ketokafe BHB','KETOCAFE':'Ketokafe BHB','KETOKAFE':'Ketokafe BHB',
+    // Itax
     'V-ITAX':'V-Itax','VITAX':'V-Itax',
-    'V-NEUROKAFE':'V-Neurokafe',
+    // Neurokafe
+    'V-NEUROKAFE':'Neurokafe','NEUROKAFE':'Neurokafe',
+    // Italay
     'V-ITALAY':'V-Italay',
+    // Collagen
     'V-COLLAGEN':'V-Collagen',
     'VITALAGE COLLAGEN':'Vitalage Collagen','VITALAGE':'Vitalage Collagen',
-    'V-TARLY':'V-Tarly',
-    'VNRGY':'V-Nrgy','V-NRGY':'V-Nrgy',
-    'V-GLUTATION':'V-Glutatión','GLUTATION':'V-Glutatión','GLUTATIÓN':'V-Glutatión',
+    // Vitarly
+    'V-TARLY':'Vitarly-L','VITARLY':'Vitarly-L',
+    // NRGY
+    'VNRGY':'V-NRGY','V-NRGY':'V-NRGY',
+    // Glutatión — catalog name is V-Glutation (no accent)
+    'V-GLUTATION':'V-Glutation','GLUTATION':'V-Glutation','GLUTATIÓN':'V-Glutation','V-GLUTATIÓN':'V-Glutation',
+    // Glucalose
     'V-GLUCALOSE':'V-Glucalose',
+    // Italboost
     'V-ITALBOOST':'V-Italboost','V-TALBOOST':'V-Italboost',
+    // Itadol
     'V-ITADOL':'V-Itadol','VITADOL':'V-Itadol','V-TADOL':'V-Itadol',
+    // Lovkafe
     'LOVKAFE':'Lovkafe','V-LOVKAFE':'Lovkafe',
+    // Glucalose
+    'GLUCALOSE':'V-Glucalose',
+    // Asculax
+    'ASCULAX':'V-Asculax',
   };
 
   function matchProd(nombre){
@@ -3779,6 +3820,7 @@ function openCartModal(){
               <div class="cir-nm">${it.n}</div>
               ${px?.ct?`<div style="font-size:9px;color:#7c3aed;font-weight:600">${px.ct}</div>`:''}
               ${px?.b?`<div style="font-size:9px;color:var(--muted);line-height:1.3">${px.b[0]||''}</div>`:''}
+              ${(()=>{var inv=inventario&&inventario.find(function(i){return i.nombre===it.n;});if(inv&&inv.stock<=0&&!inv.sobrePedido)return '<div style="font-size:9px;font-weight:700;color:#c04040;background:#fff5f5;padding:2px 6px;border-radius:5px;display:inline-block">⚠️ Sin stock</div>';if(inv&&inv.stock<=0&&inv.sobrePedido)return '<div style="font-size:9px;font-weight:700;color:#1a56db;background:#f0f4ff;padding:2px 6px;border-radius:5px;display:inline-block">📦 Sobre pedido</div>';if(inv&&inv.stock>0&&inv.stock<=3)return '<div style="font-size:9px;color:#d97706">⚠️ Stock: '+inv.stock+'</div>';return '';})()}
               <div class="cir-pr">$${it.p.toLocaleString()} c/u</div>
             </div>
             <div class="cir-qty">
@@ -5192,11 +5234,14 @@ function renderUserEditModal(uid){
     </div>
     <div class="in-row" style="margin-bottom:7px">
       <input class="in" id="ueEmail" value="${u.email||''}" placeholder="Email / usuario">
-      <select class="in" id="ueRole" style="flex:.6">
-        <option value="paid"${u.role==='paid'||u.role==='admin'?' selected':''}>🌿 Consultor</option>
-        <option value="operador"${u.role==='operador'?' selected':''}>🔧 Operador</option>
-        <option value="consult"${u.role==='consult'?' selected':''}>👁️ Consulta</option>
-      </select>
+      ${u.role==='admin_op'
+        ?'<div class="in" style="flex:.6;background:#f5f5f0;color:var(--muted);font-size:11px">🔐 Op. Admin</div><input type="hidden" id="ueRole" value="admin_op">'
+        :`<select class="in" id="ueRole" style="flex:.6">
+          <option value="paid"${u.role==='paid'||u.role==='admin'?' selected':''}>🌿 Consultor</option>
+          <option value="operador"${u.role==='operador'?' selected':''}>🔧 Operador</option>
+          <option value="socio"${u.role==='socio'?' selected':''}>🤝 Socio</option>
+          <option value="consult"${u.role==='consult'?' selected':''}>👁️ Consulta</option>
+        </select>`}
     </div>
     <div style="background:var(--warm);border-radius:8px;padding:9px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
       <span style="font-family:monospace;font-size:17px;font-weight:700;color:var(--deep);letter-spacing:2px">${u.pass}</span>
@@ -5386,16 +5431,17 @@ function renderUserEditModal(uid){
     </div>`:'<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px">Activa módulos primero</div>'}
     <div style="display:flex;flex-direction:column;gap:6px">
       ${subUsers.length?subUsers.map(su=>`
-      <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:10px">
+      <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer" onclick="openUserEditModal('${su.id}')">
         <div style="width:32px;height:32px;border-radius:50%;background:${su.role==='socio'?'#1a7f3c':'#6b4a6e'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${su.name.charAt(0).toUpperCase()}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:700;color:var(--deep)">${su.name}</div>
           <div style="font-size:10px;color:var(--muted)">${su.role==='socio'?'🤝 Socio':'🔧 Operador'} · ${su.email} · pass: <b>${su.pass}</b></div>
         </div>
-        <div style="display:flex;gap:4px">
+        <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
           <button class="btn btn-wa btn-sm" style="font-size:9px;padding:3px 7px" onclick="enviarWASubUser('${uid}','${su.id}')">💬</button>
           <button class="btn btn-d btn-sm" style="font-size:9px;padding:3px 7px" onclick="deleteSubUser('${uid}','${su.id}')">✕</button>
         </div>
+        <div style="font-size:16px;color:var(--muted)">›</div>
       </div>`).join('')
       :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Sin operadores creados</div>'}
     </div>`
@@ -7762,7 +7808,6 @@ function importarDatosCSV(input){
 
 // ── INVENTARIO ─────────────────────────────────────────────
 var inventario=S.get('ik_inventario',[]);
-
 function getInv(nombre){return inventario.find(function(i){return i.nombre===nombre;})||null;}
 
 function renderInventario(){
@@ -7772,85 +7817,215 @@ function renderInventario(){
 
   if(!list.length){
     el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">'
-      +(inventario.length?'Sin resultados':'Agrega productos al inventario')+'</div>';
+      +(inventario.length?'Sin resultados':'Sin productos en inventario. Toca "+ Cargar inventario" para agregar.')+'</div>';
     return;
   }
 
   el.innerHTML=list.map(function(item){
     var p=PP.find(function(x){return x.n===item.nombre;});
     var stockColor=item.stock<=0?'#c04040':item.stock<=3?'#d97706':'#1a7f3c';
-    var stockLabel=item.stock<=0?'Sin stock':item.stock+' piezas';
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;margin-bottom:7px;background:#fff">'
-      +'<div style="font-size:22px">'+(p?p.e:'📦')+'</div>'
-      +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--deep)">'+item.nombre+'</div>'
-        +(p?'<div style="font-size:10px;color:var(--muted)">'+p.cat+(p.ct?' · '+p.ct:'')+'</div>':'')
-        +'<div style="font-size:10px;font-weight:700;color:'+stockColor+'">'+stockLabel
-          +(item.sobrePedido?' + <span style="color:#1a56db">Sobre pedido disponible</span>':'')+'</div>'
+    var today=new Date();
+    var cad=item.fechaCaducidad?new Date(item.fechaCaducidad):null;
+    var cadDays=cad?Math.round((cad-today)/86400000):null;
+    var cadColor=cadDays===null?'var(--muted)':cadDays<30?'#c04040':cadDays<90?'#d97706':'#1a7f3c';
+    var cadLabel=cad?cad.toLocaleDateString('es-MX'):'—';
+    return '<div style="display:grid;grid-template-columns:1fr 70px 90px 90px 80px 70px;gap:4px;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;align-items:center;background:#fff">'
+      // Product name + category
+      +'<div><div style="font-size:12px;font-weight:700;color:var(--deep)">'+(p?p.e+' ':'')+item.nombre+'</div>'
+        +(p?'<div style="font-size:9px;color:var(--muted)">'+p.cat+(p.ct?' · '+p.ct:'')+'</div>':'')
       +'</div>'
-      +'<div style="display:flex;flex-direction:column;gap:5px;align-items:center">'
-        +'<div style="display:flex;gap:4px;align-items:center">'
-          +'<button class="cq-b" data-inv="'+encodeURIComponent(item.nombre)+'" onclick="adjustInvStock(decodeURIComponent(this.dataset.inv),-1)">-</button>'
-          +'<span style="font-size:13px;font-weight:700;min-width:24px;text-align:center">'+item.stock+'</span>'
-          +'<button class="cq-b" data-inv="'+encodeURIComponent(item.nombre)+'" onclick="adjustInvStock(decodeURIComponent(this.dataset.inv),1)">+</button>'
-        +'</div>'
-        +'<label style="display:flex;align-items:center;gap:4px;cursor:pointer">'
-          +'<input type="checkbox" '+(item.sobrePedido?'checked':'')+' data-inv="'+encodeURIComponent(item.nombre)+'" onchange="toggleSobrePedido(decodeURIComponent(this.dataset.inv),this.checked)" style="width:12px;height:12px">'
-          +'<span style="font-size:9px;color:var(--muted)">Sobre pedido</span>'
+      // Stock — editable input
+      +'<div style="text-align:center">'
+        +'<input type="number" min="0" value="'+item.stock+'" '
+          +'data-inv="'+encodeURIComponent(item.nombre)+'" '
+          +'onchange="updateInvStock(decodeURIComponent(this.dataset.inv),parseInt(this.value)||0)" '
+          +'style="width:55px;text-align:center;font-size:13px;font-weight:700;color:'+stockColor+';border:1px solid var(--border);border-radius:6px;padding:4px;font-family:-apple-system,sans-serif">'
+      +'</div>'
+      // Fecha registro
+      +'<div style="text-align:center;font-size:10px;color:var(--muted)">'+(item.fechaRegistro||'—')+'</div>'
+      // Caducidad — editable
+      +'<div style="text-align:center">'
+        +'<input type="date" value="'+(item.fechaCaducidad||'')+'" '
+          +'data-inv="'+encodeURIComponent(item.nombre)+'" '
+          +'onchange="updateInvCaducidad(decodeURIComponent(this.dataset.inv),this.value)" '
+          +'style="font-size:9px;color:'+cadColor+';border:1px solid var(--border);border-radius:5px;padding:2px 4px;width:85px">'
+        +(cadDays!==null&&cadDays<30?'<div style="font-size:9px;color:#c04040;font-weight:700">'+(cadDays<=0?'VENCIDO':cadDays+' días')+'</div>':'')
+      +'</div>'
+      // Sobre pedido toggle
+      +'<div style="text-align:center">'
+        +'<label style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer">'
+          +'<input type="checkbox" '+(item.sobrePedido?'checked':'')+' '
+            +'data-inv="'+encodeURIComponent(item.nombre)+'" '
+            +'onchange="toggleSobrePedido(decodeURIComponent(this.dataset.inv),this.checked)" '
+            +'style="width:14px;height:14px">'
+          +'<span style="font-size:9px;color:var(--muted)">S.P.</span>'
         +'</label>'
       +'</div>'
-      +'<button class="btn btn-d btn-sm" style="font-size:10px;padding:3px 7px" data-inv="'+encodeURIComponent(item.nombre)+'" onclick="removeFromInv(decodeURIComponent(this.dataset.inv))">✕</button>'
+      // Remove button
+      +'<div style="text-align:center">'
+        +'<button class="btn btn-d btn-sm" style="font-size:10px;padding:3px 7px" '
+          +'data-inv="'+encodeURIComponent(item.nombre)+'" '
+          +'onclick="removeFromInv(decodeURIComponent(this.dataset.inv))">✕</button>'
+      +'</div>'
     +'</div>';
   }).join('');
 }
 
-function addInvProduct(){
-  var catOptions=PP.filter(function(p){
-    return !inventario.find(function(i){return i.nombre===p.n;});
-  }).map(function(p){
-    return '<option value="'+p.n+'">'+p.e+' '+p.n+'</option>';
-  }).join('');
-  openMo(2,'<div class="m-title">📦 Agregar al inventario</div>'
-    +'<select class="in" id="invSelProd" style="width:100%;margin-bottom:10px"><option value="">— Selecciona producto —</option>'+catOptions+'</select>'
-    +'<div class="in-row" style="margin-bottom:10px">'
-      +'<input class="in" id="invInitStock" type="number" placeholder="Stock inicial" min="0" value="0">'
-      +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">'
-        +'<input type="checkbox" id="invSobrePedido" style="width:15px;height:15px"> Sobre pedido</label>'
-    +'</div>'
-    +'<button class="btn btn-p btn-full" onclick="confirmAddInv()">✓ Agregar al inventario</button>');
-}
-
-function confirmAddInv(){
-  var name=(document.getElementById('invSelProd')?.value||'').trim();
-  var stock=parseInt(document.getElementById('invInitStock')?.value)||0;
-  var sp=document.getElementById('invSobrePedido')?.checked||false;
-  if(!name){showT('Selecciona un producto');return;}
-  if(inventario.find(function(i){return i.nombre===name;})){showT('Ya está en inventario');return;}
-  inventario.push({nombre:name,stock:stock,sobrePedido:sp,updatedAt:new Date().toISOString()});
-  saveInv();closeMo(2);renderInventario();
-  showT('✓ '+name+' agregado al inventario');
-}
-
-function adjustInvStock(nombre,delta){
+function updateInvStock(nombre,newStock){
   var item=getInv(nombre);if(!item)return;
-  item.stock=Math.max(0,item.stock+delta);
+  item.stock=Math.max(0,newStock);
+  item.updatedAt=new Date().toISOString();
+  saveInv();
+  syncInvItem(item);
+}
+
+function updateInvCaducidad(nombre,fecha){
+  var item=getInv(nombre);if(!item)return;
+  item.fechaCaducidad=fecha||null;
   item.updatedAt=new Date().toISOString();
   saveInv();renderInventario();
+  syncInvItem(item);
+}
+
+function syncInvItem(item){
+  var cid=getConsultorId();if(!cid)return;
+  API.saveInventarioItem({
+    consultor_id:cid,
+    producto:item.nombre,
+    stock:item.stock,
+    sobre_pedido:item.sobrePedido||false,
+    fecha_registro:item.fechaRegistro||new Date().toISOString().slice(0,10),
+    fecha_caducidad:item.fechaCaducidad||null
+  }).catch(function(){});
+}
+
+function openCargarInventario(){
+  var hoy=new Date().toISOString().slice(0,10);
+  var h='<div class="m-title">📦 Cargar inventario</div>';
+  h+='<div style="background:#f8f5ff;border-radius:9px;padding:10px 12px;margin-bottom:12px">';
+  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Fechas (se aplican a todos)</div>';
+  h+='<div class="in-row">';
+  h+='<div style="flex:1"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">📅 Fecha de registro</div>';
+  h+='<input class="in" type="date" id="invFechaReg" value="'+hoy+'"></div>';
+  h+='<div style="flex:1"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">⏰ Caducidad default</div>';
+  h+='<input class="in" type="date" id="invFechaCad"></div>';
+  h+='</div></div>';
+  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Cantidad por producto</div>';
+  h+='<div style="max-height:350px;overflow-y:auto;-webkit-overflow-scrolling:touch">';
+  PP.filter(function(p){return p.n!=='Escáner BioCuántico';}).forEach(function(p){
+    var inv=getInv(p.n);
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">';
+    h+='<div style="font-size:18px;flex-shrink:0">'+p.e+'</div>';
+    h+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--deep)">'+p.n+'</div>';
+    h+='<div style="font-size:9px;color:var(--muted)">'+p.cat+(p.ct?' · '+p.ct:'')+'</div></div>';
+    h+='<input type="number" min="0" class="invCargaInput" data-prod="'+encodeURIComponent(p.n)+'" value="'+(inv?inv.stock:0)+'" style="width:65px;text-align:center;font-size:14px;font-weight:700;border:1.5px solid var(--border);border-radius:7px;padding:5px;font-family:-apple-system,sans-serif">';
+    h+='</div>';
+  });
+  h+='</div>';
+  h+='<button class="btn btn-p btn-full" style="margin-top:12px" onclick="guardarCargaInventario()">💾 Guardar inventario</button>';
+  openMo(2,h);
+}
+
+function guardarCargaInventario(){
+  var fechaReg=document.getElementById('invFechaReg')?.value||new Date().toISOString().slice(0,10);
+  var fechaCad=document.getElementById('invFechaCad')?.value||null;
+  var inputs=document.querySelectorAll('.invCargaInput');
+  var cid=getConsultorId();
+  inputs.forEach(function(inp){
+    var nombre=decodeURIComponent(inp.dataset.prod);
+    var qty=parseInt(inp.value)||0;
+    var existing=getInv(nombre);
+    if(existing){
+      existing.stock=qty;
+      existing.fechaRegistro=fechaReg;
+      if(fechaCad)existing.fechaCaducidad=fechaCad;
+      existing.updatedAt=new Date().toISOString();
+    } else if(qty>0){
+      inventario.push({nombre:nombre,stock:qty,sobrePedido:false,
+        fechaRegistro:fechaReg,fechaCaducidad:fechaCad,updatedAt:new Date().toISOString()});
+    }
+    // Sync to Supabase
+    if(cid&&qty>=0){
+      var item=getInv(nombre)||{nombre:nombre,stock:qty,sobrePedido:false};
+      API.saveInventarioItem({
+        consultor_id:cid,producto:nombre,stock:qty,
+        sobre_pedido:item.sobrePedido||false,
+        fecha_registro:fechaReg,fecha_caducidad:fechaCad||null
+      }).catch(function(){});
+    }
+  });
+  saveInv();closeMo(2);renderInventario();
+  showT('✓ Inventario guardado');
 }
 
 function toggleSobrePedido(nombre,val){
   var item=getInv(nombre);if(!item)return;
   item.sobrePedido=val;
-  saveInv();renderInventario();
+  saveInv();syncInvItem(item);
 }
 
 function removeFromInv(nombre){
   if(!confirm('¿Quitar '+nombre+' del inventario?'))return;
+  var cid=getConsultorId();
   inventario=inventario.filter(function(i){return i.nombre!==nombre;});
-  saveInv();renderInventario();
+  saveInv();
+  if(cid)API.deleteInventarioItem(cid,nombre).catch(function(){});
+  renderInventario();
 }
 
 function saveInv(){S.set('ik_inventario',inventario);}
+
+function exportarInventarioExcel(){
+  var rows=[['Producto','Categoría','Contenido','Stock','Fecha Registro','Caducidad','Sobre Pedido']];
+  inventario.forEach(function(item){
+    var p=PP.find(function(x){return x.n===item.nombre;});
+    rows.push([item.nombre,p?p.cat:'',p?p.ct||'':'',item.stock,item.fechaRegistro||'',item.fechaCaducidad||'',item.sobrePedido?'Sí':'No']);
+  });
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='inventario_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();URL.revokeObjectURL(url);
+  showT('✓ Inventario exportado como CSV (abrir en Excel)');
+}
+
+function exportarInventarioPDF(){
+  var fecha=new Date().toLocaleDateString('es-MX');
+  var boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
+  var negocio=boCfg?.appName||APP_CFG.appName||'Iksan Wellness';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Inventario</title>'
+    +'<style>body{font-family:-apple-system,sans-serif;max-width:700px;margin:0 auto;padding:20px;font-size:12px}'
+    +'table{width:100%;border-collapse:collapse;margin-top:16px}'
+    +'th{background:#1a2a3e;color:#fff;padding:8px;text-align:left;font-size:11px}'
+    +'td{padding:7px 8px;border-bottom:1px solid #eee;font-size:11px}'
+    +'tr:nth-child(even){background:#f8f8f8}'
+    +'.ok{color:#1a7f3c;font-weight:700}.warn{color:#d97706;font-weight:700}.bad{color:#c04040;font-weight:700}'
+    +'@media print{body{padding:0}}</style></head><body>'
+    +'<h2 style="color:#1a2a3e;margin-bottom:4px">'+negocio+' — Inventario</h2>'
+    +'<div style="color:#888;font-size:11px;margin-bottom:16px">Generado: '+fecha+'</div>'
+    +'<table><tr><th>Producto</th><th>Cat.</th><th>Stock</th><th>F. Registro</th><th>Caducidad</th><th>Sobre Pedido</th></tr>';
+  inventario.forEach(function(item){
+    var p=PP.find(function(x){return x.n===item.nombre;});
+    var today=new Date();
+    var cad=item.fechaCaducidad?new Date(item.fechaCaducidad):null;
+    var cadDays=cad?Math.round((cad-today)/86400000):null;
+    var stockCls=item.stock<=0?'bad':item.stock<=3?'warn':'ok';
+    var cadStr=cad?cad.toLocaleDateString('es-MX'):'—';
+    var cadCls=cadDays===null?'':cadDays<0?'bad':cadDays<30?'warn':'ok';
+    html+='<tr><td><b>'+item.nombre+'</b>'+(p&&p.ct?' <span style="color:#888">('+p.ct+')</span>':'')+'</td>'
+      +'<td>'+(p?p.cat:'')+'</td>'
+      +'<td class="'+stockCls+'">'+item.stock+'</td>'
+      +'<td>'+(item.fechaRegistro||'—')+'</td>'
+      +'<td class="'+cadCls+'">'+cadStr+(cadDays!==null&&cadDays<30?' <b>('+Math.max(0,cadDays)+' días)</b>':'')+'</td>'
+      +'<td>'+(item.sobrePedido?'✓ Sí':'No')+'</td></tr>';
+  });
+  html+='</table></body></html>';
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  if(isIOS){var w=window.open('','_blank');if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print();},600);}}
+  else{var blob=new Blob([html],{type:'text/html'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='inventario_'+new Date().toISOString().slice(0,10)+'.html';a.click();URL.revokeObjectURL(url);showT('Inventario descargado — ábrelo para imprimir');}
+}
+
 
 // Descuenta inventario al confirmar venta
 function descuentaInventario(items){
@@ -7959,16 +8134,17 @@ function renderAdminOpList(){
     var actAt=op.activatedAt||op.activated_at||null;
     var exp=actAt&&op.days>0?new Date(new Date(actAt).getTime()+op.days*86400000).toLocaleDateString('es-MX'):'Sin límite';
     var activo=checkAccess(op);
-    return '<div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:#fff;border:1px solid var(--border);border-radius:9px;margin-bottom:6px">'
+    return '<div style="display:flex;align-items:center;gap:9px;padding:9px 12px;background:#fff;border:1px solid var(--border);border-radius:9px;margin-bottom:6px;cursor:pointer" data-opid="'+op.id+'" onclick="openUserEditModal(this.dataset.opid)">'
       +'<div style="width:32px;height:32px;border-radius:50%;background:#1a2a3e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">'+op.name.charAt(0).toUpperCase()+'</div>'
       +'<div style="flex:1;min-width:0">'
         +'<div style="font-size:12px;font-weight:700;color:var(--deep)">'+op.name+'</div>'
-        +'<div style="font-size:10px;color:var(--muted)">'+op.email+' · pass: '+op.pass+' · '+exp+'</div>'
+        +'<div style="font-size:10px;color:var(--muted)">'+op.email+' · pass: <b>'+op.pass+'</b> · '+exp+'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:4px">'
+      +'<div style="display:flex;gap:4px;align-items:center" onclick="event.stopPropagation()">'
         +'<span style="font-size:10px;font-weight:700;color:'+(activo?'#1a7f3c':'#c04040')+';padding:2px 8px;border-radius:6px;background:'+(activo?'#f0faf0':'#fff5f5')+'">'+(activo?'Activo':'Expirado')+'</span>'
         +'<button class="btn btn-d btn-sm" style="font-size:9px;padding:3px 7px" data-opid="'+op.id+'" onclick="revocarAdminOp(this.dataset.opid)">Revocar</button>'
       +'</div>'
+      +'<div style="font-size:16px;color:var(--muted)">›</div>'
     +'</div>';
   }).join('');
 }
