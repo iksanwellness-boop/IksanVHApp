@@ -1472,9 +1472,11 @@ function initLogin(){
   if(urlUser){
     // ── MODO CONSULTOR: URL tiene ?u= — mostrar SOLO ese usuario ──
     // BLOCK old format without token — ?u=Name is not secure
+    // Check if token was processed (either full token or 'ok' marker)
     const hasToken=new URLSearchParams(window.location.search).get('t');
-    if(!hasToken){
-      // Old format — clear URL and show normal login
+    const hasTokenSession=sessionStorage.getItem('ik_token_user');
+    if(!hasToken&&!hasTokenSession){
+      // Old format without token — clear URL and show normal login
       window.history.replaceState({},'',window.location.pathname);
       sessionStorage.removeItem('ik_url_user');
       initLogin();
@@ -7801,8 +7803,9 @@ window.addEventListener('load',function(){
           sessionStorage.setItem('ik_url_user', decoded.email.toLowerCase());
           // Save full user data for login screen display
           sessionStorage.setItem('ik_token_user', JSON.stringify(decoded));
-          // Limpiar URL para que no se vea el token (seguridad)
-          window.history.replaceState({},'',window.location.pathname+'?u='+encodeURIComponent(decoded.email));
+          // Keep ?u=email in URL so initLogin knows this is a consultant URL
+          // Don't strip token — it's already saved to sessionStorage securely
+          window.history.replaceState({},'',window.location.pathname+'?u='+encodeURIComponent(decoded.email)+'&t=ok');
         }
       }catch(e){console.warn('Token inválido:',e);}
     }
