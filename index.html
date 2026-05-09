@@ -1064,7 +1064,7 @@ const API={
     }catch(e){console.warn('API error:',e);return null;}
   },
   async shorten(longUrl){return this.call('/shorten','POST',{url:longUrl});},
-  async login(email,pass){return this.call('/auth/login','POST',{email,pass});},
+  async login(email,pass){return this.call('/auth/login','POST',{email:normalizeEmail(email),pass});},
   async getUsuarios(){return this.call('/usuarios','GET',null,true);},
   async createUsuario(data){return this.call('/usuarios','POST',data,true);},
   async updateUsuario(id,data){return this.call('/usuarios/'+id,'PUT',data,true);},
@@ -1453,10 +1453,17 @@ function normalizeUser(u){
   if(u.created_at&&!u.createdAt)u.createdAt=u.created_at;
   if(u.parent_id&&!u.parentId)u.parentId=u.parent_id;
   if(u.modulos_asignados&&!u.modulosAsignados)u.modulosAsignados=u.modulos_asignados;
-  // Ensure days is a number
   if(u.days===null||u.days===undefined)u.days=-1;
   u.days=parseInt(u.days);
+  if(u.email&&!u.email.includes('@'))u.email=u.email.toLowerCase().trim()+'@iksan.app';
   return u;
+}
+
+function normalizeEmail(val){
+  val=(val||'').trim();
+  if(!val)return val;
+  if(!val.includes('@'))return val.toLowerCase()+'@iksan.app';
+  return val.toLowerCase();
 }
 
 function initLogin(){
@@ -1557,7 +1564,7 @@ function doLogin(){
   if(!uid){errEl.textContent='Selecciona un usuario primero';return;}
   // Handle pending login (user from URL not yet in localStorage)
   if(uid.startsWith('_pending_')){
-    const pendingEmail=uid.replace('_pending_','');
+    const pendingEmail=normalizeEmail(uid.replace('_pending_',''));
     if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
 
     // Try token data from sessionStorage first (works offline, has consultor_id for operadores)
@@ -4690,7 +4697,7 @@ function renderNuModulos(all){
 
 function createUser(){
   const name=document.getElementById('nuName').value.trim();
-  const email=document.getElementById('nuEmail').value.trim();
+  const email=normalizeEmail(document.getElementById('nuEmail').value.trim());
   const pass=document.getElementById('nuPass').value;
   const role=document.getElementById('nuRole').value;
   const periodo=document.getElementById('nuPeriodo')?.value||'30';
@@ -5399,7 +5406,7 @@ function saveUserEdit(uid){
   const u=users.find(x=>x.id===uid);if(!u)return;
   const nombre=document.getElementById('ueNombre')?.value.trim();
   const phone=document.getElementById('uePhone')?.value.trim();
-  const email=document.getElementById('ueEmail')?.value.trim();
+  const email=normalizeEmail(document.getElementById('ueEmail')?.value.trim());
   const role=document.getElementById('ueRole')?.value;
   const pass1=document.getElementById('uePass1')?.value.trim();
   if(nombre)u.name=nombre;
@@ -7800,7 +7807,7 @@ window.addEventListener('load',function(){
             }catch(e){}
           }
           // Guardar el usuario en sessionStorage para auto-seleccionarlo
-          sessionStorage.setItem('ik_url_user', decoded.email.toLowerCase());
+          sessionStorage.setItem('ik_url_user', normalizeEmail(decoded.email));
           // Save full user data for login screen display
           sessionStorage.setItem('ik_token_user', JSON.stringify(decoded));
           // Keep ?u=email in URL so initLogin knows this is a consultant URL
