@@ -1138,7 +1138,9 @@ function getConsultorId(){
 
 async function sbSaveConsultante(c){
   if(!c||!c.id)return;
-  const cid=getConsultorId();if(!cid)return;
+  // Use consultante's own consultor_id if available, else current user's
+  const cid=c.consultor_id||getConsultorId();
+  if(!cid||cid==='u_admin')return; // admin doesn't own consultantes
   const payload={
     id:c.id, consultor_id:cid,
     nombre:c.name||'', telefono:c.phone||null,
@@ -1606,14 +1608,15 @@ function doLogin(){
       u.consultorId=uLocal.parent_id||uLocal.id;
     }
 
-    // Load server data for this consultor
-    const cid=u.consultorId||u.id;
+    // Load server data
+    const cid=u.consultor_id||u.consultorId||u.id;
+    const isAdminU=(u.id==='u_admin'||u.role==='admin');
     Promise.all([
-      API.getConsultantes(cid),   // 0
-      API.getVentas(cid),         // 1
-      API.getGastos(cid),         // 2
-      API.getCitasBio(cid),       // 3
-      API.getCitasDr(cid),        // 4
+      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid), // 0 — admin gets all
+      isAdminU?Promise.resolve([]):API.getVentas(cid),         // 1
+      isAdminU?Promise.resolve([]):API.getGastos(cid),         // 2
+      isAdminU?Promise.resolve([]):API.getCitasBio(cid),       // 3
+      isAdminU?Promise.resolve([]):API.getCitasDr(cid),        // 4
       API.getConfig(cid),         // 5
       API.getPrecios(cid),        // 6
     ]).then(function(results){
@@ -1900,14 +1903,15 @@ function createConsultante(){
     setActiveConsultante(consultantes.find(c=>c.name.toLowerCase()===name.toLowerCase()).id);
     return;
   }
+  const cid2=currentUser?(currentUser.consultor_id||currentUser.consultorId||currentUser.id):'';
   const c={
     id:'c_'+Date.now(),
     name,phone,email,origin:origin||'',
     age:'',sex:'',city:'',occ:'',notes:'',
     conditions:[],foodPref:[],
     status:'prospecto',statusNote:'',
-    items:[],
-    history:[],
+    items:[],history:[],
+    consultor_id:cid2,
     createdAt:new Date().toISOString(),
     lastUpdate:new Date().toISOString()
   };
@@ -3046,16 +3050,21 @@ Responde SOLO con este JSON (sin texto extra, sin backticks):
 
   try{
     const WORKER_URL='https://iksanmastervh.iksanwellness.workers.dev/chat';
+    // Add timeout for mobile — 60 seconds
+    const controller=new AbortController();
+    const timeoutId=setTimeout(function(){controller.abort();},60000);
     const res=await fetch(WORKER_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json',...extraHeaders},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-5',
         max_tokens:3000,
         system:sysPrompt,
         messages:[{role:'user',content:parts}]
-      })
+      }),
+      signal:controller.signal
     });
+    clearTimeout(timeoutId);
     if(!res.ok){
       const errBody=await res.text().catch(()=>'');
       const errData=JSON.parse(errBody||'{}');
@@ -3073,10 +3082,21 @@ Responde SOLO con este JSON (sin texto extra, sin backticks):
     document.getElementById('anaSpin').style.display='none';
     document.getElementById('anaMain').style.display='block';
     var msg=err.message||'Error desconocido';
-    if(msg.includes('401')||msg.includes('auth')||msg.toLowerCase().includes('api_key'))msg='Sin API Key valida. Configura tu clave Anthropic.';
-    else if(msg.includes('cors')||msg.includes('network')||msg.includes('fetch'))msg='Error de red. Verifica tu conexion a internet.';
-    showT('Error: '+msg.slice(0,90));
     console.error('[Iksan IA] Error completo:',err);
+    if(err.name==='AbortError'||msg.includes('abort'))msg='Tiempo de espera agotado. El archivo puede ser muy grande. Intenta con una imagen en lugar de PDF.';
+    else if(msg.includes('load failed')||msg.includes('Failed to fetch')||msg.includes('NetworkError'))msg='Error de red. Verifica tu conexión a internet e intenta de nuevo.';
+    else if(msg.includes('401')||msg.includes('api_key'))msg='API Key no válida. Configura tu clave en el Worker de Cloudflare.';
+    document.getElementById('anaRes').innerHTML=
+      '<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5;margin-top:10px">'
+      +'<div style="font-size:13px;font-weight:700;color:#c04040;margin-bottom:8px">⚠️ Error al analizar</div>'
+      +'<div style="font-size:12px;color:#7f1d1d;line-height:1.6;margin-bottom:10px">'+msg+'</div>'
+      +'<div style="font-size:11px;color:#888">💡 Sugerencias:<br>'
+      +'• Usa imagen JPG/PNG en lugar de PDF<br>'
+      +'• El archivo debe pesar menos de 5MB<br>'
+      +'• Verifica tu conexión a internet<br>'
+      +'• Intenta desde WiFi en lugar de datos móviles</div>'
+      +'</div>';
+    showT('Error al analizar');
   }
 }
 
@@ -6345,13 +6365,14 @@ function cartWhatsAppEnriquecido(){
   let msg=`🌿 *${appNombre} — Protocolo personalizado*\n`;
   msg+=`👤 *${c.name}*${c.age?' · '+c.age+' años':''}${c.sex?' · '+sexLabel(c.sex):''}\n\n`;
   msg+=`*Productos recomendados:*\n`;
-  c.items.forEach(it=>{
-    const px=getAllProductos().find(p=>p.n===it.n);
-    msg+=`\n${it.e||px?.e||'🌿'} *${it.n}* × ${it.q}\n`;
-    if(px?.b?.length)msg+=`   ✓ ${px.b.slice(0,2).join('\n   ✓ ')}\n`;
-    if(px?.d)msg+=`   💊 ${px.d}\n`;
-    if(px?.t)msg+=`   ⏰ ${px.t}\n`;
-    msg+=`   💰 $${(it.p*it.q).toLocaleString()} MXN\n`;
+  c.items.forEach(function(it){
+    var px=getAllProductos().find(function(p){return p.n===it.n;});
+    msg+='\n'+(it.e||(px&&px.e)||'🌿')+' *'+it.n+'*'+((px&&px.ct)?' ('+px.ct+')':'')+' × '+it.q+'\n';
+    if(px&&px.b&&px.b.length)msg+='   ✓ '+px.b.slice(0,2).join('\n   ✓ ')+'\n';
+    if(px&&px.d)msg+='   💊 Dosis: '+px.d+'\n';
+    if(px&&px.t)msg+='   ⏰ Tomar: '+px.t+'\n';
+    if(px&&px.dur)msg+='   📅 '+px.dur+'\n';
+    msg+='   💰 $'+(it.p*it.q).toLocaleString()+' MXN\n';
   });
   msg+=`\n`;
   if(desc>0)msg+=`🏷️ Descuento${promo?' ('+promo+')':''}: -$${desc.toLocaleString()}\n`;
