@@ -328,25 +328,25 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
   <div class="sec-title">👤 Consultantes</div>
   <div class="sec-sub" id="conSub">Selecciona o crea un consultante para empezar</div>
 
-  <!-- Selector / Creator -->
+  <!-- Buscador + Crear -->
   <div class="sel-card" id="conSelector">
-    <div class="sel-title">Seleccionar consultante</div>
-    <div class="in-row">
-      <select class="in" id="conSelect" onchange="if(this.value)setActiveConsultante(this.value)">
-        <option value="">— Elegir consultante existente —</option>
-      </select>
+    <!-- Buscador -->
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input class="in" id="conSearch" placeholder="🔍 Buscar consultante..." oninput="renderConList()" style="flex:1">
+      <button class="btn btn-p btn-sm" onclick="document.getElementById('newConForm').style.display=document.getElementById('newConForm').style.display==='none'?'block':'none'">+ Nuevo</button>
     </div>
-    <div class="sel-title" style="margin-top:12px">O crear nuevo</div>
-    <div class="in-row">
-      <input class="in" id="newConName" placeholder="Nombre completo" onkeydown="if(event.key==='Enter')createConsultante()">
-      <button class="btn btn-p btn-sm" onclick="createConsultante()">+ Crear</button>
-    </div>
-    <div class="in-row">
-      <input class="in" id="newConPhone" placeholder="📱 WhatsApp" type="tel">
-      <input class="in" id="newConEmail" placeholder="✉️ Email (opcional)" type="email" style="flex:1.3">
-    </div>
-    <div class="in-row">
-      <select class="in" id="newConOrigin">
+    <!-- Hidden create form -->
+    <div id="newConForm" style="display:none;border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nuevo consultante</div>
+      <div class="in-row" style="margin-bottom:7px">
+        <input class="in" id="newConName" placeholder="Nombre completo" onkeydown="if(event.key==='Enter')createConsultante()">
+        <button class="btn btn-p btn-sm" onclick="createConsultante()">+ Crear</button>
+      </div>
+      <div class="in-row" style="margin-bottom:7px">
+        <input class="in" id="newConPhone" placeholder="📱 WhatsApp" type="tel">
+        <input class="in" id="newConEmail" placeholder="✉️ Email" type="email">
+      </div>
+      <select class="in" id="newConOrigin" style="margin-bottom:0;width:100%">
         <option value="">Origen (¿cómo llegó?)</option>
         <option value="evento">🎪 Evento</option>
         <option value="metaads">📣 Meta Ads</option>
@@ -359,6 +359,10 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
         <option value="otro">🔹 Otro</option>
       </select>
     </div>
+    <!-- Quick select scroll -->
+    <select class="in" id="conSelect" onchange="if(this.value)setActiveConsultante(this.value)" style="margin-top:10px">
+      <option value="">— Seleccionar consultante —</option>
+    </select>
   </div>
 
   <!-- ACTIVE CONSULTANTE PANEL -->
@@ -1444,6 +1448,15 @@ function initLogin(){
 
   if(urlUser){
     // ── MODO CONSULTOR: URL tiene ?u= — mostrar SOLO ese usuario ──
+    // BLOCK old format without token — ?u=Name is not secure
+    const hasToken=new URLSearchParams(window.location.search).get('t');
+    if(!hasToken){
+      // Old format — clear URL and show normal login
+      window.history.replaceState({},'',window.location.pathname);
+      sessionStorage.removeItem('ik_url_user');
+      initLogin();
+      return;
+    }
     // Check localStorage first
     var target=loginUsers.find(function(u){
       return u.email.toLowerCase()===urlUser||
@@ -2100,12 +2113,24 @@ function addToHistory(type,summary,data){
 function renderConList(){
   const el=document.getElementById('conList');
   if(!el)return;
-  if(!consultantes.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>Sin consultantes aún · Crea el primero arriba</div>';
+  // Filter by current user's consultor_id
+  const myCid=currentUser?(currentUser.consultor_id||currentUser.consultorId||currentUser.id):'';
+  const isAdminUser=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin');
+  const myConsultantes=isAdminUser?consultantes:consultantes.filter(function(c){
+    return !c.consultor_id||c.consultor_id===myCid;
+  });
+  // Search filter
+  const sq=(document.getElementById('conSearch')?.value||'').toLowerCase().trim();
+  const filtered=sq?myConsultantes.filter(function(c){
+    return c.name.toLowerCase().includes(sq)||(c.phone||'').includes(sq)||(c.email||'').toLowerCase().includes(sq);
+  }):myConsultantes;
+
+  if(!filtered.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>'+(sq?'Sin resultados para "'+sq+'"':'Sin consultantes aún · Crea el primero arriba')+'</div>';
     return;
   }
-  el.innerHTML='<div class="card-title">Tus consultantes ('+consultantes.length+')</div>'+
-    consultantes.slice().sort((a,b)=>(b.lastUpdate||b.createdAt).localeCompare(a.lastUpdate||a.createdAt)).map(c=>{
+  el.innerHTML='<div class="card-title">'+( isAdminUser?'Todos los consultantes':'Tus consultantes')+' ('+filtered.length+')</div>'+
+    filtered.slice().sort((a,b)=>(b.lastUpdate||b.createdAt||'').localeCompare(a.lastUpdate||a.createdAt||'')).map(c=>{
       const ini=c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const st=STATUS[c.status||'prospecto'];
       const histN=(c.history||[]).length;
@@ -5416,7 +5441,14 @@ function copiarAccesoWA(uid){
 function deleteUserFromEdit(uid){
   users=users.filter(u=>u.id!==uid);
   modulos.forEach(m=>{if(m.activatedFor)m.activatedFor=m.activatedFor.filter(id=>id!==uid);});
-  saveAll();closeMo(1);renderUsers();showT('Usuario eliminado');
+  subPayments=subPayments.filter(p=>p.userId!==uid);
+  saveAll();
+  // Sync deletion to Supabase
+  API.deleteUsuario(uid).then(function(r){
+    if(r&&r.ok)showT('✓ Consultor eliminado del servidor');
+    else showT('Eliminado localmente');
+  }).catch(function(){showT('Eliminado localmente');});
+  closeMo(1);renderUsers();
 }
 
 
@@ -5530,7 +5562,13 @@ function renewUser(id){
   saveAll();renderUsers();showT('✓ Usuario renovado por '+days+' días');
 }
 
-function deleteUser(id){users=users.filter(u=>u.id!==id);saveAll();renderUsers();}
+function deleteUser(id){
+  users=users.filter(u=>u.id!==id);
+  subPayments=subPayments.filter(p=>p.userId!==id);
+  saveAll();
+  API.deleteUsuario(id).catch(function(){});
+  renderUsers();
+}
 
 function showUserPass(id){
   const u=users.find(x=>x.id===id);if(!u)return;
