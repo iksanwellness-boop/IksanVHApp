@@ -1199,8 +1199,13 @@ async function sbSaveConsultante(c){
     history:c.history||[],
     updated_at:new Date().toISOString()
   };
-  const r=await API.updateConsultante(c.id,payload);
-  if(!r||!r.ok){await API.createConsultante(payload);}
+  try{
+    const r=await API.updateConsultante(c.id,payload);
+    if(!r||!r.ok){
+      const r2=await API.createConsultante(payload);
+      if(!r2||!r2.ok)console.warn('[IKSAN] sbSaveConsultante failed:',c.name,r2);
+    }
+  }catch(e){console.warn('[IKSAN] sbSaveConsultante error:',e);}
 }
 
 async function sbSaveVenta(sale){
@@ -1655,7 +1660,11 @@ function doLogin(){
     u.consultor_id = u.parent_id || u.consultor_id || u.id;
     currentUser=u;
     // Don't clear localStorage here — keep as fallback until Supabase responds
-    // Data will be overwritten by Supabase results in Promise.all below
+    // Restore active consultante from localStorage
+    var savedActiveId=S.get('ik_activeCon',null);
+    if(savedActiveId){
+      activeConId=savedActiveId;
+    }
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
 
@@ -1747,8 +1756,9 @@ function doLogin(){
           };
         });
         S.set('ik_consultantes',consultantes);
+        // Immediately render so user sees their data
+        setTimeout(function(){renderConList();refreshAllConSelects();},100);
       }
-      // Only overwrite local data if server returned something
       if(results[1]&&Array.isArray(results[1])&&results[1].length>0){sales=results[1];S.set('ik_sales',sales);}
       if(results[2]&&Array.isArray(results[2])&&results[2].length>0){gastos=results[2];S.set('ik_gastos',gastos);}
       if(results[3]&&Array.isArray(results[3])&&results[3].length>0){citasBio=results[3];S.set('ik_citasBio',citasBio);}
@@ -2026,7 +2036,7 @@ function createConsultante(){
     setActiveConsultante(consultantes.find(c=>c.name.toLowerCase()===name.toLowerCase()).id);
     return;
   }
-  const cid2=currentUser?(currentUser.consultor_id||currentUser.consultorId||currentUser.id):'';
+  const cid2=getConsultorId();// Always use consistent consultor ID
   const c={
     id:'c_'+Date.now(),
     name,phone,email,origin:origin||'',
@@ -2225,10 +2235,11 @@ function renderConList(){
   const el=document.getElementById('conList');
   if(!el)return;
   // Filter by current user's consultor_id
-  const myCid=currentUser?(currentUser.consultor_id||currentUser.consultorId||currentUser.id):'';
-  const isAdminUser=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin');
+  const myCid=getConsultorId();
+  const isAdminUser=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
   const myConsultantes=isAdminUser?consultantes:consultantes.filter(function(c){
-    return !c.consultor_id||c.consultor_id===myCid;
+    // Show if no consultor_id (legacy) OR matches current user's consultor chain
+    return !c.consultor_id||c.consultor_id===myCid||c.consultor_id===(currentUser&&currentUser.id);
   });
   // Search filter
   const sq=(document.getElementById('conSearch')?.value||'').toLowerCase().trim();
