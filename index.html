@@ -707,11 +707,11 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
       </div>
       <!-- Table header -->
       <div style="display:grid;grid-template-columns:1fr 70px 90px 90px 80px 70px;gap:4px;padding:6px 8px;background:var(--warm);border-radius:7px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">
-        <div>Producto</div>
-        <div style="text-align:center">Stock</div>
-        <div style="text-align:center">F. Registro</div>
-        <div style="text-align:center">Caducidad</div>
-        <div style="text-align:center">Pedido</div>
+        <div onclick="sortInv('nombre')" style="cursor:pointer">Producto <span id="invSort_nombre">↑</span></div>
+        <div style="text-align:center;cursor:pointer" onclick="sortInv('stock')">Stock <span id="invSort_stock"></span></div>
+        <div style="text-align:center;cursor:pointer" onclick="sortInv('fechaRegistro')">F. Reg <span id="invSort_fechaRegistro"></span></div>
+        <div style="text-align:center;cursor:pointer" onclick="sortInv('fechaCaducidad')">Caduc. <span id="invSort_fechaCaducidad"></span></div>
+        <div style="text-align:center">S.P.</div>
         <div></div>
       </div>
       <div id="invList"></div>
@@ -1177,17 +1177,28 @@ function getConsultorId(){
 
 async function sbSaveConsultante(c){
   if(!c||!c.id)return;
-  // Use consultante's own consultor_id if available, else current user's
   const cid=c.consultor_id||getConsultorId();
-  if(!cid||cid==='u_admin')return; // admin doesn't own consultantes
+  if(!cid||cid==='u_admin')return;
   const payload={
-    id:c.id, consultor_id:cid,
-    nombre:c.name||'', telefono:c.phone||null,
-    email:c.email||null, notas:c.notes||null,
+    id:c.id,consultor_id:cid,
+    nombre:c.name||'',
+    telefono:c.phone||null,
+    email:c.email||null,
+    notas:c.notes||null,
     padecimientos:c.conditions||[],
+    status:c.status||'prospecto',
+    origin:c.origin||null,
+    status_note:c.statusNote||null,
+    age:c.age||null,
+    sex:c.sex||null,
+    city:c.city||null,
+    occ:c.occ||null,
+    food_pref:c.foodPref||[],
+    items:c.items||[],
+    saved_carts:c.savedCarts||[],
+    history:c.history||[],
     updated_at:new Date().toISOString()
   };
-  // Try update first, then insert
   const r=await API.updateConsultante(c.id,payload);
   if(!r||!r.ok){await API.createConsultante(payload);}
 }
@@ -1286,7 +1297,7 @@ const PP=[
   {n:"D Fence",cat:"Niños",e:"🛡️",p:800,ct:"135g Polvo",b:["Protege células cerebrales","Desarrollo neurológico","Antioxidante"],pa:["Neurodesarrollo","Sistema inmune infantil"],kw:["niños","niño","neurológico","cerebro","inmune"],ing:"Inulina, Limón, Vitamina C, Magnesio, Curcumina 95%, Zinc, Vitamina D3",d:"1 porción/día",t:"En agua o jugo, sabor limón",dur:"Continuo"},
   {n:"Smartbiotics",cat:"Niños",e:"⭐",p:800,ct:"165g Polvo",b:["Mejora digestión","Aprendizaje","Retención","Inmune","Flora intestinal"],pa:["Desarrollo cognitivo","Flora intestinal","Absorción nutrientes"],kw:["niños","niño","probiotico","flora","aprendizaje"],ing:"6 cepas probióticas + Inulina, mango",d:"1 porción/día",t:"En agua o jugo, sabor mango",dur:"Continuo"},
   {n:"Glutatión Plus",cat:"Antienvejecimiento",e:"💎",p:1400,ct:"50ml Gotas",b:["Detox metales pesados","Antioxidante","Regeneración celular"],pa:["Envejecimiento","Metales pesados","Cáncer","Inflamación"],kw:["glutation","antioxidante","celular","envejecimiento","cancer"],ing:"L-Glutatión Plus alta biodisponibilidad",d:"Gotas sublingual",t:"Sublingual máxima absorción",dur:"Continuo bajo supervisión"},
-  {n:"Escáner BioCuántico",cat:"Servicio / Escaneo",e:"🔬",p:500,ct:"1 Escaneo",isService:true,b:["Evaluación rápida no invasiva","Detecta órganos","Niveles nutrientes y metales","Balance hormonal"],pa:["Evaluación general","Detección preventiva","Metales pesados","Hormonas"],kw:["biocuantico","escaner","scan","escaneo","salud"],ing:"Escaneo por palma de mano. Detecta: órganos, nutrientes, metales, hormonas, sistema cardiovascular y nervioso",d:"1 sesión 30-45 min",t:"Agendar cita. Incluye interpretación.",dur:"Resultados inmediatos"}
+  {n:"Escáner BioCuántico",cat:"Servicio / Escaneo",e:"🔬",p:500,ct:"1 Escaneo",isService:true,b:["Evaluación de salud rápida, no invasiva y segura","Análisis de 40+ sistemas del cuerpo en minutos","Detecta desequilibrios en nutrientes, vitaminas y minerales","Identifica metales pesados, toxinas y niveles hormonales","Informe detallado con recomendaciones personalizadas de productos"],pa:["Evaluación preventiva de salud","Detección de carencias nutricionales","Metales pesados y toxinas","Balance hormonal","Sistema cardiovascular y nervioso","Densidad ósea"],kw:["biocuantico","escaner","scan","escaneo","salud","prevencion","organos"],ing:"A través de la palma de la mano el escáner detecta microseñales eléctricas del cuerpo generando un informe detallado sobre: funcionamiento de órganos, nutrientes y vitaminas, metales pesados y toxinas, balance hormonal, sistema cardiovascular, densidad ósea y más.",d:"1 sesión de 30-45 minutos",t:"Se agenda cita. Incluye análisis completo e interpretación personalizada.",dur:"Resultados inmediatos al finalizar el escaneo"}
 ];
 
 const KITS=[
@@ -1676,7 +1687,7 @@ function doLogin(){
     if(u.role==='admin')safeCall(initPriceTable);
     safeCall(applyModulosTabs,[u]);
     const boCfg=S.get('ik_boconfig_'+u.id,null);
-    if(boCfg)applyBoConfig(boCfg);
+    if(boCfg)setTimeout(function(){applyBoConfig(boCfg);},300);
     showT('Bienvenido/a, '+u.name);
   }
 
@@ -1711,11 +1722,29 @@ function doLogin(){
       // Only update if Supabase returned actual data
       if(results[0]&&Array.isArray(results[0])&&results[0].length>=0){
         consultantes=results[0].map(function(c){
-          return{id:c.id,name:c.nombre||c.name||'',phone:c.telefono||c.phone||'',
-            email:c.email||'',notas:c.notas||'',padecimientos:c.padecimientos||[],
-            consultor_id:c.consultor_id,created_at:c.created_at,
-            status:c.status||'prospecto',conditions:c.padecimientos||[],
-            history:c.history||[],items:c.items||[]};
+          return{
+            id:c.id,
+            name:c.nombre||c.name||'',
+            phone:c.telefono||c.phone||'',
+            email:c.email||'',
+            notes:c.notas||'',
+            notas:c.notas||'',
+            consultor_id:c.consultor_id,
+            created_at:c.created_at,
+            status:c.status||'prospecto',
+            origin:c.origin||'',
+            statusNote:c.status_note||'',
+            age:c.age||'',
+            sex:c.sex||'',
+            city:c.city||'',
+            occ:c.occ||'',
+            foodPref:c.food_pref||[],
+            conditions:c.padecimientos||[],
+            items:c.items||[],
+            savedCarts:c.saved_carts||[],
+            history:c.history||[],
+            lastUpdate:c.updated_at||c.created_at
+          };
         });
         S.set('ik_consultantes',consultantes);
       }
@@ -1725,20 +1754,15 @@ function doLogin(){
       if(results[3]&&Array.isArray(results[3])&&results[3].length>0){citasBio=results[3];S.set('ik_citasBio',citasBio);}
       if(results[4]&&Array.isArray(results[4])&&results[4].length>0){citasDr=results[4];S.set('ik_citasDr',citasDr);}
 
-      // Config del consultor
-      if(results[5]&&typeof results[5]==='object'&&!Array.isArray(results[5])){
+      // Config del consultor — load BO config (colors, logo, name)
+      if(results[5]&&typeof results[5]==='object'&&!Array.isArray(results[5])&&Object.keys(results[5]).length>0){
         var cfg=results[5];
-        if(cfg.appName||cfg.appSub||cfg.lang){
-          // Merge with local APP_CFG
-          if(cfg.appName)APP_CFG.appName=cfg.appName;
-          if(cfg.appSub)APP_CFG.appSub=cfg.appSub;
-          if(cfg.lang)APP_CFG.lang=cfg.lang;
-          S.set('ik_cfg',APP_CFG);
-        }
-        // Apply BO config (colors, logo)
-        if(u.id!=='u_admin'){
+        if(u.id!=='u_admin'&&u.role!=='admin'){
+          // Save and apply BO config
           S.set('ik_boconfig_'+u.id,cfg);
-          if(typeof applyBoConfig==='function')safeCall(applyBoConfig,[cfg]);
+          setTimeout(function(){
+            if(typeof applyBoConfig==='function')safeCall(applyBoConfig,[cfg]);
+          },200);
         }
       }
 
@@ -2193,6 +2217,7 @@ function addToHistory(type,summary,data){
   c.history.push({date:new Date().toISOString(),type,summary,data});
   c.lastUpdate=new Date().toISOString();
   saveAll();
+  sbSaveConsultante(c).catch(function(){});
   renderConHistory(c);
 }
 
@@ -2316,6 +2341,7 @@ function setConStatus(s){
   const c=getActiveCon();if(!c)return;
   c.status=s;c.lastUpdate=new Date().toISOString();
   saveAll();
+  sbSaveConsultante(c).catch(function(){});
   renderActiveConPanel();
   renderActiveBar();
   showT('✓ Estado: '+STATUS[s].lbl);
@@ -2334,14 +2360,18 @@ function setConStatus(s){
 
 function setConOrigin(o){
   const c=getActiveCon();if(!c)return;
-  c.origin=o;saveAll();renderActiveConPanel();
+  c.origin=o;saveAll();
+  sbSaveConsultante(c).catch(function(){});
+  renderActiveConPanel();
   openConStatusModal();
 }
 
 function saveStatusNote(){
   const c=getActiveCon();if(!c)return;
   c.statusNote=document.getElementById('statusNote').value.trim();
-  saveAll();renderActiveConPanel();closeMo(1);showT('Nota guardada ✓');
+  saveAll();
+  sbSaveConsultante(c).catch(function(){});
+  renderActiveConPanel();closeMo(1);showT('Nota guardada ✓');
 }
 
 function conWhatsApp(){
@@ -3905,12 +3935,12 @@ function adjQty(name,d){
 
 function rmItem(name){
   const c=getActiveCon();if(!c)return;
-  c.items=c.items.filter(i=>i.n!==name);saveAll();openCartModal();renderActiveConPanel();
+  c.items=c.items.filter(i=>i.n!==name);saveAll();sbSaveConsultante(c).catch(function(){});openCartModal();renderActiveConPanel();
 }
 
 function clearCart(){
   const c=getActiveCon();if(!c)return;
-  c.items=[];saveAll();openCartModal();renderActiveConPanel();
+  c.items=[];saveAll();sbSaveConsultante(c).catch(function(){});openCartModal();renderActiveConPanel();
 }
 
 function cartWhatsApp(){
@@ -4282,8 +4312,90 @@ function openProductModal(name){
       <div style="font-size:12px;margin-bottom:4px"><strong>Cuándo:</strong> ${p.t}</div>
       <div style="font-size:12px"><strong>Duración:</strong> ${p.dur}</div>
     </div>
-    <button class="btn btn-p btn-full" style="margin-top:14px" onclick="quickAdd('${name.replace(/'/g,"\\'")}');closeMo(2)">🛒 Agregar al carrito</button>
+    <div style="display:flex;gap:7px;margin-top:14px">
+      <button class="btn btn-p" style="flex:2" data-nm="${name}" onclick="quickAdd(this.dataset.nm);closeMo(2)">🛒 Carrito</button>
+      <button class="btn btn-wa" style="flex:1" data-nm="${name}" onclick="enviarFichaPorWA(this.dataset.nm)">💬 WA</button>
+    </div>
   `);
+}
+
+function enviarFichaPorWA(name){
+  var p=PP.find(function(x){return x.n===name;});if(!p)return;
+  var c=getActiveCon();
+  var reg=getPrice(name);var pr=getPromoPrice(name);
+  var precio=pr&&pr<reg?'$'+pr.toLocaleString()+' MXN (promo)':'$'+reg.toLocaleString()+' MXN';
+  var parts=[p.e+' *'+p.n+'*'+(p.ct?' ('+p.ct+')':'')+' — '+precio,''];
+  parts.push('*Beneficios:*');
+  p.b.forEach(function(b){parts.push('\u2713 '+b);});
+  if(p.pa&&p.pa.length)parts.push('','*Apoya con:* '+p.pa.join(', '));
+  if(p.ing)parts.push('','*Ingredientes:* '+p.ing);
+  parts.push('','*Dosis:* '+p.d,'*Cuándo:* '+p.t);
+  if(p.dur)parts.push('*Duración:* '+p.dur);
+  var msg=parts.join('\n');
+  var tel=c?(c.phone||'').replace(/[^0-9]/g,''):'';
+  window._lastWAMsg=msg;window._lastWATel=tel;
+  openMo(3,'<div class="m-title">Ficha técnica: '+name+'</div>'
+    +(c?'<div style="font-size:11px;background:#f0faf0;padding:6px 10px;border-radius:7px;margin-bottom:8px;color:#1a7f3c">Para: <b>'+c.name+'</b></div>':'')
+    +'<textarea id="waMsgTA" class="in" style="min-height:200px;font-size:11px;resize:vertical;line-height:1.6">'+msg+'</textarea>'
+    +'<div style="display:flex;gap:7px;margin-top:10px">'
+    +'<button class="btn btn-wa" style="flex:2" onclick="openWADirectEdited(window._lastWATel)">WhatsApp</button>'
+    +'<button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsgEdited()">Copiar</button>'
+    +'</div>');
+}
+
+function buildFichaMsg(p){
+  var reg=getPrice(p.n);var pr=getPromoPrice(p.n);
+  var precio=pr&&pr<reg?'$'+pr.toLocaleString()+' MXN':'$'+reg.toLocaleString()+' MXN';
+  var parts=[p.e+' *'+p.n+'*'+(p.ct?' ('+p.ct+')':'')+' — '+precio];
+  if(p.b&&p.b.length)parts.push('Ben: '+p.b.slice(0,2).join(', '));
+  if(p.d)parts.push('Dosis: '+p.d);
+  return parts.join('\n');
+}
+
+function openEnviarFichasModal(){
+  var c=getActiveCon();
+  var padOpts=['Cardiovascular','Diabetes','Obesidad','Digestion','Huesos','Energia','Piel','Nervioso','Detox','Hormonas','Ojos','General'];
+  var h='<div class="m-title">Enviar fichas por WhatsApp</div>';
+  if(c)h+='<div style="font-size:11px;background:#f0faf0;border-radius:7px;padding:7px 10px;margin-bottom:10px;color:#1a7f3c">Para: <b>'+c.name+'</b></div>';
+  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Por padecimiento</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">';
+  padOpts.forEach(function(pad){h+='<button class="cat-pill" data-pad="'+encodeURIComponent(pad)+'" onclick="enviarFichasPadecimiento(decodeURIComponent(this.dataset.pad))">'+pad+'</button>';});
+  h+='</div><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Seleccionar productos</div><div style="display:flex;flex-wrap:wrap;gap:5px;max-height:180px;overflow-y:auto">';
+  PP.filter(function(p){return !p.isService;}).forEach(function(p){h+='<label style="display:flex;align-items:center;gap:5px;background:#f8f5ff;border-radius:7px;padding:5px 8px;cursor:pointer;font-size:11px"><input type="checkbox" class="fichaChk" value="'+encodeURIComponent(p.n)+'" style="width:13px;height:13px"> '+p.e+' '+p.n+'</label>';});
+  h+='</div><button class="btn btn-wa btn-full" style="margin-top:12px" onclick="enviarFichasSeleccionadas()">Enviar seleccionados</button>';
+  openMo(2,h);
+}
+
+function enviarFichasPadecimiento(pad){
+  var s=pad.toLowerCase();
+  var matches=PP.filter(function(p){
+    if(p.isService)return false;
+    return (p.pa&&p.pa.some(function(a){return a.toLowerCase().includes(s);}))
+      ||(p.kw&&p.kw.some(function(k){return s.includes(k)||k.includes(s);}))
+      ||(p.b&&p.b.some(function(b){return b.toLowerCase().includes(s);}));
+  });
+  if(!matches.length){showT('Sin productos para ese padecimiento');return;}
+  var c=getActiveCon();
+  var tel=c?(c.phone||'').replace(/[^0-9]/g,''):'';
+  var parts=['Protocolo VitalHealth: '+pad,''];
+  if(c)parts.splice(1,0,'Para: '+c.name,'');
+  matches.slice(0,6).forEach(function(p){parts.push(buildFichaMsg(p),'');});
+  var msg=parts.join('\n');
+  window._lastWAMsg=msg;window._lastWATel=tel;
+  openMo(3,'<div class="m-title">'+pad+'</div><textarea id="waMsgTA" class="in" style="min-height:220px;font-size:11px;resize:vertical">'+msg+'</textarea><div style="display:flex;gap:7px;margin-top:10px"><button class="btn btn-wa" style="flex:2" onclick="openWADirectEdited(window._lastWATel)">WhatsApp</button><button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsgEdited()">Copiar</button></div>');
+}
+
+function enviarFichasSeleccionadas(){
+  var chks=document.querySelectorAll('.fichaChk:checked');
+  if(!chks.length){showT('Selecciona al menos un producto');return;}
+  var c=getActiveCon();
+  var tel=c?(c.phone||'').replace(/[^0-9]/g,''):'';
+  var parts=['Fichas de productos VitalHealth'];
+  if(c)parts.push('Para: '+c.name);
+  parts.push('---','');
+  chks.forEach(function(chk){var p=PP.find(function(x){return x.n===decodeURIComponent(chk.value);});if(p){parts.push(buildFichaMsg(p),'');}});
+  var msg=parts.join('\n');
+  window._lastWAMsg=msg;window._lastWATel=tel;
+  openMo(3,'<div class="m-title">Fichas seleccionadas</div><textarea id="waMsgTA" class="in" style="min-height:200px;font-size:11px;resize:vertical">'+msg+'</textarea><div style="display:flex;gap:7px;margin-top:10px"><button class="btn btn-wa" style="flex:2" onclick="openWADirectEdited(window._lastWATel)">WhatsApp</button><button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsgEdited()">Copiar</button></div>');
 }
 
 
@@ -4346,7 +4458,11 @@ function renderVentas(){
 
 function setVentasFilter(f){ventasFilter=f;renderVentas();}
 function setVentasTipo(f){ventasTipoFilter=f;renderVentas();}
-function deleteSale(id){sales=sales.filter(s=>s.id!==id);saveAll();renderVentas();updateStatsBO();}
+function deleteSale(id){
+  sales=sales.filter(s=>s.id!==id);saveAll();
+  API.call('/ventas/'+id,'DELETE').catch(function(){});
+  renderVentas();updateStatsBO();
+}
 
 function updateStatsBO(){
   const total=sales.reduce((s,x)=>s+x.total,0);
@@ -4596,7 +4712,11 @@ function renderGastos(){
   `).join('');
 }
 
-function deleteGasto(id){gastos=gastos.filter(g=>g.id!==id);saveAll();renderGastos();}
+function deleteGasto(id){
+  gastos=gastos.filter(g=>g.id!==id);saveAll();
+  API.call('/gastos/'+id,'DELETE').catch(function(){});
+  renderGastos();
+}
 
 /* ═══════════════════════════════════════════════════
    BO CONSULTOR — AGENDA
@@ -5890,6 +6010,7 @@ window._copyShortUrl=function(){
 function openWADirectEdited(tel){
   var ta=document.getElementById('waMsgTA');
   var msg=ta?ta.value:window._lastWAMsg||'';
+  msg=msg.replace(/\n{3,}/g,'\n\n').replace(/ {2,}/g,' ').trim();
   var t=(tel||'').replace(/[^0-9]/g,'');
   window.open('https://wa.me/'+(t||'')+'?text='+encodeURIComponent(msg),'_blank');
 }
@@ -6813,7 +6934,7 @@ function saveBoConfig(){
   applyBoConfig(cfg);
   // Sync to Supabase
   if(currentUser){
-    const cid=currentUser.consultor_id||currentUser.id;
+    const cid=currentUser.id; // always save with own ID, not parent
     API.saveConfig(cid,cfg).then(function(r){
       if(r&&r.ok)showT('✓ Config guardada en servidor');
       else showT('✓ Config guardada localmente');
@@ -6824,7 +6945,8 @@ function saveBoConfig(){
 }
 
 function applyBoConfig(cfg){
-  if(!cfg||!cfg.nombre)return;
+  if(!cfg)return;
+  if(!cfg.nombre&&!cfg.c1&&!cfg.logo)return; // nothing to apply
   // Aplicar colores como CSS variables
   const r=document.documentElement.style;
   if(cfg.c1)r.setProperty('--rose',cfg.c1);
@@ -7807,6 +7929,16 @@ function importarDatosCSV(input){
 }
 
 // ── INVENTARIO ─────────────────────────────────────────────
+var _invSort={col:'nombre',asc:true};
+function sortInv(col){
+  if(_invSort.col===col)_invSort.asc=!_invSort.asc;
+  else{_invSort.col=col;_invSort.asc=true;}
+  ['nombre','stock','fechaRegistro','fechaCaducidad'].forEach(function(c){
+    var el=document.getElementById('invSort_'+c);
+    if(el)el.textContent=c===_invSort.col?(_invSort.asc?'↑':'↓'):'';
+  });
+  renderInventario();
+}
 var inventario=S.get('ik_inventario',[]);
 function getInv(nombre){return inventario.find(function(i){return i.nombre===nombre;})||null;}
 
@@ -7814,6 +7946,12 @@ function renderInventario(){
   var el=document.getElementById('invList');if(!el)return;
   var q=(document.getElementById('invSearch')?.value||'').toLowerCase().trim();
   var list=inventario.filter(function(i){return !q||i.nombre.toLowerCase().includes(q);});
+  list=list.slice().sort(function(a,b){
+    var col=_invSort.col;
+    if(col==='stock')return _invSort.asc?(a.stock||0)-(b.stock||0):(b.stock||0)-(a.stock||0);
+    var av=a[col]||'';var bv=b[col]||'';
+    return _invSort.asc?av.localeCompare(bv):bv.localeCompare(av);
+  });
 
   if(!list.length){
     el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">'
@@ -7913,12 +8051,11 @@ function openCargarInventario(){
   h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Cantidad por producto</div>';
   h+='<div style="max-height:350px;overflow-y:auto;-webkit-overflow-scrolling:touch">';
   PP.filter(function(p){return p.n!=='Escáner BioCuántico';}).forEach(function(p){
-    var inv=getInv(p.n);
     h+='<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">';
     h+='<div style="font-size:18px;flex-shrink:0">'+p.e+'</div>';
     h+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--deep)">'+p.n+'</div>';
     h+='<div style="font-size:9px;color:var(--muted)">'+p.cat+(p.ct?' · '+p.ct:'')+'</div></div>';
-    h+='<input type="number" min="0" class="invCargaInput" data-prod="'+encodeURIComponent(p.n)+'" value="'+(inv?inv.stock:0)+'" style="width:65px;text-align:center;font-size:14px;font-weight:700;border:1.5px solid var(--border);border-radius:7px;padding:5px;font-family:-apple-system,sans-serif">';
+    h+='<input type="number" min="0" class="invCargaInput" data-prod="'+encodeURIComponent(p.n)+'" value="0" style="width:65px;text-align:center;font-size:14px;font-weight:700;border:1.5px solid var(--border);border-radius:7px;padding:5px;font-family:-apple-system,sans-serif">';
     h+='</div>';
   });
   h+='</div>';
@@ -7973,7 +8110,21 @@ function removeFromInv(nombre){
   renderInventario();
 }
 
-function saveInv(){S.set('ik_inventario',inventario);}
+function saveInv(){
+  S.set('ik_inventario',inventario);
+  // Background sync to Supabase
+  var cid=getConsultorId();
+  if(cid){
+    inventario.forEach(function(item){
+      API.saveInventarioItem({
+        consultor_id:cid,producto:item.nombre,stock:item.stock,
+        sobre_pedido:item.sobrePedido||false,
+        fecha_registro:item.fechaRegistro||new Date().toISOString().slice(0,10),
+        fecha_caducidad:item.fechaCaducidad||null
+      }).catch(function(){});
+    });
+  }
+}
 
 function exportarInventarioExcel(){
   var rows=[['Producto','Categoría','Contenido','Stock','Fecha Registro','Caducidad','Sobre Pedido']];
