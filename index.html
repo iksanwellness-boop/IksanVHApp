@@ -332,7 +332,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
   <div class="sel-card" id="conSelector">
     <!-- Buscador -->
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <input class="in" id="conSearch" placeholder="🔍 Buscar consultante..." oninput="renderConList()" style="flex:1">
+      <input class="in" id="conSearch" placeholder="🔍 Buscar cliente..." oninput="renderConList()" style="flex:1">
       <button class="btn btn-p btn-sm" onclick="document.getElementById('newConForm').style.display=document.getElementById('newConForm').style.display==='none'?'block':'none'">+ Nuevo</button>
     </div>
     <!-- Hidden create form -->
@@ -615,7 +615,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
       <div class="stat-box"><div class="stat-icon">🔵</div><div class="stat-val" id="statConProsp">0</div><div class="stat-lbl">Prospectos</div></div>
       <div class="stat-box"><div class="stat-icon">✅</div><div class="stat-val" id="statConActive">0</div><div class="stat-lbl">Activos</div></div>
     </div>
-    <input class="in" id="searchCon" placeholder="🔍 Buscar consultante..." oninput="renderAllClientes()" style="margin-bottom:10px">
+    <input class="in" id="searchCon" placeholder="🔍 Buscar cliente..." oninput="renderAllClientes()" style="margin-bottom:10px">
     <div id="allClientesList"></div>
   </div>
 
@@ -1729,7 +1729,7 @@ function doLogin(){
       API.getInventario(cid),     // 7
     ]).then(function(results){
       // Only update if Supabase returned actual data
-      if(results[0]&&Array.isArray(results[0])&&results[0].length>=0){
+      if(results[0]&&Array.isArray(results[0])&&results[0].length>0){
         clientes=results[0].map(function(c){
           return{
             id:c.id,
