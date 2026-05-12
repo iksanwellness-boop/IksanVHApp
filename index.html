@@ -452,19 +452,16 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <div class="bo-hero-sub">Tus ventas, gastos, citas y comisiones</div>
   </div>
   <div class="subnav">
-    <!-- OPERATIVO -->
-    <button class="subnav-tab on" onclick="goBoView('ventas')" id="sb-ventas">🛒 Ventas</button>
-    <button class="subnav-tab" onclick="goBoView('agenda')" id="sb-agenda">📅 Agenda</button>
-    <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 BioCuántico</button>
-    <button class="subnav-tab" onclick="goBoView('citas-dr')" id="sb-citas-dr">🏥 Derivaciones</button>
+    <button class="subnav-tab on" onclick="goBoView('ventas')" id="sb-ventas">🛒 Ingresos</button>
+    <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 Cita Bio</button>
+    <button class="subnav-tab" onclick="goBoView('citas-dr')" id="sb-citas-dr">🏥 Derivados</button>
     <button class="subnav-tab" onclick="goBoView('todos-con')" id="sb-todos-con">👥 Clientes</button>
     <button class="subnav-tab" onclick="goBoView('inventario')" id="sb-inventario">📦 Inventario</button>
-    <!-- ADMINISTRATIVO -->
+    <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios">🏷️ Precios</button>
+    <button class="subnav-tab" onclick="goBoView('gastos')" id="sb-gastos">💸 Gastos</button>
     <button class="subnav-tab" onclick="goBoView('whatsapp')" id="sb-whatsapp">💬 WA Bot</button>
     <button class="subnav-tab" onclick="goBoView('mi-config')" id="sb-mi-config">🎨 Config</button>
-    <!-- CONTABLE -->
-    <button class="subnav-tab" onclick="goBoView('gastos')" id="sb-gastos">💸 Gastos</button>
-    <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios" style="display:none">🏷️ Precios</button>
+    <button class="subnav-tab" onclick="goBoView('agenda')" id="sb-agenda">📅 Agenda</button>
   </div>
 
   <!-- BO: Ventas -->
@@ -2137,7 +2134,7 @@ function renderActiveBar(){
   bar.onclick=()=>{goView('clientes');};
 }
 
-function sexLabel(s){return s==='F'?'Mujer':s==='M'?'Hombre':s==='O'?'Otro':'';}
+function sexLabel(s){return s==='F'?'Mujer':s==='M'?'Hombre':s==='N'?'Nin@':'';}
 
 function renderCitaAlerts(){
   const bar=document.getElementById('citaAlertBar');if(!bar)return;
@@ -2333,9 +2330,9 @@ function openConFichaModal(){
       <div><label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Sexo</label>
         <select class="in" id="fSex">
           <option value="">—</option>
-          <option value="F"${c.sex==='F'?' selected':''}>Mujer</option>
-          <option value="M"${c.sex==='M'?' selected':''}>Hombre</option>
-          <option value="O"${c.sex==='O'?' selected':''}>Otro</option>
+          <option value="F"${c.sex==='F'?' selected':''}>👩 Mujer</option>
+          <option value="M"${c.sex==='M'?' selected':''}>👨 Hombre</option>
+          <option value="N"${c.sex==='N'?' selected':''}>👧 Niñ@</option>
         </select>
       </div>
       <div><label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">WhatsApp</label><input class="in" id="fPhone" type="tel" value="${c.phone||''}"></div>
@@ -3590,7 +3587,7 @@ async function runAnalysis(){
   document.getElementById('anaMain').style.display='none';
   document.getElementById('anaSpin').style.display='block';
   const edad=parseInt(c.age)||0;
-  const esNino=(edad>0&&edad<18)||(c.sex==='N');
+  const esNino=c.sex==='N'; // Only show kids products if explicitly set as Niñ@
   const langInstr=getLangPrompt();
 
   // Age-appropriate product filter
@@ -4124,9 +4121,12 @@ function clearComp(){
 }
 
 function confirmSale(){
-  const c=getActiveCon();if(!c||!c.items.length)return;
-  const method=document.querySelector('input[name=payMethod]:checked')?.value;
-  if(!method){showT('Selecciona forma de pago');return;}
+  const c=getActiveCon();
+  if(!c){showT('Selecciona un cliente primero');return;}
+  if(!c.items||!c.items.length){showT('El carrito esta vacio');return;}
+  const methodEl=document.querySelector('input[name=payMethod]:checked');
+  if(!methodEl){showT('Selecciona forma de pago');return;}
+  const method=methodEl.value;
   const nota=document.getElementById('payNota')?.value||'';
   const {bruto,desc,final,promo}=getCartTotals();
   const cuentas=S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}]);
@@ -5052,7 +5052,20 @@ function renderCitasBio(){
   `;
 }
 
-function deleteCitaBio(id){citasBio=citasBio.filter(c=>c.id!==id);saveAll();API.deleteCitaBio(id).catch(function(){});renderCitasBio();}
+function deleteCitaBio(id){
+  var cita=citasBio.find(function(c){return c.id===id;});
+  citasBio=citasBio.filter(function(c){return c.id!==id;});
+  if(cita&&cita.cliId){
+    var cli=clientes.find(function(x){return x.id===cita.cliId;});
+    if(cli&&cli.history){
+      cli.history=cli.history.filter(function(h){return !(h.type==='cita'&&h.data&&h.data.fecha===cita.fecha);});
+      sbSaveConsultante(cli).catch(function(){});
+    }
+  }
+  saveAll();
+  API.deleteCitaBio(id).catch(function(){});
+  renderCitasBio();renderCitaAlerts();
+}
 
 function sendCitaBioWA(id){
   const a=citasBio.find(x=>x.id===id);if(!a)return;
@@ -5134,7 +5147,21 @@ function updateCitaDrStatus(id,status){
   showT('✓ Estado actualizado');
 }
 
-function deleteCitaDr(id){citasDr=citasDr.filter(c=>c.id!==id);saveAll();renderCitasDr();}
+function deleteCitaDr(id){
+  var cita=citasDr.find(function(c){return c.id===id;});
+  citasDr=citasDr.filter(function(c){return c.id!==id;});
+  // Also remove from client history
+  if(cita&&cita.cliId){
+    var cli=clientes.find(function(x){return x.id===cita.cliId;});
+    if(cli&&cli.history){
+      cli.history=cli.history.filter(function(h){return !(h.type==='cita'&&h.data&&h.data.fecha===cita.fecha&&h.data.doctor===cita.doctor);});
+      sbSaveConsultante(cli).catch(function(){});
+    }
+  }
+  saveAll();
+  API.call('/citas-dr/'+id,'DELETE').catch(function(){});
+  renderCitasDr();renderCitaAlerts();
+}
 
 /* ═══════════════════════════════════════════════════
    BO CONSULTOR — TODOS CLIENTES
