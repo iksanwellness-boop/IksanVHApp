@@ -1078,10 +1078,10 @@ const API={
   async createUsuario(data){return this.call('/usuarios','POST',data,true);},
   async updateUsuario(id,data){return this.call('/usuarios/'+id,'PUT',data,true);},
   async deleteUsuario(id){return this.call('/usuarios/'+id,'DELETE',null,true);},
-  async getClientes(cid){return this.call('/clientes?consultor_id='+cid);},
-  async createConsultante(data){return this.call('/clientes','POST',data);},
-  async updateConsultante(id,data){return this.call('/clientes/'+id,'PUT',data);},
-  async deleteConsultante(id){return this.call('/clientes/'+id,'DELETE');},
+  async getConsultantes(cid){return this.call('/consultantes?consultor_id='+cid);},
+  async createConsultante(data){return this.call('/consultantes','POST',data);},
+  async updateConsultante(id,data){return this.call('/consultantes/'+id,'PUT',data);},
+  async deleteConsultante(id){return this.call('/consultantes/'+id,'DELETE');},
   async getVentas(cid){return this.call('/ventas?consultor_id='+cid);},
   async createVenta(data){return this.call('/ventas','POST',data);},
   async deleteVenta(id){return this.call('/ventas/'+id,'DELETE');},
@@ -1108,7 +1108,7 @@ const API={
 };
 
 let APP_CFG=S.get('ik_cfg',{appName:'IKSAN',appSub:'Wellness · VitalHealth',lang:'es'});
-let clientes=S.get('ik_clientes',[]);
+let clientes=S.get('ik_consultantes',[]);// UI says 'clientes' but key stays 'consultantes'
 let prices=S.get('ik_prices',{});
 const ADMIN_DEFAULT={id:'u_admin',name:'Admin Iksan',email:'admin',pass:'iksan2024',role:'admin',active:true,days:-1,activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()};
 let users=(function(){
@@ -1163,7 +1163,7 @@ function saveAll(){
   S.set('ik_users',users);
   S.set('ik_subPayments',subPayments);
   // Consultante data — also cache locally for speed
-  S.set('ik_clientes',clientes);
+  S.set('ik_consultantes',clientes);
   S.set('ik_sales',sales);
   S.set('ik_gastos',gastos);
   S.set('ik_citasBio',citasBio);
@@ -1719,7 +1719,7 @@ function doLogin(){
     const cid=u.consultor_id||u.consultorId||u.parent_id||u.id;
     const isAdminU=(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op');
     Promise.all([
-      isAdminU?API.call('/clientes','GET',null,true):API.getClientes(cid), // 0
+      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid), // 0
       isAdminU?Promise.resolve([]):API.getVentas(cid),         // 1
       isAdminU?Promise.resolve([]):API.getGastos(cid),         // 2
       isAdminU?Promise.resolve([]):API.getCitasBio(cid),       // 3
@@ -1755,7 +1755,7 @@ function doLogin(){
             lastUpdate:c.updated_at||c.created_at
           };
         });
-        S.set('ik_clientes',clientes);
+        S.set('ik_consultantes',clientes);
         // Immediately render so user sees their data
         setTimeout(function(){renderConList();refreshAllConSelects();},100);
       }
@@ -6417,7 +6417,7 @@ function saveModulo(){
 // Contenido detallado fijo por módulo (no editable)
 const MOD_DETALLE={
   m1:{items:[
-    '👥 Listado completo de clientes/clientes',
+    '👥 Listado completo de clientes/consultantes',
     '🌿 Recomendaciones de productos personalizadas por perfil',
     '📦 Catálogo visual con 31 productos VitalHealth + kits',
     '🏷️ Precios editables del catálogo (precio regular + promo)',
@@ -6869,7 +6869,7 @@ function importData(inp){
 
 function resetAll(){
   if(!confirm('⚠️⚠️⚠️ ÚLTIMA OPORTUNIDAD ⚠️⚠️⚠️\n¿Borrar TODO sin posibilidad de recuperar?'))return;
-  ['ik_cfg','ik_clientes','ik_prices','ik_users','ik_sales','ik_locs','ik_gastos','ik_citasBio','ik_citasDr','ik_modulos','ik_subPayments','ik_activeCon'].forEach(k=>localStorage.removeItem(k));
+  ['ik_cfg','ik_consultantes','ik_prices','ik_users','ik_sales','ik_locs','ik_gastos','ik_citasBio','ik_citasDr','ik_modulos','ik_subPayments','ik_activeCon'].forEach(k=>localStorage.removeItem(k));
   showT('Datos borrados · Recargando...');
   setTimeout(()=>location.reload(),800);
 }
