@@ -2057,9 +2057,16 @@ function populateConSelect(elId){
   if(!el)return;
   const isAdminU=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
   const cid=getConsultorId();
-  const lista=isAdminU?[]:clientes.filter(function(c){
-    return !c.consultor_id||c.consultor_id===cid||(currentUser&&c.consultor_id===currentUser.id);
-  });
+  var lista;
+  if(isAdminU){
+    lista=[];
+  } else {
+    lista=clientes.filter(function(c){
+      return !c.consultor_id||c.consultor_id===cid||(currentUser&&c.consultor_id===currentUser.id);
+    });
+    // Fallback: if filter returns empty but clientes has data, show all
+    if(!lista.length&&clientes.length)lista=clientes;
+  }
   el.innerHTML='<option value="">— Cliente —</option>'+
     lista.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 }
@@ -2297,10 +2304,16 @@ function renderConList(){
   const isAdminUser=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
   // Admin has no own clients — all clients belong to consultores
   // Admin uses BO Admin → Todos Clientes view to see all
-  const myClientes=isAdminUser?[]:clientes.filter(function(c){
-    // Show if no consultor_id (legacy) OR matches current user's consultor chain
-    return !c.consultor_id||c.consultor_id===myCid||c.consultor_id===(currentUser&&currentUser.id);
-  });
+  var myClientes;
+  if(isAdminUser){
+    myClientes=[];
+  } else {
+    myClientes=clientes.filter(function(c){
+      return !c.consultor_id||c.consultor_id===myCid||c.consultor_id===(currentUser&&currentUser.id);
+    });
+    // Safety fallback: if filter returns empty but we have clients, show all
+    if(!myClientes.length&&clientes.length)myClientes=clientes;
+  }
   // Search filter
   const sq=(document.getElementById('conSearch')?.value||'').toLowerCase().trim();
   const filtered=sq?myClientes.filter(function(c){
@@ -3830,7 +3843,9 @@ function runDemo(){
    CART
    ═══════════════════════════════════════════════════ */
 function saveCartByName(){
-  var c=getActiveCon();if(!c||!c.items.length)return;
+  var c=getActiveCon();
+  if(!c){showT('Error: sin cliente activo (id:'+activeConId+' lista:'+clientes.length+')');return;}
+  if(!c.items||!c.items.length){showT('Error: carrito vacio');return;}
   var name=(document.getElementById('cartSaveName')?.value||'').trim();
   if(!name){showT('Escribe un nombre para el carrito');return;}
   if(!c.savedCarts)c.savedCarts=[];
@@ -4141,8 +4156,8 @@ function clearComp(){
 
 function confirmSale(){
   const c=getActiveCon();
-  if(!c){showT('Selecciona un cliente primero');return;}
-  if(!c.items||!c.items.length){showT('El carrito esta vacio');return;}
+  if(!c){showT('Sin cliente: id='+activeConId+' lista='+clientes.length);return;}
+  if(!c.items||!c.items.length){showT('Carrito vacío');return;}
   const methodEl=document.querySelector('input[name=payMethod]:checked');
   if(!methodEl){showT('Selecciona forma de pago');return;}
   const method=methodEl.value;
