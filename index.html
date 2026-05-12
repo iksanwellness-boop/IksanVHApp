@@ -455,8 +455,8 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <button class="subnav-tab on" onclick="goBoView('ventas')" id="sb-ventas">📊 Ventas</button>
     <button class="subnav-tab" onclick="goBoView('gastos')" id="sb-gastos">💸 Gastos</button>
     <button class="subnav-tab" onclick="goBoView('agenda')" id="sb-agenda">📅 Agenda</button>
-    <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 Análisis</button>
-    <button class="subnav-tab" onclick="goBoView('citas-dr')" id="sb-citas-dr">👨‍⚕️ Doctores</button>
+    <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 BioCuántico</button>
+    <button class="subnav-tab" onclick="goBoView('citas-dr')" id="sb-citas-dr">🏥 Derivaciones</button>
     <button class="subnav-tab" onclick="goBoView('todos-con')" id="sb-todos-con">👥 Clientes</button>
     <button class="subnav-tab" onclick="goBoView('inventario')" id="sb-inventario">📦 Inventario</button>
     <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios" style="display:none">🏷️ Precios</button>
@@ -575,7 +575,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     </div>
   </div>
 
-  <!-- BO: Citas Doctores -->
+  <!-- BO: Derivaciones -->
   <div id="bo-citas-dr" class="bo-view" style="display:none;padding-top:14px">
     <div class="stat-grid">
       <div class="stat-box"><div class="stat-icon">🤝</div><div class="stat-val" id="statComisionTotal">$0</div><div class="stat-lbl">Comisiones</div></div>
@@ -587,8 +587,8 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
         <select class="in" id="citaDrConsultante"><option value="">— Consultante —</option></select>
       </div>
       <div class="in-row">
-        <input class="in" id="citaDrDoctor" placeholder="Nombre del doctor/a">
-        <input class="in" id="citaDrEspecialidad" placeholder="Especialidad" style="flex:.8">
+        <input class="in" id="citaDrDoctor" placeholder="Nombre del especialista">
+        <input class="in" id="citaDrEspecialidad" placeholder="Especialidad / motivo" style="flex:.8">
       </div>
       <div class="in-row">
         <input type="date" class="in" id="citaDrFecha">
@@ -1783,6 +1783,18 @@ function doLogin(){
         if(typeof filterCat==='function')safeCall(filterCat);
       }
 
+      // Inventario — only for consultores, not admin
+      if(!isAdminU&&results[7]&&Array.isArray(results[7])&&results[7].length>0){
+        inventario=results[7].map(function(i){return{
+          nombre:i.producto,stock:i.stock||0,sobrePedido:i.sobre_pedido||false,
+          fechaRegistro:i.fecha_registro||null,fechaCaducidad:i.fecha_caducidad||null,
+          updatedAt:i.updated_at
+        };});
+        saveInv();
+      } else if(isAdminU){
+        inventario=[];S.set('ik_inventario',[]);
+      }
+
       renderConList();refreshAllConSelects();
     }).catch(function(e){console.warn('Data load error:',e);});
 
@@ -1966,7 +1978,19 @@ function goBoView(v){
   if(tab)tab.classList.add('on');
   if(v==='ventas'){renderVentas();updateStatsBO();}
   if(v==='gastos'){renderGastos();initGastoSelects();}
-  if(v==='agenda'){renderAgenda('citas');}
+  if(v==='agenda'){
+    // Ensure citas are loaded before rendering
+    var agCid=getConsultorId();
+    if(agCid&&(!citasBio.length&&!citasDr.length)){
+      Promise.all([API.getCitasBio(agCid),API.getCitasDr(agCid)]).then(function(r){
+        if(r[0]&&r[0].length)citasBio=r[0];
+        if(r[1]&&r[1].length)citasDr=r[1];
+        renderAgenda('citas');
+      }).catch(function(){renderAgenda('citas');});
+    } else {
+      renderAgenda('citas');
+    }
+  }
   if(v==='citas-bio'){renderCitasBio();populateConSelect('citaBioConsultante');document.getElementById('citaBioFecha').value=new Date().toISOString().slice(0,10);}
   if(v==='citas-dr'){renderCitasDr();populateConSelect('citaDrConsultante');document.getElementById('citaDrFecha').value=new Date().toISOString().slice(0,10);}
   if(v==='todos-con'){renderAllClientes();}
@@ -2106,7 +2130,7 @@ function sexLabel(s){return s==='F'?'Mujer':s==='M'?'Hombre':s==='O'?'Otro':'';}
 function renderCitaAlerts(){
   const bar=document.getElementById('citaAlertBar');if(!bar)return;
   const today=new Date();today.setHours(0,0,0,0);
-  const all=[...citasBio.map(a=>({...a,tipo:'BioCuantico'})),...citasDr.map(a=>({...a,tipo:'Dr. '+a.doctor}))];
+  const all=[...citasBio.map(a=>({...a,tipo:'BioCuantico'})),...citasDr.map(a=>({...a,tipo:'🏥 '+(a.doctor||'Derivación')}))];
   const upcoming=all.filter(a=>a.fecha>=today.toISOString().slice(0,10));
   if(!upcoming.length){bar.style.display='none';return;}
   const d2=new Date(today);d2.setDate(d2.getDate()+2);
@@ -3780,14 +3804,22 @@ function saveCartByName(){
   if(!c.savedCarts)c.savedCarts=[];
   var existing=c.savedCarts.findIndex(function(sc){return sc.name===name;});
   var totals=getCartTotals();
-  var cartCopy={name:name,items:JSON.parse(JSON.stringify(c.items)),date:new Date().toISOString(),
-    descuento:totals.desc||0,promo:totals.promo||'',total:totals.final||0};
+  var cartCopy={
+    name:name,
+    items:JSON.parse(JSON.stringify(c.items)),
+    date:new Date().toISOString(),
+    descuento:totals.desc||0,
+    promo:totals.promo||'',
+    total:totals.final||0,
+    descuentoActivo:c.descuentoActivo||null
+  };
   if(existing>=0)c.savedCarts[existing]=cartCopy;
   else c.savedCarts.push(cartCopy);
   saveAll();
   sbSaveConsultante(c).catch(function(){});
   showT('✓ Carrito guardado: '+name);
-  openCartModal();
+  closeMo(1);closeMo(2);
+  renderActiveConPanel();
 }
 
 function loadSavedCart(name){
@@ -3796,6 +3828,8 @@ function loadSavedCart(name){
   if(!saved){showT('Carrito no encontrado');return;}
   if(!confirm('Cargar "'+name+'"? Reemplaza el carrito actual.'))return;
   c.items=JSON.parse(JSON.stringify(saved.items));
+  if(saved.descuentoActivo)c.descuentoActivo=saved.descuentoActivo;
+  if(saved.promo)c.promoActiva=saved.promo;
   saveAll();
   showT('✓ Carrito cargado: '+name);
   openCartModal();
@@ -4091,7 +4125,7 @@ function confirmSale(){
   };
   _compData=null;
   sales.push(sale);
-  addToHistory('sale','Venta $'+final.toLocaleString()+' · '+methodLabel+(promo?' · Promo: '+promo:''),{items:sale.items,total:final,bruto,desc,promo,payMethod:methodLabel,comprobante:sale.comprobante});
+  addToHistory('sale','Venta $'+final.toLocaleString()+' · '+methodLabel+(promo?' · Promo: '+promo:''),{saleId:sale.id,items:sale.items,total:final,bruto,desc,promo,payMethod:methodLabel,comprobante:sale.comprobante});
   descuentaInventario(sale.items); // Deduct from inventory
   c.items=[];
   if(c.status==='prospecto')c.status='activo';
@@ -4545,9 +4579,24 @@ function renderVentas(){
 function setVentasFilter(f){ventasFilter=f;renderVentas();}
 function setVentasTipo(f){ventasTipoFilter=f;renderVentas();}
 function deleteSale(id){
-  sales=sales.filter(s=>s.id!==id);saveAll();
+  // Find the sale to get client info before deleting
+  var sale=sales.find(function(s){return s.id===id;});
+  sales=sales.filter(function(s){return s.id!==id;});
+  // Also remove from client history
+  if(sale&&sale.cliId){
+    var cli=clientes.find(function(c){return c.id===sale.cliId;});
+    if(cli&&cli.history){
+      cli.history=cli.history.filter(function(h){
+        return !(h.type==='sale'&&h.data&&h.data.saleId===id);
+      });
+      cli.lastUpdate=new Date().toISOString();
+      sbSaveConsultante(cli).catch(function(){});
+    }
+  }
+  saveAll();
   API.call('/ventas/'+id,'DELETE').catch(function(){});
   renderVentas();updateStatsBO();
+  showT('Venta eliminada');
 }
 
 function updateStatsBO(){
@@ -6094,15 +6143,16 @@ window._copyShortUrl=function(){
   else{showT('Copia el link manualmente');}
 };
 function cleanWAMsg(msg){
-  // Remove characters that show as ? in WhatsApp
   return (msg||'')
-    .replace(/[\u2713\u2714]/g,'✓')   // checkmarks
-    .replace(/[\u2022]/g,'-')           // bullet points
-    .replace(/[\u2019\u2018]/g,"'")    // smart quotes
-    .replace(/[\u201C\u201D]/g,'"')    // smart double quotes
-    .replace(/[\u2014\u2013]/g,'-')    // em/en dashes
-    .replace(/\n{3,}/g,'\n\n')          // excess newlines
-    .replace(/ {2,}/g,' ')              // excess spaces
+    .replace(/\u2713|\u2714/g,'*')      // checkmarks → *
+    .replace(/\u2022/g,'-')             // bullets → -
+    .replace(/\u2019|\u2018/g,"'")     // smart quotes
+    .replace(/\u201C|\u201D/g,'"')     // smart double quotes
+    .replace(/\u2014|\u2013/g,'-')     // em/en dashes
+    .replace(/\u00b7/g,'-')             // middle dot
+    .replace(/[\u0080-\u00bf]/g,'')    // latin supplement that breaks some phones
+    .replace(/\n{3,}/g,'\n\n')
+    .replace(/ {2,}/g,' ')
     .trim();
 }
 
