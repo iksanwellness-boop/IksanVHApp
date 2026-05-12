@@ -283,7 +283,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 
 <!-- HEADER -->
 <div class="app-header">
-  <div class="logo-area" onclick="goView('consultantes')">
+  <div class="logo-area" onclick="goView('clientes')">
     <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs><radialGradient id="ig" cx="30%" cy="30%" r="75%"><stop offset="0%" stop-color="#fce870"/><stop offset="35%" stop-color="#fddde8"/><stop offset="75%" stop-color="#f0a0d8"/><stop offset="100%" stop-color="#e880d0"/></radialGradient><path id="ta" d="M 15,50 A 35,35 0 0,1 85,50"/></defs>
       <circle cx="50" cy="50" r="49" fill="white"/>
@@ -307,7 +307,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 
 <!-- ACTIVE CONSULTANTE BAR -->
 <div class="active-bar empty" id="activeBar">
-  <span>Sin consultante activo · Selecciona uno en la pestaña Consultantes</span>
+  <span>Sin cliente activo · Selecciona uno en la pestaña Clientes</span>
 </div>
 
 <!-- ALERTAS CITAS -->
@@ -315,18 +315,18 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 
 <!-- MAIN NAV -->
 <div class="nav" id="mainNav">
-  <button class="nav-tab on" onclick="goView('consultantes')" id="nt-consultantes">👤 <span>Consultantes</span></button>
+  <button class="nav-tab on" onclick="goView('clientes')" id="nt-clientes">👤 <span>Clientes</span></button>
   <button class="nav-tab" onclick="goView('catalogo')" id="nt-catalogo">📦 <span>Catálogo</span></button>
   <button class="nav-tab bo-tab" onclick="goView('bo')" id="nt-bo" style="display:none">🏢 <span>BO Consultor</span></button>
   <button class="nav-tab admin-tab" onclick="goView('admin')" id="nt-admin" style="display:none">👑 <span>BO Admin</span></button>
 </div>
 
 
-<!-- ════════════ VIEW: CONSULTANTES ════════════ -->
-<div class="view on" id="v-consultantes">
+<!-- ════════════ VIEW: CLIENTES ════════════ -->
+<div class="view on" id="v-clientes">
 <div class="wrap">
-  <div class="sec-title">👤 Consultantes</div>
-  <div class="sec-sub" id="conSub">Selecciona o crea un consultante para empezar</div>
+  <div class="sec-title">👤 Clientes</div>
+  <div class="sec-sub" id="conSub">Selecciona o crea un cliente para empezar</div>
 
   <!-- Buscador + Crear -->
   <div class="sel-card" id="conSelector">
@@ -337,7 +337,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     </div>
     <!-- Hidden create form -->
     <div id="newConForm" style="display:none;border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nuevo consultante</div>
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nuevo cliente</div>
       <div class="in-row" style="margin-bottom:7px">
         <input class="in" id="newConName" placeholder="Nombre completo" onkeydown="if(event.key==='Enter')createConsultante()">
         <button class="btn btn-p btn-sm" onclick="createConsultante()">+ Crear</button>
@@ -390,7 +390,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
         <button class="btn btn-o" onclick="openQuizModal()" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 8px;height:auto">
           <span style="font-size:24px">🌿</span>
-          <span style="font-size:12px;font-weight:600">Quiz BioCuántico</span>
+          <span style="font-size:12px;font-weight:600">Quiz Síntomas</span>
         </button>
         <button class="btn btn-o" onclick="openVHModal()" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 8px;height:auto">
           <span style="font-size:24px">🔬</span>
@@ -410,7 +410,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     </div>
   </div>
 
-  <!-- Consultantes list (when none active) -->
+  <!-- Clientes list (when none active) -->
   <div id="conList" style="margin-top:14px"></div>
 </div>
 </div>
@@ -455,9 +455,9 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <button class="subnav-tab on" onclick="goBoView('ventas')" id="sb-ventas">📊 Ventas</button>
     <button class="subnav-tab" onclick="goBoView('gastos')" id="sb-gastos">💸 Gastos</button>
     <button class="subnav-tab" onclick="goBoView('agenda')" id="sb-agenda">📅 Agenda</button>
-    <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 Citas Bio</button>
+    <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 Análisis</button>
     <button class="subnav-tab" onclick="goBoView('citas-dr')" id="sb-citas-dr">👨‍⚕️ Doctores</button>
-    <button class="subnav-tab" onclick="goBoView('todos-con')" id="sb-todos-con">👥 Consultantes</button>
+    <button class="subnav-tab" onclick="goBoView('todos-con')" id="sb-todos-con">👥 Clientes</button>
     <button class="subnav-tab" onclick="goBoView('inventario')" id="sb-inventario">📦 Inventario</button>
     <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios" style="display:none">🏷️ Precios</button>
     <button class="subnav-tab" onclick="goBoView('whatsapp')" id="sb-whatsapp">💬 WhatsApp Bot</button>
@@ -469,7 +469,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <div class="stat-grid">
       <div class="stat-box"><div class="stat-icon">💰</div><div class="stat-val" id="statVentasTotal">$0</div><div class="stat-lbl">Total ventas</div></div>
       <div class="stat-box"><div class="stat-icon">🛍️</div><div class="stat-val" id="statVentasCount">0</div><div class="stat-lbl">Operaciones</div></div>
-      <div class="stat-box"><div class="stat-icon">👥</div><div class="stat-val" id="statClientesAct">0</div><div class="stat-lbl">Consultantes activos</div></div>
+      <div class="stat-box"><div class="stat-icon">👥</div><div class="stat-val" id="statClientesAct">0</div><div class="stat-lbl">Clientes activos</div></div>
     </div>
     <div class="card">
       <div class="card-title">Filtrar</div>
@@ -608,15 +608,15 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     </div>
   </div>
 
-  <!-- BO: Todos consultantes -->
+  <!-- BO: Todos clientes -->
   <div id="bo-todos-con" class="bo-view" style="display:none;padding-top:14px">
     <div class="stat-grid">
-      <div class="stat-box"><div class="stat-icon">👥</div><div class="stat-val" id="statConTotal">0</div><div class="stat-lbl">Consultantes</div></div>
+      <div class="stat-box"><div class="stat-icon">👥</div><div class="stat-val" id="statConTotal">0</div><div class="stat-lbl">Clientes</div></div>
       <div class="stat-box"><div class="stat-icon">🔵</div><div class="stat-val" id="statConProsp">0</div><div class="stat-lbl">Prospectos</div></div>
       <div class="stat-box"><div class="stat-icon">✅</div><div class="stat-val" id="statConActive">0</div><div class="stat-lbl">Activos</div></div>
     </div>
-    <input class="in" id="searchCon" placeholder="🔍 Buscar consultante..." oninput="renderAllConsultantes()" style="margin-bottom:10px">
-    <div id="allConsultantesList"></div>
+    <input class="in" id="searchCon" placeholder="🔍 Buscar consultante..." oninput="renderAllClientes()" style="margin-bottom:10px">
+    <div id="allClientesList"></div>
   </div>
 
   <!-- BO: Precios catálogo -->
@@ -765,7 +765,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
   <div class="card" style="border-left:4px solid #1a7f3c">
     <div class="card-title">🛡️ Copia de seguridad de mis datos</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
-      Descarga un archivo con todos tus datos: consultantes, ventas, gastos y citas. 
+      Descarga un archivo con todos tus datos: clientes, ventas, gastos y citas. 
       Úsalo como respaldo o para restaurar en caso de pérdida.
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
@@ -907,7 +907,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8b1a5a,#5a1a4a);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
         <div><div style="font-size:13px;font-weight:700;color:var(--deep)">El consultor abre el archivo y entra con sus credenciales</div>
-        <div style="font-size:11px;color:var(--muted)">El archivo corre en cualquier navegador sin instalación. Sus datos (consultantes, ventas, citas) quedan guardados en su dispositivo y son sólo suyos.</div></div>
+        <div style="font-size:11px;color:var(--muted)">El archivo corre en cualquier navegador sin instalación. Sus datos (clientes, ventas, citas) quedan guardados en su dispositivo y son sólo suyos.</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8b1a5a,#5a1a4a);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
@@ -1040,7 +1040,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
    STATE & PERSISTENCE
    ═══════════════════════════════════════════════════ */
 let LANG='es';
-let curView='consultantes', curBoView='ventas', curAdminView='subs';
+let curView='clientes', curBoView='ventas', curAdminView='subs';
 let activeConId=null;
 let currentUser=null;
 
@@ -1078,10 +1078,10 @@ const API={
   async createUsuario(data){return this.call('/usuarios','POST',data,true);},
   async updateUsuario(id,data){return this.call('/usuarios/'+id,'PUT',data,true);},
   async deleteUsuario(id){return this.call('/usuarios/'+id,'DELETE',null,true);},
-  async getConsultantes(cid){return this.call('/consultantes?consultor_id='+cid);},
-  async createConsultante(data){return this.call('/consultantes','POST',data);},
-  async updateConsultante(id,data){return this.call('/consultantes/'+id,'PUT',data);},
-  async deleteConsultante(id){return this.call('/consultantes/'+id,'DELETE');},
+  async getClientes(cid){return this.call('/clientes?consultor_id='+cid);},
+  async createConsultante(data){return this.call('/clientes','POST',data);},
+  async updateConsultante(id,data){return this.call('/clientes/'+id,'PUT',data);},
+  async deleteConsultante(id){return this.call('/clientes/'+id,'DELETE');},
   async getVentas(cid){return this.call('/ventas?consultor_id='+cid);},
   async createVenta(data){return this.call('/ventas','POST',data);},
   async deleteVenta(id){return this.call('/ventas/'+id,'DELETE');},
@@ -1108,7 +1108,7 @@ const API={
 };
 
 let APP_CFG=S.get('ik_cfg',{appName:'IKSAN',appSub:'Wellness · VitalHealth',lang:'es'});
-let consultantes=S.get('ik_consultantes',[]);
+let clientes=S.get('ik_clientes',[]);
 let prices=S.get('ik_prices',{});
 const ADMIN_DEFAULT={id:'u_admin',name:'Admin Iksan',email:'admin',pass:'iksan2024',role:'admin',active:true,days:-1,activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()};
 let users=(function(){
@@ -1131,7 +1131,7 @@ let citasBio=S.get('ik_citasBio',[]);
 let citasDr=S.get('ik_citasDr',[]);
 const MODULOS_DEFAULT=[
   {id:'m1',name:'Básico',icon:'🌱',price:199,color:'#1a56db',desc:'Listado de clientes + recomendaciones de productos + catálogo con precios editables',includes:['clientes','catalogo','precios'],baseApp:false,activatedFor:[]},
-  {id:'m2',name:'Intermedio',icon:'🌿',price:349,color:'#1a7f3c',desc:'Todo Básico + carrito de ventas + hoja de ingesta y beneficios para el consultante',includes:['clientes','catalogo','precios','carrito','ingesta'],baseApp:false,activatedFor:[]},
+  {id:'m2',name:'Intermedio',icon:'🌿',price:349,color:'#1a7f3c',desc:'Todo Básico + carrito de ventas + hoja de ingesta y beneficios para el cliente',includes:['clientes','catalogo','precios','carrito','ingesta'],baseApp:false,activatedFor:[]},
   {id:'m3',name:'Avanzado',icon:'🔬',price:549,color:'#8b1a5a',desc:'Todo Intermedio + control de ingresos y gastos + gestión de citas BioCuántico y derivaciones a doctores',includes:['clientes','catalogo','precios','carrito','ingesta','ingresos','gastos','citas'],baseApp:false,activatedFor:[]},
   {id:'m4',name:'Plus',icon:'⭐',price:799,color:'#b8960c',desc:'Todo Avanzado + Chatbot personalizado de WhatsApp para automatizar atención y agendar citas',includes:['clientes','catalogo','precios','carrito','ingesta','ingresos','gastos','citas','chatbot'],baseApp:false,activatedFor:[]}
 ];
@@ -1163,7 +1163,7 @@ function saveAll(){
   S.set('ik_users',users);
   S.set('ik_subPayments',subPayments);
   // Consultante data — also cache locally for speed
-  S.set('ik_consultantes',consultantes);
+  S.set('ik_clientes',clientes);
   S.set('ik_sales',sales);
   S.set('ik_gastos',gastos);
   S.set('ik_citasBio',citasBio);
@@ -1273,7 +1273,7 @@ const ORIGIN={
    ═══════════════════════════════════════════════════ */
 const PP=[
   {n:"V-Organex",cat:"Detox / Hígado",e:"🌿",p:650,ct:"60 Cáps",b:["Desintoxica el hígado","Limpia las vías biliares","Apoya al control de alergias"],pa:["Hepatitis","Hígado Graso","Colesterol elevado","Cirrosis"],kw:["higado","hepatitis","cirrosis","colesterol","detox"],ing:"Boldo, Cardo mariano, Hierba del Sapo, Guaraná, Achicoria, Alcachofa",d:"2 cáps/día (3 en casos severos)",t:"Con agua antes de los alimentos",dur:"1–3 meses"},
-  {n:"Té Detox",cat:"Detox / Hígado",e:"🍵",p:350,ct:"8g Herbal",b:["Favorece pérdida de peso","Apoya desinflamación abdominal","Más energía"],pa:["Estreñimiento","Gastritis","Colitis","Sobrepeso"],kw:["estreñimiento","gastritis","colitis","peso","detox"],ing:"Hoja de Caqui, Malva, Nopal, Jengibre, Manzanilla",d:"3 tazas/día",t:"Antes o después de alimentos",dur:"1 mes detox"},
+  {n:"Té Detox",cat:"Detox / Hígado",e:"🍵",p:350,ct:"8 sobres",b:["Ayuda a la desintoxicación del organismo","Mejora la digestión y disminuye el estreñimiento","Apoya la reducción de medidas","Desinflamación abdominal","Más energía y bienestar general"],pa:["Estreñimiento","Gastritis","Colitis","Sobrepeso","Detox","Hígado","Digestión"],kw:["estreñimiento","gastritis","colitis","peso","detox","higado","digestion"],ing:"Hoja de caqui, cardo santo, malva, manzanilla, jengibre y diente de león",d:"1 taza de 250ml antes o durante el desayuno, comida y/o cena",t:"Frío o caliente. Antes o durante alimentos",dur:"1 sobre rinde 4 litros (6-12 días). Protocolo recomendado: 21 días",prep:"1. Hervir 1 litro de agua. 2. Apagar fuego y añadir 1 sobre. 3. Dejar reposar 5-8 horas. 4. Combinar con 3 litros de agua fría. 5. Refrigerar. Rinde 4 litros.",nota:"Este producto no es un medicamento. Su uso es responsabilidad de quien lo consume."},
   {n:"V-Glucalose",cat:"Glucosa / Diabetes",e:"💙",p:650,ct:"60 Cáps",b:["Regula azúcar en sangre","Sensibilidad a la insulina","Bienestar metabólico"],pa:["Diabetes","Glucosa elevada","Ovario poliquístico"],kw:["diabetes","glucosa","azucar","insulina","ovario"],ing:"Nopal, Chaya, Berberina, Fenogreco, Cardo Mariano",d:"2 cáps/día (3 crónicos)",t:"Con primer alimento",dur:"2–3 meses"},
   {n:"V-Itaren",cat:"Riñones",e:"🫘",p:650,ct:"60 Cáps",b:["Equilibrio hídrico","Mejor circulación","Bienestar renal"],pa:["Ácido úrico","Retención líquidos","Cálculos renales","Infección urinaria"],kw:["riñon","acido urico","retencion","calculos","urinaria"],ing:"Jamaica, Cola de Caballo, Diente de León, Moringa",d:"2 cáps/día (hasta 6 crónicos)",t:"Con mínimo 2L de agua/día",dur:"1–3 meses"},
   {n:"Vitarly-L",cat:"Energía / Sexual",e:"⚡",p:750,ct:"60 Cáps",b:["Más energía","Flujo sanguíneo arterial","Mejor rendimiento sexual"],pa:["Poca energía","Bajo rendimiento sexual","Metabolismo lento"],kw:["energia","sexual","libido","rendimiento","deporte"],ing:"L-arginina, Cafeína, Magnesio, Té Verde, Zinc, CoQ10",d:"2 cáps/día",t:"Mañana antes desayuno o pre-entreno",dur:"Continuo"},
@@ -1352,16 +1352,16 @@ function showT(msg){const el=document.getElementById('toast');el.textContent=msg
    ═══════════════════════════════════════════════════ */
 const T={
   es:{
-    consultantes:'Consultantes',catalogo:'Catálogo',bo:'BO Consultor',admin:'BO Admin',
+    clientes:'Clientes',catalogo:'Catálogo',bo:'BO Consultor',admin:'BO Admin',
     ventas:'Ventas',gastos:'Gastos',agenda:'Agenda',precios:'Precios',config:'Mi Config',
     todos:'Todos',origen:'Por origen',tipo:'Por tipo',productos:'Productos',
     escaneo:'Escáner',derivado:'Derivados Dr.',transito:'En tránsito',
     guardar:'Guardar',cancelar:'Cancelar',agregar:'Agregar',eliminar:'Eliminar',
     // Nav tabs
-    nt_consultantes:'👤 Consultantes',nt_catalogo:'📦 Catálogo',nt_bo:'🏢 BO Consultor',nt_admin:'👑 BO Admin',
+    nt_clientes:'👤 Clientes',nt_catalogo:'📦 Catálogo',nt_bo:'🏢 BO Consultor',nt_admin:'👑 BO Admin',
     // BO subnav
     sb_ventas:'📊 Ventas',sb_gastos:'💸 Gastos',sb_agenda:'📅 Agenda',
-    sb_citas_bio:'🔬 Citas Bio',sb_citas_dr:'👨‍⚕️ Doctores',sb_todos:'👥 Consultantes',
+    sb_citas_bio:'🔬 Citas Bio',sb_citas_dr:'👨‍⚕️ Doctores',sb_todos:'👥 Clientes',
     sb_precios:'🏷️ Precios',sb_wa:'💬 WhatsApp Bot',sb_miconfig:'🎨 Mi Config',
     // Admin subnav
     sa_subs:'💳 Suscripciones',sa_ingresos:'💰 Ingresos App',sa_modulos:'🧩 Módulos',
@@ -1370,10 +1370,10 @@ const T={
     bo_hero_title:'🏢 Back Office Consultor',bo_hero_sub:'Tus ventas, gastos, citas y comisiones',
     // Catalog modes
     cat_productos:'📦 Productos',cat_kits:'🎁 Paquetes/Kits',
-    // Consultantes section
-    con_title:'👤 Consultantes',con_sub:'Selecciona o crea un consultante para empezar',
+    // Clientes section
+    con_title:'👤 Clientes',con_sub:'Selecciona o crea un cliente para empezar',
     // Stats
-    stat_ventas:'Total ventas',stat_ops:'Operaciones',stat_clientes:'Consultantes activos',
+    stat_ventas:'Total ventas',stat_ops:'Operaciones',stat_clientes:'Clientes activos',
     // Catalog
     cat_title:'📦 Catálogo VitalHealth',cat_search:'🔍 Buscar producto, condición o beneficio...',
     // Cart
@@ -1382,13 +1382,13 @@ const T={
     rep_venta:'Venta',rep_total:'Total',rep_productos:'Productos',
   },
   en:{
-    consultantes:'Clients',catalogo:'Catalog',bo:'Consultant BO',admin:'Admin BO',
+    clientes:'Clients',catalogo:'Catalog',bo:'Consultant BO',admin:'Admin BO',
     ventas:'Sales',gastos:'Expenses',agenda:'Agenda',precios:'Prices',config:'My Config',
     todos:'All',origen:'By origin',tipo:'By type',productos:'Products',
     escaneo:'Scanner',derivado:'Dr. Referrals',transito:'Pending payment',
     guardar:'Save',cancelar:'Cancel',agregar:'Add',eliminar:'Delete',
     // Nav tabs
-    nt_consultantes:'👤 Clients',nt_catalogo:'📦 Catalog',nt_bo:'🏢 Consultant BO',nt_admin:'👑 Admin BO',
+    nt_clientes:'👤 Clients',nt_catalogo:'📦 Catalog',nt_bo:'🏢 Consultant BO',nt_admin:'👑 Admin BO',
     // BO subnav
     sb_ventas:'📊 Sales',sb_gastos:'💸 Expenses',sb_agenda:'📅 Agenda',
     sb_citas_bio:'🔬 Bio Appointments',sb_citas_dr:'👨‍⚕️ Doctors',sb_todos:'👥 Clients',
@@ -1400,7 +1400,7 @@ const T={
     bo_hero_title:'🏢 Consultant Back Office',bo_hero_sub:'Your sales, expenses, appointments and commissions',
     // Catalog modes
     cat_productos:'📦 Products',cat_kits:'🎁 Kits/Bundles',
-    // Consultantes section
+    // Clientes section
     con_title:'👤 Clients',con_sub:'Select or create a client to get started',
     // Stats
     stat_ventas:'Total sales',stat_ops:'Operations',stat_clientes:'Active clients',
@@ -1423,7 +1423,7 @@ function setLang(l){
   document.querySelectorAll('[data-t]').forEach(el=>{const k=el.dataset.t;const tx=t(k);if(tx&&tx!==k)el.textContent=tx;});
   // Nav tabs texto (span dentro del button)
   const ntMap={
-    'nt-consultantes':[l==='es'?'Consultantes':'Clients'],
+    'nt-clientes':[l==='es'?'Clientes':'Clients'],
     'nt-catalogo':[l==='es'?'Catálogo':'Catalog'],
     'nt-bo':[l==='es'?'BO Consultor':'Consultant BO'],
     'nt-admin':[l==='es'?'BO Admin':'Admin BO']
@@ -1455,7 +1455,7 @@ function setLang(l){
   // Re-render visible views
   if(curView==='catalogo')initCat();
   if(curView==='bo')renderVentas();
-  if(curView==='consultantes'){
+  if(curView==='clientes'){
     const conSubEl=document.getElementById('conSub');if(conSubEl)conSubEl.textContent=t('con_sub');
   }
 }
@@ -1669,7 +1669,7 @@ function doLogin(){
     document.getElementById('mainApp').style.display='block';
 
     // Reset tabs
-    ['nt-consultantes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
+    ['nt-clientes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
       var el=document.getElementById(id);if(el)el.style.display='none';
     });
 
@@ -1688,7 +1688,7 @@ function doLogin(){
     try{document.getElementById('cfgLang').value=APP_CFG.lang||'es';}catch(e){}
 
     const savedActive=S.get('ik_activeCon',null);
-    if(savedActive&&consultantes.find(c=>c.id===savedActive))setActiveConsultante(savedActive);
+    if(savedActive&&clientes.find(c=>c.id===savedActive))setActiveConsultante(savedActive);
     else renderConList();
 
     refreshAllConSelects();
@@ -1719,7 +1719,7 @@ function doLogin(){
     const cid=u.consultor_id||u.consultorId||u.parent_id||u.id;
     const isAdminU=(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op');
     Promise.all([
-      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid), // 0
+      isAdminU?API.call('/clientes','GET',null,true):API.getClientes(cid), // 0
       isAdminU?Promise.resolve([]):API.getVentas(cid),         // 1
       isAdminU?Promise.resolve([]):API.getGastos(cid),         // 2
       isAdminU?Promise.resolve([]):API.getCitasBio(cid),       // 3
@@ -1730,7 +1730,7 @@ function doLogin(){
     ]).then(function(results){
       // Only update if Supabase returned actual data
       if(results[0]&&Array.isArray(results[0])&&results[0].length>=0){
-        consultantes=results[0].map(function(c){
+        clientes=results[0].map(function(c){
           return{
             id:c.id,
             name:c.nombre||c.name||'',
@@ -1755,7 +1755,7 @@ function doLogin(){
             lastUpdate:c.updated_at||c.created_at
           };
         });
-        S.set('ik_consultantes',consultantes);
+        S.set('ik_clientes',clientes);
         // Immediately render so user sees their data
         setTimeout(function(){renderConList();refreshAllConSelects();},100);
       }
@@ -1811,7 +1811,7 @@ function doLogout(){
   if(!confirm('¿Cerrar sesión?'))return;
   currentUser=null;
   activeConId=null;
-  consultantes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
+  clientes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
   S.set('ik_activeCon',null);
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
@@ -1844,7 +1844,7 @@ function loginAsTestOperator(){
   // Switch to test operator view
   if(!confirm('Simular vista de Operador? Para volver: cierra sesion y entra de nuevo como Admin.'))return;
   currentUser=testUser;
-  consultantes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
+  clientes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
   document.getElementById('userPill').textContent='Operador de Prueba';
   safeCall(applyModulosTabs,[testUser]);
   renderConList();
@@ -1859,7 +1859,7 @@ function applyModulosTabs(u){
 
   // ── ADMIN: todas las pestañas ──
   if(u.role==='admin'||u.role==='admin_op'){
-    ['nt-consultantes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
+    ['nt-clientes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
       var el=document.getElementById(id);if(el)el.style.display='flex';
     });
     ['sb-ventas','sb-gastos','sb-agenda','sb-citas-bio','sb-citas-dr',
@@ -1901,7 +1901,7 @@ function applyModulosTabs(u){
   var hasM4=mods.indexOf('m4')>=0;
 
   // Main nav tabs
-  var ntCon=document.getElementById('nt-consultantes');
+  var ntCon=document.getElementById('nt-clientes');
   var ntCat=document.getElementById('nt-catalogo');
   var ntBo=document.getElementById('nt-bo');
   var ntAdmin=document.getElementById('nt-admin');
@@ -1912,15 +1912,15 @@ function applyModulosTabs(u){
 
   // BO sub-tabs
   var boTabs={
-    'sb-ventas':hasM2&&!isOperador,        // operador no ve ingresos/ventas financieras
-    'sb-gastos':false,                      // operador nunca ve gastos
+    'sb-ventas':hasM2&&!isOperador,
+    'sb-gastos':hasM2&&!isOperador,         // gastos visible para consultor con M2
     'sb-agenda':hasM3,
     'sb-citas-bio':hasM3,
     'sb-citas-dr':hasM3,
     'sb-todos-con':hasM3,
-    'sb-precios':false,
-    'sb-whatsapp':hasM4&&!isOperador,       // operador no configura bot
-    'sb-mi-config':hasM2&&!isOperador       // operador usa config del consultor raíz
+    'sb-precios':hasM2&&!isOperador,        // precios visible para consultor con M2
+    'sb-whatsapp':hasM4&&!isOperador,
+    'sb-mi-config':hasM2&&!isOperador
   };
   Object.keys(boTabs).forEach(function(id){
     var el=document.getElementById(id);
@@ -1934,7 +1934,7 @@ function applyModulosTabs(u){
     showT('Sin módulos activos. Contacta al admin.');
     return;
   }
-  if(!hasM2&&curView==='bo')goView('consultantes');
+  if(!hasM2&&curView==='bo')goView('clientes');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1949,7 +1949,7 @@ function goView(v){
   if(tabEl)tabEl.classList.add('on');
   curView=v;
 
-  if(v==='consultantes'){renderConSelect();renderActiveConPanel();renderConList();}
+  if(v==='clientes'){renderConSelect();renderActiveConPanel();renderConList();}
   if(v==='catalogo')initCat();
   if(v==='bo'){goBoView(curBoView);}
   if(v==='admin'&&currentUser?.role==='admin'){goAdminView(curAdminView);}
@@ -1968,7 +1968,7 @@ function goBoView(v){
   if(v==='agenda'){renderAgenda('citas');}
   if(v==='citas-bio'){renderCitasBio();populateConSelect('citaBioConsultante');document.getElementById('citaBioFecha').value=new Date().toISOString().slice(0,10);}
   if(v==='citas-dr'){renderCitasDr();populateConSelect('citaDrConsultante');document.getElementById('citaDrFecha').value=new Date().toISOString().slice(0,10);}
-  if(v==='todos-con'){renderAllConsultantes();}
+  if(v==='todos-con'){renderAllClientes();}
   if(v==='precios'){initBoPriceTable();}
   if(v==='whatsapp'){loadBotConfig();}
   if(v==='mi-config'){loadBoConfigForm();renderBoGastoCuentas();renderBoRubros();}
@@ -2003,20 +2003,20 @@ function closeMo(n){document.getElementById('m'+n).classList.remove('on');}
 
 
 /* ═══════════════════════════════════════════════════
-   CONSULTANTES — selector & creator
+   CLIENTES — selector & creator
    ═══════════════════════════════════════════════════ */
 function renderConSelect(){
   const sel=document.getElementById('conSelect');
   if(!sel)return;
   sel.innerHTML='<option value="">— Elegir consultante existente —</option>'+
-    consultantes.map(c=>`<option value="${c.id}"${c.id===activeConId?' selected':''}>${c.name}${c.phone?' · '+c.phone:''}</option>`).join('');
+    clientes.map(c=>`<option value="${c.id}"${c.id===activeConId?' selected':''}>${c.name}${c.phone?' · '+c.phone:''}</option>`).join('');
 }
 
 function populateConSelect(elId){
   const el=document.getElementById(elId);
   if(!el)return;
   el.innerHTML='<option value="">— Consultante —</option>'+
-    consultantes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    clientes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 }
 
 function refreshAllConSelects(){
@@ -2031,9 +2031,9 @@ function createConsultante(){
   const email=document.getElementById('newConEmail').value.trim();
   const origin=document.getElementById('newConOrigin').value;
   if(!name){showT('Escribe un nombre');return;}
-  if(consultantes.find(c=>c.name.toLowerCase()===name.toLowerCase())){
-    showT('Ya existe ese consultante');
-    setActiveConsultante(consultantes.find(c=>c.name.toLowerCase()===name.toLowerCase()).id);
+  if(clientes.find(c=>c.name.toLowerCase()===name.toLowerCase())){
+    showT('Ya existe ese cliente');
+    setActiveConsultante(clientes.find(c=>c.name.toLowerCase()===name.toLowerCase()).id);
     return;
   }
   const cid2=getConsultorId();// Always use consistent consultor ID
@@ -2048,7 +2048,7 @@ function createConsultante(){
     createdAt:new Date().toISOString(),
     lastUpdate:new Date().toISOString()
   };
-  consultantes.push(c);saveAll();
+  clientes.push(c);saveAll();
   sbSaveConsultante(c).catch(function(){});
   document.getElementById('newConName').value='';
   if(document.getElementById('newConPhone'))document.getElementById('newConPhone').value='';
@@ -2061,7 +2061,7 @@ function createConsultante(){
 }
 
 function setActiveConsultante(id){
-  const c=consultantes.find(x=>x.id===id);
+  const c=clientes.find(x=>x.id===id);
   if(!c){activeConId=null;S.set('ik_activeCon',null);renderActiveConPanel();renderActiveBar();return;}
   activeConId=id;
   S.set('ik_activeCon',id);
@@ -2078,14 +2078,14 @@ function clearActiveConsultante(){
   renderConList();
 }
 
-function getActiveCon(){return activeConId?consultantes.find(c=>c.id===activeConId):null;}
+function getActiveCon(){return activeConId?clientes.find(c=>c.id===activeConId):null;}
 
 function renderActiveBar(){
   const bar=document.getElementById('activeBar');
   const c=getActiveCon();
   if(!c){
     bar.className='active-bar empty';
-    bar.innerHTML='<span>Sin consultante activo · Selecciona uno en la pestaña Consultantes</span>';
+    bar.innerHTML='<span>Sin cliente activo · Selecciona uno en la pestaña Clientes</span>';
     return;
   }
   const ini=c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -2097,7 +2097,7 @@ function renderActiveBar(){
       <div class="ac-sub">${c.age?c.age+' años · ':''}${sexLabel(c.sex)}${c.phone?' · '+c.phone:''}</div>
     </div>
     <button class="ac-close" onclick="event.stopPropagation();clearActiveConsultante()">✕ Cerrar</button>`;
-  bar.onclick=()=>{goView('consultantes');};
+  bar.onclick=()=>{goView('clientes');};
 }
 
 function sexLabel(s){return s==='F'?'Mujer':s==='M'?'Hombre':s==='O'?'Otro':'';}
@@ -2237,21 +2237,21 @@ function renderConList(){
   // Filter by current user's consultor_id
   const myCid=getConsultorId();
   const isAdminUser=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
-  const myConsultantes=isAdminUser?consultantes:consultantes.filter(function(c){
+  const myClientes=isAdminUser?clientes:clientes.filter(function(c){
     // Show if no consultor_id (legacy) OR matches current user's consultor chain
     return !c.consultor_id||c.consultor_id===myCid||c.consultor_id===(currentUser&&currentUser.id);
   });
   // Search filter
   const sq=(document.getElementById('conSearch')?.value||'').toLowerCase().trim();
-  const filtered=sq?myConsultantes.filter(function(c){
+  const filtered=sq?myClientes.filter(function(c){
     return c.name.toLowerCase().includes(sq)||(c.phone||'').includes(sq)||(c.email||'').toLowerCase().includes(sq);
-  }):myConsultantes;
+  }):myClientes;
 
   if(!filtered.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>'+(sq?'Sin resultados para "'+sq+'"':'Sin consultantes aún · Crea el primero arriba')+'</div>';
+    el.innerHTML='<div class="empty"><div class="empty-icon">👥</div>'+(sq?'Sin resultados para "'+sq+'"':'Sin clientes aún · Crea el primero arriba')+'</div>';
     return;
   }
-  el.innerHTML='<div class="card-title">'+( isAdminUser?'Todos los consultantes':'Tus consultantes')+' ('+filtered.length+')</div>'+
+  el.innerHTML='<div class="card-title">'+( isAdminUser?'Todos los clientes':'Tus clientes')+' ('+filtered.length+')</div>'+
     filtered.slice().sort((a,b)=>(b.lastUpdate||b.createdAt||'').localeCompare(a.lastUpdate||a.createdAt||'')).map(c=>{
       const ini=c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const st=STATUS[c.status||'prospecto'];
@@ -2321,7 +2321,7 @@ function saveConFicha(){
 }
 
 function deleteCon(id){
-  consultantes=consultantes.filter(c=>c.id!==id);
+  clientes=clientes.filter(c=>c.id!==id);
   if(activeConId===id)clearActiveConsultante();
   saveAll();
   API.deleteConsultante(id).catch(function(){console.warn('delete consultante failed');});
@@ -2504,7 +2504,7 @@ var _sintomasSeleccionados=[];
 function openQuizModal(){
   const c=getActiveCon();if(!c){showT('Selecciona consultante primero');return;}
   _sintomasSeleccionados=[];
-  // Precargar síntomas del consultante si los tiene
+  // Precargar síntomas del cliente si los tiene
   if(c.conditions&&c.conditions.length){
     _sintomasSeleccionados=[...c.conditions];
   }
@@ -2514,7 +2514,7 @@ function openQuizModal(){
 function renderSintomasSelector(){
   const c=getActiveCon();
   let html='<div class="m-title">🌿 Evaluación · '+c.name+'</div>';
-  html+='<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Selecciona los síntomas o diagnósticos del consultante. Puedes elegir varios.</div>';
+  html+='<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Selecciona los síntomas o diagnósticos del cliente. Puedes elegir varios.</div>';
 
   // Separate sintomas from padecimientos
   var hasSintomas=SINTOMAS_CATS.some(function(c){return c.tipo==='sintoma';});
@@ -2602,17 +2602,14 @@ function generarRecomendacionSintomas(){
   if(c.sex==='F')['V-Glucalose','Lovkafe','V-Collagen','Vitalage Collagen'].forEach(function(n){if(sc[n]!=null)sc[n]++;});
   if(edad<18)['Genius Shake','D Fence','Smartbiotics'].forEach(function(n){if(sc[n]!=null)sc[n]+=3;});
 
-  var ranked=PP.filter(function(p){return sc[p.n]>0;}).sort(function(a,b){return sc[b.n]-sc[a.n];});
+  // Always boost Té Detox + V-Organex as base protocol
+  sc['Té Detox']=(sc['Té Detox']||0)+5;
+  sc['V-Organex']=(sc['V-Organex']||0)+5;
+  var ranked=PP.filter(function(p){return sc[p.n]>0&&!p.isService;}).sort(function(a,b){return sc[b.n]-sc[a.n];});
   if(ranked.length<6)ranked.push(...PP.filter(function(p){return !ranked.find(function(x){return x.n===p.n;});}).slice(0,6-ranked.length));
 
-  // Determine max products by user module level
-  var maxProds=3; // basico default
-  if(currentUser){
-    var userMods=currentUser.modulosAsignados||[];
-    if(userMods.includes('m4')||userMods.includes('m3'))maxProds=5;
-    else if(userMods.includes('m2'))maxProds=4;
-    else maxProds=3;
-  }
+  // No cap — show all relevant products, sorted by relevance
+  var maxProds=ranked.length||10;
 
   // Price limit for top package: $5,555
   var prices_local=prices||{};
@@ -2668,7 +2665,7 @@ function generarRecomendacionSintomas(){
 
   var jBasico='Para '+(soloPadec.length?soloPadec[0]:soloSint[0]||'tu caso')+', lo más importante es empezar con los nutrientes clave. '
     +basicProds+' te dan el soporte inicial que tu cuerpo necesita. '
-    +'Muchos de nuestros consultantes notan mejoría en 3 a 4 semanas con uso constante.';
+    +'Muchos de nuestros clientes notan mejoría en 3 a 4 semanas con uso constante.';
 
   var jEsencial='Este protocolo de 4 productos actúa en conjunto para abordar de raíz lo que nos describes: '+mainSymptoms+'. '
     +'Cada producto tiene una función específica y se potencian entre sí. '
@@ -3029,7 +3026,7 @@ function buildVHTextModal(){
   h+='<div class="m-title">🔬 Escaner BioCuantico VH</div>';
   if(c){h+='<div style="font-size:11px;background:#f0faf0;border-radius:7px;padding:7px 10px;margin-bottom:10px;color:#1a7f3c">👤 '+c.name+(c.age?' · '+c.age+' años':'')+(c.sex?' · '+(c.sex==='F'?'Femenino':'Masculino'):'')+'</div>';}
   h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📋 Texto del reporte BioCuantico</div>';
-  h+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Pega el texto del reporte. Se guarda automaticamente para este consultante.</div>';
+  h+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Pega el texto del reporte. Se guarda automaticamente para este cliente.</div>';
   h+='<textarea id="vhTextoReporte" class="in" style="min-height:160px;resize:vertical;font-size:11px;line-height:1.5" '
     +'oninput="saveVHText(this.value)" '
     +'placeholder="Pega aqui el texto del reporte VitalHealth...">'+savedText+'</textarea>';
@@ -3039,7 +3036,7 @@ function buildVHTextModal(){
   h+='<div><div style="font-size:13px;font-weight:700;color:var(--deep)">🥗 Plan de alimentacion mensual</div>';
   h+='<div style="font-size:10px;color:var(--muted)">Claude sugerira que comer y evitar segun el reporte y preferencias</div></div></label>';
   h+='<div id="alimentSection" style="display:none;margin-top:10px">';
-  h+='<div style="font-size:11px;color:var(--muted);margin-bottom:5px">Preferencias, alergias o restricciones del consultante:</div>';
+  h+='<div style="font-size:11px;color:var(--muted);margin-bottom:5px">Preferencias, alergias o restricciones del cliente:</div>';
   h+='<textarea id="alimentHabitos" class="in" style="min-height:65px;resize:vertical;font-size:12px" placeholder="Ej: Le gusta la comida mexicana. No le gusta el pescado. Intolerante a lactosa. Come mucho pan y refrescos..."></textarea>';
   h+='</div></div>';
   h+='<button class="btn btn-p btn-full" style="font-size:13px;padding:12px" onclick="runVHTextAnalysis()">🔬 Analizar y generar carrito</button>';
@@ -3781,7 +3778,9 @@ function saveCartByName(){
   if(!name){showT('Escribe un nombre para el carrito');return;}
   if(!c.savedCarts)c.savedCarts=[];
   var existing=c.savedCarts.findIndex(function(sc){return sc.name===name;});
-  var cartCopy={name:name,items:JSON.parse(JSON.stringify(c.items)),date:new Date().toISOString()};
+  var totals=getCartTotals();
+  var cartCopy={name:name,items:JSON.parse(JSON.stringify(c.items)),date:new Date().toISOString(),
+    descuento:totals.desc||0,promo:totals.promo||'',total:totals.final||0};
   if(existing>=0)c.savedCarts[existing]=cartCopy;
   else c.savedCarts.push(cartCopy);
   saveAll();
@@ -4322,6 +4321,8 @@ function openProductModal(name){
       <div style="font-size:12px;margin-bottom:4px"><strong>Dosis:</strong> ${p.d}</div>
       <div style="font-size:12px;margin-bottom:4px"><strong>Cuándo:</strong> ${p.t}</div>
       <div style="font-size:12px"><strong>Duración:</strong> ${p.dur}</div>
+      ${p.prep?'<div style="font-size:11px;margin-top:8px;background:#f0faf0;border-radius:7px;padding:8px 10px"><strong>📋 Preparación:</strong><br>'+p.prep+'</div>':''}
+      ${p.nota?'<div style="font-size:10px;color:var(--muted);margin-top:5px;font-style:italic">'+p.nota+'</div>':''}
     </div>
     <div style="display:flex;gap:7px;margin-top:14px">
       <button class="btn btn-p" style="flex:2" data-nm="${name}" onclick="quickAdd(this.dataset.nm);closeMo(2)">🛒 Carrito</button>
@@ -4342,6 +4343,8 @@ function enviarFichaPorWA(name){
   if(p.ing)parts.push('','*Ingredientes:* '+p.ing);
   parts.push('','*Dosis:* '+p.d,'*Cuándo:* '+p.t);
   if(p.dur)parts.push('*Duración:* '+p.dur);
+  if(p.prep)parts.push('','*Preparación:*',''+p.prep);
+  if(p.nota)parts.push('','_'+p.nota+'_');
   var msg=parts.join('\n');
   var tel=c?(c.phone||'').replace(/[^0-9]/g,''):'';
   window._lastWAMsg=msg;window._lastWATel=tel;
@@ -4480,7 +4483,7 @@ function updateStatsBO(){
   document.getElementById('statVentasTotal').textContent='$'+total.toLocaleString();
   document.getElementById('statVentasCount').textContent=sales.length;
   const conConActividad=new Set([...sales.map(s=>s.cliId),...citasBio.map(c=>c.cliId),...citasDr.map(c=>c.cliId)]);
-  document.getElementById('statClientesAct').textContent=consultantes.filter(c=>conConActividad.has(c.id)||c.status==='activo').length;
+  document.getElementById('statClientesAct').textContent=clientes.filter(c=>conConActividad.has(c.id)||c.status==='activo').length;
   // Labels i18n
   const lblV=document.querySelector('#statVentasTotal')?.closest('.stat-box')?.querySelector('.stat-lbl');
   const lblO=document.querySelector('#statVentasCount')?.closest('.stat-box')?.querySelector('.stat-lbl');
@@ -4853,7 +4856,7 @@ function saveCitaBio(){
   const hora=document.getElementById('citaBioHora').value;
   const nota=document.getElementById('citaBioNota').value.trim();
   if(!cliId||!fecha){showT('Selecciona consultante y fecha');return;}
-  const c=consultantes.find(x=>x.id===cliId);
+  const c=clientes.find(x=>x.id===cliId);
   citasBio.push({
     id:'cb_'+Date.now(),
     cliId,cliName:c?.name||'',
@@ -4874,7 +4877,7 @@ function saveCitaBio(){
 }
 
 function addToHistoryFor(cliId,type,summary,data){
-  const c=consultantes.find(x=>x.id===cliId);if(!c)return;
+  const c=clientes.find(x=>x.id===cliId);if(!c)return;
   if(!c.history)c.history=[];
   c.history.push({date:new Date().toISOString(),type,summary,data});
   c.lastUpdate=new Date().toISOString();
@@ -4910,7 +4913,7 @@ function deleteCitaBio(id){citasBio=citasBio.filter(c=>c.id!==id);saveAll();API.
 
 function sendCitaBioWA(id){
   const a=citasBio.find(x=>x.id===id);if(!a)return;
-  const c=consultantes.find(x=>x.id===a.cliId);
+  const c=clientes.find(x=>x.id===a.cliId);
   const msg=encodeURIComponent(`🔬 *Recordatorio Cita BioCuántico*\n\n👤 ${a.cliName}\n📅 ${a.fecha}${a.hora?' · ⏰ '+a.hora:''}\n${a.nota?'\n📝 '+a.nota:''}\n\n💡 *Recomendaciones:*\n• Ayuno de 2 horas\n• Ropa cómoda\n• Sin cremas en las manos\n\n_Iksan Wellness · VitalHealth_`);
   window.open(`https://wa.me/${(c?.phone||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
 }
@@ -4927,7 +4930,7 @@ function saveCitaDr(){
   const comision=parseFloat(document.getElementById('citaDrComision').value)||0;
   const nota=document.getElementById('citaDrNota').value.trim();
   if(!cliId||!doctor||!fecha){showT('Faltan datos: consultante, doctor y fecha');return;}
-  const c=consultantes.find(x=>x.id===cliId);
+  const c=clientes.find(x=>x.id===cliId);
   citasDr.push({
     id:'cd_'+Date.now(),
     cliId,cliName:c?.name||'',
@@ -4987,24 +4990,24 @@ function updateCitaDrStatus(id,status){
 function deleteCitaDr(id){citasDr=citasDr.filter(c=>c.id!==id);saveAll();renderCitasDr();}
 
 /* ═══════════════════════════════════════════════════
-   BO CONSULTOR — TODOS CONSULTANTES
+   BO CONSULTOR — TODOS CLIENTES
    ═══════════════════════════════════════════════════ */
-function renderAllConsultantes(){
+function renderAllClientes(){
   const q=(document.getElementById('searchCon')?.value||'').toLowerCase();
-  document.getElementById('statConTotal').textContent=consultantes.length;
-  document.getElementById('statConProsp').textContent=consultantes.filter(c=>c.status==='prospecto').length;
-  document.getElementById('statConActive').textContent=consultantes.filter(c=>c.status==='activo').length;
+  document.getElementById('statConTotal').textContent=clientes.length;
+  document.getElementById('statConProsp').textContent=clientes.filter(c=>c.status==='prospecto').length;
+  document.getElementById('statConActive').textContent=clientes.filter(c=>c.status==='activo').length;
 
-  const filtered=consultantes.filter(c=>!q||c.name.toLowerCase().includes(q)||(c.phone||'').includes(q)||(c.email||'').toLowerCase().includes(q));
-  const list=document.getElementById('allConsultantesList');
-  if(!filtered.length){list.innerHTML='<div class="empty"><div class="empty-icon">👥</div>'+(q?'Sin resultados':'Sin consultantes')+'</div>';return;}
+  const filtered=clientes.filter(c=>!q||c.name.toLowerCase().includes(q)||(c.phone||'').includes(q)||(c.email||'').toLowerCase().includes(q));
+  const list=document.getElementById('allClientesList');
+  if(!filtered.length){list.innerHTML='<div class="empty"><div class="empty-icon">👥</div>'+(q?'Sin resultados':'Sin clientes')+'</div>';return;}
   list.innerHTML=filtered.slice().sort((a,b)=>(b.lastUpdate||b.createdAt).localeCompare(a.lastUpdate||a.createdAt)).map(c=>{
     const ini=c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     const st=STATUS[c.status||'prospecto'];
     const hist=(c.history||[]).length;
     const cartTotal=(c.items||[]).reduce((s,i)=>s+i.p*i.q,0);
     const totalSales=sales.filter(s=>s.cliId===c.id).reduce((s,x)=>s+x.total,0);
-    return `<div class="list-item${c.id===activeConId?' active':''}" onclick="setActiveConsultante('${c.id}');goView('consultantes')">
+    return `<div class="list-item${c.id===activeConId?' active':''}" onclick="setActiveConsultante('${c.id}');goView('clientes')">
       <div class="li-avatar">${ini}</div>
       <div class="li-info">
         <div class="li-name">${c.name}</div>
@@ -6414,7 +6417,7 @@ function saveModulo(){
 // Contenido detallado fijo por módulo (no editable)
 const MOD_DETALLE={
   m1:{items:[
-    '👥 Listado completo de clientes/consultantes',
+    '👥 Listado completo de clientes/clientes',
     '🌿 Recomendaciones de productos personalizadas por perfil',
     '📦 Catálogo visual con 31 productos VitalHealth + kits',
     '🏷️ Precios editables del catálogo (precio regular + promo)',
@@ -6437,7 +6440,7 @@ const MOD_DETALLE={
     '📅 Agenda de citas BioCuántico con recordatorio WA',
     '👨‍⚕️ Derivaciones a doctores con seguimiento de comisión',
     '📈 Estadísticas de ventas y clientes activos',
-    '🏥 Vista de todos los consultantes con historial'
+    '🏥 Vista de todos los clientes con historial'
   ]},
   m4:{items:[
     '✅ Todo lo del plan Avanzado',
@@ -6827,7 +6830,7 @@ function changeMyPass(){
 
 function exportData(){
   const data={
-    cfg:APP_CFG,consultantes,prices,users,sales,locations,
+    cfg:APP_CFG,clientes,prices,users,sales,locations,
     gastos,citasBio,citasDr,modulos,subPayments,
     exportedAt:new Date().toISOString()
   };
@@ -6847,7 +6850,7 @@ function importData(inp){
       const d=JSON.parse(ev.target.result);
       if(!confirm('⚠️ Esto sobrescribirá los datos actuales. ¿Continuar?'))return;
       if(d.cfg)APP_CFG=d.cfg;
-      if(d.consultantes)consultantes=d.consultantes;
+      if(d.clientes)clientes=d.clientes;
       if(d.prices)prices=d.prices;
       if(d.users)users=d.users;
       if(d.sales)sales=d.sales;
@@ -6866,7 +6869,7 @@ function importData(inp){
 
 function resetAll(){
   if(!confirm('⚠️⚠️⚠️ ÚLTIMA OPORTUNIDAD ⚠️⚠️⚠️\n¿Borrar TODO sin posibilidad de recuperar?'))return;
-  ['ik_cfg','ik_consultantes','ik_prices','ik_users','ik_sales','ik_locs','ik_gastos','ik_citasBio','ik_citasDr','ik_modulos','ik_subPayments','ik_activeCon'].forEach(k=>localStorage.removeItem(k));
+  ['ik_cfg','ik_clientes','ik_prices','ik_users','ik_sales','ik_locs','ik_gastos','ik_citasBio','ik_citasDr','ik_modulos','ik_subPayments','ik_activeCon'].forEach(k=>localStorage.removeItem(k));
   showT('Datos borrados · Recargando...');
   setTimeout(()=>location.reload(),800);
 }
@@ -7292,7 +7295,7 @@ function shareVentaWA(id){
   const appNombre=APP_CFG.appName||'Iksan Wellness';
   const items=(s.items||[]).map(i=>`• ${i.n} × ${i.q} = $${(i.p*i.q).toLocaleString()}`).join('\n');
   const msg=`🌿 *${appNombre} — Comprobante*\n👤 ${s.client}\n📅 ${new Date(s.date).toLocaleDateString('es-MX')}\n\n${items}\n\n💳 *Total: $${s.total.toLocaleString()} MXN*\n${s.payMethod?'Pago: '+s.payMethod:''}`;
-  const c=consultantes.find(x=>x.id===s.cliId);
+  const c=clientes.find(x=>x.id===s.cliId);
   const phone=(c?.phone||'').replace(/\D/g,'');
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,'_blank');
 }
@@ -7886,7 +7889,7 @@ function exportarDatosCSV(){
     version:'1.0',
     fecha:fecha,
     consultor:currentUser?{id:currentUser.id,name:currentUser.name,email:currentUser.email}:{},
-    consultantes:consultantes,
+    clientes:clientes,
     ventas:sales,
     gastos:gastos,
     citasBio:citasBio,
@@ -7903,13 +7906,13 @@ function exportarDatosCSV(){
   URL.revokeObjectURL(url);
   showT('✓ Respaldo descargado: '+a.download);
 
-  // Also download consultantes as CSV separately
-  if(consultantes.length){
-    var csvBlob=new Blob([toCSV(consultantes,['id','name','phone','email','notes','status','createdAt'])],{type:'text/csv'});
+  // Also download clientes as CSV separately
+  if(clientes.length){
+    var csvBlob=new Blob([toCSV(clientes,['id','name','phone','email','notes','status','createdAt'])],{type:'text/csv'});
     var csvUrl=URL.createObjectURL(csvBlob);
     var a2=document.createElement('a');
     a2.href=csvUrl;
-    a2.download='iksan_consultantes_'+nombre+'_'+fecha+'.csv';
+    a2.download='iksan_clientes_'+nombre+'_'+fecha+'.csv';
     setTimeout(function(){a2.click();URL.revokeObjectURL(csvUrl);},500);
   }
 }
@@ -7920,9 +7923,9 @@ function importarDatosCSV(input){
   reader.onload=function(e){
     try{
       var data=JSON.parse(e.target.result);
-      if(!data.version||!data.consultantes){showT('Archivo no válido');return;}
-      if(!confirm('¿Restaurar datos de respaldo?\nSe reemplazarán los datos actuales con los del archivo del '+data.fecha+'.\n\nConsultantes: '+data.consultantes.length+' | Ventas: '+(data.ventas||[]).length))return;
-      consultantes=data.consultantes||[];
+      if(!data.version||!data.clientes){showT('Archivo no válido');return;}
+      if(!confirm('¿Restaurar datos de respaldo?\nSe reemplazarán los datos actuales con los del archivo del '+data.fecha+'.\n\nClientes: '+data.clientes.length+' | Ventas: '+(data.ventas||[]).length))return;
+      clientes=data.clientes||[];
       sales=data.ventas||[];
       gastos=data.gastos||[];
       citasBio=data.citasBio||[];
@@ -7930,7 +7933,7 @@ function importarDatosCSV(input){
       saveAll();
       renderConList();
       refreshAllConSelects();
-      showT('✓ Datos restaurados: '+consultantes.length+' consultantes, '+(sales.length)+' ventas');
+      showT('✓ Datos restaurados: '+clientes.length+' clientes, '+(sales.length)+' ventas');
     }catch(err){
       showT('Error al leer el archivo: '+err.message);
     }
