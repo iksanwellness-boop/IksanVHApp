@@ -1796,6 +1796,7 @@ function doLogin(){
           if(adminLocal&&!users.find(function(x){return x.id==='u_admin';}))users.unshift(adminLocal);
           S.set('ik_users',users);
           if(typeof renderUsers==='function')safeCall(renderUsers);
+          if(typeof renderAdminOpList==='function')safeCall(renderAdminOpList);
         }
       }).catch(function(){});
     }
@@ -2388,7 +2389,7 @@ function saveStatusNote(){
 function conWhatsApp(){
   const c=getActiveCon();if(!c||!c.phone){showT('Sin WhatsApp registrado');return;}
   const msg=encodeURIComponent(`Hola ${c.name} 💚 Te escribe tu consultor de Iksan Wellness · VitalHealth.`);
-  window.open(`https://wa.me/${c.phone.replace(/\D/g,'')}?text=${msg}`,'_blank');
+  window.open('https://wa.me/'+c.phone.replace(/\D/g,'')+'?text='+encodeURIComponent(cleanWAMsg(msg)),'_blank');
 }
 
 
@@ -3960,7 +3961,7 @@ function cartWhatsApp(){
   const tot=c.items.reduce((s,i)=>s+i.p*i.q,0);
   const items=c.items.map(i=>`• ${i.n} × ${i.q} = $${(i.p*i.q).toLocaleString()}`).join('\n');
   const msg=encodeURIComponent(`🌿 *${APP_CFG.appName||'Iksan Wellness'} — Pedido ${c.name}*\n\n${items}\n\n*Total: $${tot.toLocaleString()} MXN*`);
-  window.open(`https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
+  window.open('https://wa.me/'+(c.phone||'').replace(/\D/g,'')+'?text='+encodeURIComponent(cleanWAMsg(msg)),'_blank');
 }
 
 function calcDisc(){
@@ -4098,7 +4099,78 @@ function confirmSale(){
   sbSaveVenta(sale).catch(function(){});
   sbSaveConsultante(c).catch(function(){});
   closeMo(1);closeMo(2);renderActiveConPanel();
-  showT('Venta registrada $'+final.toLocaleString()+' · '+methodLabel+(sale.comprobante?' · Con comprobante':''));
+  showT('Venta registrada $'+final.toLocaleString()+' · '+methodLabel);
+  // Show receipt option
+  setTimeout(function(){mostrarReciboVenta(sale,c);},300);
+}
+
+function mostrarReciboVenta(sale,c){
+  var boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
+  var negocio=boCfg?.appName||APP_CFG.appName||'Iksan Wellness';
+  var orden='ORD-'+sale.id.slice(-6).toUpperCase();
+  var fecha=new Date(sale.date).toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var h='<div class="m-title">🧾 Recibo de venta</div>';
+  h+='<div style="background:#f8f5ff;border-radius:9px;padding:12px;margin-bottom:10px">';
+  h+='<div style="display:flex;justify-content:space-between;margin-bottom:6px">';
+  h+='<div style="font-size:13px;font-weight:700;color:var(--deep)">'+negocio+'</div>';
+  h+='<div style="font-size:11px;color:var(--muted)">'+orden+'</div></div>';
+  h+='<div style="font-size:11px;color:var(--muted)">'+fecha+'</div>';
+  h+='<div style="font-size:12px;margin-top:4px">👤 <b>'+c.name+'</b>'+(c.phone?' · '+c.phone:'')+'</div>';
+  h+='</div>';
+  h+='<div style="margin-bottom:10px">';
+  sale.items.forEach(function(it){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">';
+    h+='<div>'+(it.e||'🌿')+' '+it.n+(it.q>1?' × '+it.q:'')+'</div>';
+    h+='<div style="font-weight:600">$'+(it.p*it.q).toLocaleString()+'</div></div>';
+  });
+  h+='</div>';
+  if(sale.desc>0)h+='<div style="display:flex;justify-content:space-between;font-size:12px;color:#1a7f3c;margin-bottom:4px"><div>Descuento'+(sale.promo?' ('+sale.promo+')':'')+'</div><div>-$'+sale.desc.toLocaleString()+'</div></div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:var(--deep);padding:8px 0;border-top:2px solid var(--border)">';
+  h+='<div>Total</div><div>$'+sale.total.toLocaleString()+' MXN</div></div>';
+  h+='<div style="font-size:11px;color:var(--muted);margin-top:4px">Pago: <b>'+sale.payMethod+'</b></div>';
+  if(sale.nota)h+='<div style="font-size:11px;color:var(--muted);margin-top:4px">Nota: '+sale.nota+'</div>';
+  h+='<div style="display:flex;gap:7px;margin-top:12px">';
+  h+='<button class="btn btn-wa" style="flex:2" onclick="enviarReciboWA(window._lastSale)">💬 Enviar por WhatsApp</button>';
+  h+='<button class="btn btn-o btn-sm" style="flex:1" onclick="closeMo(2)">Cerrar</button>';
+  h+='</div>';
+  window._lastSale=sale;
+  window._lastSaleClient=c;
+  openMo(2,h);
+}
+
+function enviarReciboWA(sale){
+  if(!sale)return;
+  var c=window._lastSaleClient;
+  var boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
+  var negocio=boCfg?.appName||APP_CFG.appName||'Iksan Wellness';
+  var orden='ORD-'+sale.id.slice(-6).toUpperCase();
+  var fecha=new Date(sale.date).toLocaleDateString('es-MX');
+  var lines=[
+    '*Recibo de compra - '+negocio+'*',
+    'No. Orden: '+orden,
+    'Fecha: '+fecha,
+    'Cliente: '+( c?c.name:''),
+    '',
+    '*Productos:*'
+  ];
+  sale.items.forEach(function(it){
+    lines.push('  '+it.n+(it.q>1?' x'+it.q:'')+' — $'+(it.p*it.q).toLocaleString()+' MXN');
+  });
+  if(sale.desc>0)lines.push('  Descuento: -$'+sale.desc.toLocaleString());
+  lines.push('');
+  lines.push('*Total: $'+sale.total.toLocaleString()+' MXN*');
+  lines.push('Forma de pago: '+sale.payMethod);
+  if(sale.nota)lines.push('Nota: '+sale.nota);
+  lines.push('','Gracias por tu compra.');
+  var msg=cleanWAMsg(lines.join('\n'));
+  var tel=c?(c.phone||'').replace(/[^0-9]/g,''):'';
+  window._lastWAMsg=msg;window._lastWATel=tel;
+  openMo(3,'<div class="m-title">💬 Recibo por WhatsApp</div>'
+    +'<textarea id="waMsgTA" class="in" style="min-height:200px;font-size:11px;resize:vertical;line-height:1.6">'+msg+'</textarea>'
+    +'<div style="display:flex;gap:7px;margin-top:10px">'
+    +'<button class="btn btn-wa" style="flex:2" onclick="openWADirectEdited(window._lastWATel)">💬 Enviar</button>'
+    +'<button class="btn btn-p btn-sm" style="flex:1" onclick="copyWAMsgEdited()">📋 Copiar</button>'
+    +'</div>');
 }
 
 function markAsSale(){openPayModal();}
@@ -4915,7 +4987,7 @@ function sendCitaBioWA(id){
   const a=citasBio.find(x=>x.id===id);if(!a)return;
   const c=clientes.find(x=>x.id===a.cliId);
   const msg=encodeURIComponent(`🔬 *Recordatorio Cita BioCuántico*\n\n👤 ${a.cliName}\n📅 ${a.fecha}${a.hora?' · ⏰ '+a.hora:''}\n${a.nota?'\n📝 '+a.nota:''}\n\n💡 *Recomendaciones:*\n• Ayuno de 2 horas\n• Ropa cómoda\n• Sin cremas en las manos\n\n_Iksan Wellness · VitalHealth_`);
-  window.open(`https://wa.me/${(c?.phone||'').replace(/\D/g,'')}?text=${msg}`,'_blank');
+  window.open('https://wa.me/'+(c?.phone||'').replace(/\D/g,'')+'?text='+encodeURIComponent(cleanWAMsg(msg)),'_blank');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -6021,10 +6093,23 @@ window._copyShortUrl=function(){
   if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showT('Link copiado');});}
   else{showT('Copia el link manualmente');}
 };
+function cleanWAMsg(msg){
+  // Remove characters that show as ? in WhatsApp
+  return (msg||'')
+    .replace(/[\u2713\u2714]/g,'✓')   // checkmarks
+    .replace(/[\u2022]/g,'-')           // bullet points
+    .replace(/[\u2019\u2018]/g,"'")    // smart quotes
+    .replace(/[\u201C\u201D]/g,'"')    // smart double quotes
+    .replace(/[\u2014\u2013]/g,'-')    // em/en dashes
+    .replace(/\n{3,}/g,'\n\n')          // excess newlines
+    .replace(/ {2,}/g,' ')              // excess spaces
+    .trim();
+}
+
 function openWADirectEdited(tel){
   var ta=document.getElementById('waMsgTA');
   var msg=ta?ta.value:window._lastWAMsg||'';
-  msg=msg.replace(/\n{3,}/g,'\n\n').replace(/ {2,}/g,' ').trim();
+  msg=cleanWAMsg(msg);
   var t=(tel||'').replace(/[^0-9]/g,'');
   window.open('https://wa.me/'+(t||'')+'?text='+encodeURIComponent(msg),'_blank');
 }
