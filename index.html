@@ -1,8 +1,11 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!-- IKSAN VH App v20260512_2017 -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Iksan Wellness v9</title>
 <style>
 /* System fonts — no external requests */
@@ -1050,6 +1053,7 @@ const S={
 };
 
 // ── API LAYER — Cloudflare Worker → Supabase ─────────────────
+const APP_VERSION='20260512_2017';
 const API_URL='https://iksanmastervh.iksanwellness.workers.dev';
 const ADMIN_KEY='iksan2024_master';
 const API={
@@ -1127,8 +1131,10 @@ let users=(function(){
 let sales=S.get('ik_sales',[]);
 let locations=S.get('ik_locs',['General','Evento','Meta Ads','Redes Sociales','Referido']);
 let gastos=S.get('ik_gastos',[]);
-let citasBio=S.get('ik_citasBio',[]);
-let citasDr=S.get('ik_citasDr',[]);
+let citasBioRaw=S.get('ik_citasBio',[]);
+let citasBio=(function(){var m={};citasBioRaw.forEach(function(c){m[c.id]=c;});return Object.values(m);})();
+let citasDrRaw=S.get('ik_citasDr',[]);
+let citasDr=(function(){var m={};citasDrRaw.forEach(function(c){m[c.id]=c;});return Object.values(m);})();
 const MODULOS_DEFAULT=[
   {id:'m1',name:'Básico',icon:'🌱',price:199,color:'#1a56db',desc:'Listado de clientes + recomendaciones de productos + catálogo con precios editables',includes:['clientes','catalogo','precios'],baseApp:false,activatedFor:[]},
   {id:'m2',name:'Intermedio',icon:'🌿',price:349,color:'#1a7f3c',desc:'Todo Básico + carrito de ventas + hoja de ingesta y beneficios para el cliente',includes:['clientes','catalogo','precios','carrito','ingesta'],baseApp:false,activatedFor:[]},
@@ -2049,8 +2055,13 @@ function renderConSelect(){
 function populateConSelect(elId){
   const el=document.getElementById(elId);
   if(!el)return;
-  el.innerHTML='<option value="">— Consultante —</option>'+
-    clientes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const isAdminU=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
+  const cid=getConsultorId();
+  const lista=isAdminU?[]:clientes.filter(function(c){
+    return !c.consultor_id||c.consultor_id===cid||(currentUser&&c.consultor_id===currentUser.id);
+  });
+  el.innerHTML='<option value="">— Cliente —</option>'+
+    lista.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 }
 
 function refreshAllConSelects(){
@@ -3867,6 +3878,12 @@ function deleteSavedCart(name){
 
 function openCartModal(){
   const c=getActiveCon();if(!c)return;
+  // Restore discount values after modal opens
+  setTimeout(function(){
+    if(c.discType){var dt=document.getElementById('discType');if(dt)dt.value=c.discType;}
+    if(c.discVal){var dv=document.getElementById('discVal');if(dv)dv.value=c.discVal;}
+    if(c.discPromo){var dp=document.getElementById('discPromo');if(dp)dp.value=c.discPromo;}
+  },150);
   const tot=c.items.reduce((s,i)=>s+i.p*i.q,0);
   openMo(1,`
     <div class="m-title">🛒 Carrito · ${c.name}</div>
@@ -4038,15 +4055,17 @@ function calcDisc(){
 }
 
 function getCartTotals(){
-  const c=getActiveCon();if(!c)return{bruto:0,desc:0,final:0};
+  const c=getActiveCon();if(!c)return{bruto:0,desc:0,final:0,promo:''};
   const bruto=c.items.reduce((s,i)=>s+i.p*i.q,0);
-  const type=document.getElementById('discType')?.value||'';
-  const val=parseFloat(document.getElementById('discVal')?.value)||0;
+  const type=document.getElementById('discType')?.value||c.discType||'';
+  const val=parseFloat(document.getElementById('discVal')?.value)||c.discVal||0;
   let desc=0;
   if(type==='pct'&&val>0)desc=Math.round(bruto*val/100);
   else if(type==='mxn'&&val>0)desc=Math.min(val,bruto);
   const promoEl=document.getElementById('discPromo');
-  const promo=promoEl?.value==='otra'?(document.getElementById('discPromoOtra')?.value||'Otra'):(promoEl?.value||'');
+  const promo=promoEl?(promoEl.value==='otra'?(document.getElementById('discPromoOtra')?.value||'Otra'):(promoEl.value||'')):(c.discPromo||'');
+  // Persist discount settings on cart
+  if(c&&(type||val)){c.discType=type;c.discVal=val;c.discPromo=promo;}
   return{bruto,desc,final:bruto-desc,promo};
 }
 
