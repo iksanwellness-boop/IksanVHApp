@@ -1104,8 +1104,8 @@ const API={
   async createCitaDr(data){return this.call('/citas-dr','POST',data);},
   async deleteCitaDr(id){return this.call('/citas-dr/'+id,'DELETE');},
   async getPagos(uid){return this.call('/pagos_suscripcion?user_id='+uid);},
-  async createPago(data){return this.call('/pagos_suscripcion','POST',data,true);},
-  async deletePago(id){return this.call('/pagos_suscripcion/'+id,'DELETE',null,true);},
+  async createPago(data){return this.call('/pagos-suscripcion','POST',data,true);},
+  async deletePago(id){return this.call('/pagos-suscripcion/'+id,'DELETE',null,true);},
   // Config y Precios
   async getInventario(cid){return this.call('/inventario?consultor_id='+cid);},
   async saveInventarioItem(data){return this.call('/inventario','POST',data);},
@@ -1372,7 +1372,7 @@ const T={
     nt_clientes:'👤 Clientes',nt_catalogo:'📦 Catálogo',nt_bo:'🏢 BO Consultor',nt_admin:'👑 BO Admin',
     // BO subnav
     sb_ventas:'📊 Ventas',sb_gastos:'💸 Gastos',sb_agenda:'📅 Agenda',
-    sb_citas_bio:'🔬 Citas Bio',sb_citas_dr:'👨‍⚕️ Doctores',sb_todos:'👥 Clientes',
+    sb_citas_bio:'🔬 Citas Bio',sb_citas_dr:'🏥 Derivados',sb_todos:'👥 Clientes',
     sb_precios:'🏷️ Precios',sb_wa:'💬 WhatsApp Bot',sb_miconfig:'🎨 Mi Config',
     // Admin subnav
     sa_subs:'💳 Suscripciones',sa_ingresos:'💰 Ingresos App',sa_modulos:'🧩 Módulos',
@@ -1775,16 +1775,28 @@ function doLogin(){
         // Immediately render so user sees their data
         setTimeout(function(){renderConList();refreshAllConSelects();},100);
       }
-      if(results[1]&&Array.isArray(results[1])&&results[1].length>0){sales=results[1];S.set('ik_sales',sales);}
-      if(results[2]&&Array.isArray(results[2])&&results[2].length>0){gastos=results[2];S.set('ik_gastos',gastos);}
-      if(results[3]&&Array.isArray(results[3])&&results[3].length>0){
-        // Deduplicate by ID
-        var bioMap={};results[3].forEach(function(c){bioMap[c.id]=c;});
+      // Always overwrite localStorage with Supabase — prevents stale cache
+      if(results[1]&&Array.isArray(results[1])){
+        var deletedSales=S.get('ik_deleted_sales',[]);
+        sales=results[1].filter(function(s){return deletedSales.indexOf(s.id)<0;});
+        S.set('ik_sales',sales);
+      }
+      if(results[2]&&Array.isArray(results[2])){
+        var deletedGastos=S.get('ik_deleted_gastos',[]);
+        gastos=results[2].filter(function(g){return deletedGastos.indexOf(g.id)<0;});
+        S.set('ik_gastos',gastos);
+      }
+      if(results[3]&&Array.isArray(results[3])){
+        var bioMap={};
+        var deletedBio=S.get('ik_deleted_citas_bio',[]);
+        results[3].forEach(function(c){if(deletedBio.indexOf(c.id)<0)bioMap[c.id]=c;});
         citasBio=Object.values(bioMap);
         S.set('ik_citasBio',citasBio);
       }
-      if(results[4]&&Array.isArray(results[4])&&results[4].length>0){
-        var drMap={};results[4].forEach(function(c){drMap[c.id]=c;});
+      if(results[4]&&Array.isArray(results[4])){
+        var drMap={};
+        var deletedDr=S.get('ik_deleted_citas_dr',[]);
+        results[4].forEach(function(c){if(deletedDr.indexOf(c.id)<0)drMap[c.id]=c;});
         citasDr=Object.values(drMap);
         S.set('ik_citasDr',citasDr);
       }
@@ -2031,7 +2043,8 @@ function goBoView(v){
         S.set('ik_citasBio',citasBio);
       }
       if(r[1]&&Array.isArray(r[1])&&r[1].length){
-        var dMap={};r[1].forEach(function(c){dMap[c.id]=c;});
+        var deletedDr=S.get('ik_deleted_citas_dr',[]);
+        var dMap={};r[1].forEach(function(c){if(deletedDr.indexOf(c.id)<0)dMap[c.id]=c;});
         citasDr=Object.values(dMap);
         S.set('ik_citasDr',citasDr);
       }
@@ -3884,9 +3897,11 @@ function saveCartByName(){
     items:JSON.parse(JSON.stringify(c.items)),
     date:new Date().toISOString(),
     descuento:totals.desc||0,
-    promo:totals.promo||'',
     total:totals.final||0,
-    descuentoActivo:c.descuentoActivo||null
+    discType:c.discType||'',
+    discVal:c.discVal||0,
+    discPromo:totals.promo||c.discPromo||'',
+    promo:totals.promo||''
   };
   if(existing>=0)c.savedCarts[existing]=cartCopy;
   else c.savedCarts.push(cartCopy);
@@ -3903,9 +3918,12 @@ function loadSavedCart(name){
   if(!saved){showT('Carrito no encontrado');return;}
   if(!confirm('Cargar "'+name+'"? Reemplaza el carrito actual.'))return;
   c.items=JSON.parse(JSON.stringify(saved.items));
-  if(saved.descuentoActivo)c.descuentoActivo=saved.descuentoActivo;
-  if(saved.promo)c.promoActiva=saved.promo;
+  // Restore discount fields
+  c.discType=saved.discType||saved.descuentoActivo||'';
+  c.discVal=saved.discVal||saved.descuento||0;
+  c.discPromo=saved.discPromo||saved.promo||'';
   saveAll();
+  sbSaveConsultante(c).catch(function(){});
   showT('✓ Carrito cargado: '+name);
   openCartModal();
 }
@@ -4667,6 +4685,9 @@ function deleteSale(id){
   // Find the sale to get client info before deleting
   var sale=sales.find(function(s){return s.id===id;});
   sales=sales.filter(function(s){return s.id!==id;});
+  var deletedSales=S.get('ik_deleted_sales',[]);
+  if(deletedSales.indexOf(id)<0)deletedSales.push(id);
+  S.set('ik_deleted_sales',deletedSales);
   // Also remove from client history
   if(sale&&sale.cliId){
     var cli=clientes.find(function(c){return c.id===sale.cliId;});
@@ -5118,6 +5139,9 @@ function renderCitasBio(){
 function deleteCitaBio(id){
   var cita=citasBio.find(function(c){return c.id===id;});
   citasBio=citasBio.filter(function(c){return c.id!==id;});
+  var deletedBio=S.get('ik_deleted_citas_bio',[]);
+  if(deletedBio.indexOf(id)<0)deletedBio.push(id);
+  S.set('ik_deleted_citas_bio',deletedBio);
   if(cita&&cita.cliId){
     var cli=clientes.find(function(x){return x.id===cita.cliId;});
     if(cli&&cli.history){
@@ -5255,6 +5279,10 @@ function updateCitaDrStatus(id,status){
 function deleteCitaDr(id){
   var cita=citasDr.find(function(c){return c.id===id;});
   citasDr=citasDr.filter(function(c){return c.id!==id;});
+  // Track deleted IDs to prevent reload
+  var deleted=S.get('ik_deleted_citas_dr',[]);
+  if(deleted.indexOf(id)<0)deleted.push(id);
+  S.set('ik_deleted_citas_dr',deleted);
   if(cita&&cita.cliId){
     var cli=clientes.find(function(x){return x.id===cita.cliId;});
     if(cli){
