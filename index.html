@@ -286,6 +286,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 
 <!-- HEADER -->
 <div class="app-header">
+  <div id="versionBanner" style="position:fixed;bottom:0;left:0;right:0;background:#1a2a3e;color:#fff;font-size:9px;text-align:center;padding:2px;z-index:9999;opacity:.7">IKSAN v20260512_214928</div>
   <div class="logo-area" onclick="goView('clientes')">
     <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs><radialGradient id="ig" cx="30%" cy="30%" r="75%"><stop offset="0%" stop-color="#fce870"/><stop offset="35%" stop-color="#fddde8"/><stop offset="75%" stop-color="#f0a0d8"/><stop offset="100%" stop-color="#e880d0"/></radialGradient><path id="ta" d="M 15,50 A 35,35 0 0,1 85,50"/></defs>
@@ -455,16 +456,16 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <div class="bo-hero-sub">Tus ventas, gastos, citas y comisiones</div>
   </div>
   <div class="subnav">
-    <button class="subnav-tab on" onclick="goBoView('ventas')" id="sb-ventas">🛒 Ingresos</button>
-    <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 Cita Bio</button>
+    <button class="subnav-tab on" onclick="goBoView('todos-con')" id="sb-todos-con">👥 Clientes</button>
+    <button class="subnav-tab" onclick="goBoView('citas-bio')" id="sb-citas-bio">🔬 Cita Escáner</button>
     <button class="subnav-tab" onclick="goBoView('citas-dr')" id="sb-citas-dr">🏥 Derivados</button>
-    <button class="subnav-tab" onclick="goBoView('todos-con')" id="sb-todos-con">👥 Clientes</button>
-    <button class="subnav-tab" onclick="goBoView('inventario')" id="sb-inventario">📦 Inventario</button>
-    <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios">🏷️ Precios</button>
+    <button class="subnav-tab" onclick="goBoView('agenda')" id="sb-agenda">📅 Agenda</button>
+    <button class="subnav-tab" onclick="goBoView('ventas')" id="sb-ventas">🛒 Ventas</button>
     <button class="subnav-tab" onclick="goBoView('gastos')" id="sb-gastos">💸 Gastos</button>
     <button class="subnav-tab" onclick="goBoView('whatsapp')" id="sb-whatsapp">💬 WA Bot</button>
     <button class="subnav-tab" onclick="goBoView('mi-config')" id="sb-mi-config">🎨 Config</button>
-    <button class="subnav-tab" onclick="goBoView('agenda')" id="sb-agenda">📅 Agenda</button>
+    <button class="subnav-tab" onclick="goBoView('inventario')" id="sb-inventario">📦 Inventario</button>
+    <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios">🏷️ Precios</button>
   </div>
 
   <!-- BO: Ventas -->
@@ -789,10 +790,10 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
   </div>
   <div class="subnav">
     <button class="subnav-tab on" onclick="goAdminView('subs')" id="sa-subs">💳 Suscripciones</button>
-    <button class="subnav-tab" onclick="goAdminView('ingresos')" id="sa-ingresos">💰 Ingresos App</button>
-    <button class="subnav-tab" onclick="goAdminView('modulos')" id="sa-modulos">🧩 Módulos / Apps</button>
-
-    <button class="subnav-tab" onclick="goAdminView('config')" id="sa-config">⚙️ Configuración</button>
+    <button class="subnav-tab" onclick="goAdminView('ingresos')" id="sa-ingresos">💰 Ingresos</button>
+    <button class="subnav-tab" onclick="goAdminView('modulos')" id="sa-modulos">🧩 Módulos</button>
+    <button class="subnav-tab" onclick="goAdminView('todos-con')" id="sa-todos-con">👥 Clientes</button>
+    <button class="subnav-tab" onclick="goAdminView('config')" id="sa-config">⚙️ Config</button>
   </div>
 
   <!-- ADMIN: Suscripciones (usuarios) -->
@@ -1897,6 +1898,13 @@ function applyModulosTabs(u){
     var sp=document.getElementById('sb-precios');if(sp)sp.style.display='none';
     var ntAdmin=document.getElementById('nt-admin');if(ntAdmin)ntAdmin.style.display='flex';
 
+    // Admin BO Consultor: hide all data tabs, only show structural ones
+    setTimeout(function(){
+      ['sb-todos-con','sb-gastos','sb-agenda','sb-inventario','sb-precios','sb-ventas'].forEach(function(id){
+        var el=document.getElementById(id);if(el)el.style.display='none';
+      });
+    },100);
+
     // ── ADMIN_OP: hide restricted actions in config tab ──
     if(u.role==='admin_op'){
       // Hide export/import/reset buttons and password change
@@ -1979,7 +1987,12 @@ function goView(v){
 
   if(v==='clientes'){renderConSelect();renderActiveConPanel();renderConList();}
   if(v==='catalogo')initCat();
-  if(v==='bo'){goBoView(curBoView);}
+  if(v==='bo'){
+    const isAdmBO=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
+    const banner=document.getElementById('adminDemoBanner');
+    if(banner)banner.style.display=isAdmBO?'block':'none';
+    goBoView(curBoView);
+  }
   if(v==='admin'&&currentUser?.role==='admin'){goAdminView(curAdminView);}
 }
 
@@ -1994,17 +2007,20 @@ function goBoView(v){
   if(v==='ventas'){renderVentas();updateStatsBO();}
   if(v==='gastos'){renderGastos();initGastoSelects();}
   if(v==='agenda'){
-    // Ensure citas are loaded before rendering
     var agCid=getConsultorId();
-    if(agCid&&(!citasBio.length&&!citasDr.length)){
-      Promise.all([API.getCitasBio(agCid),API.getCitasDr(agCid)]).then(function(r){
-        if(r[0]&&r[0].length)citasBio=r[0];
-        if(r[1]&&r[1].length)citasDr=r[1];
-        renderAgenda('citas');
-      }).catch(function(){renderAgenda('citas');});
-    } else {
+    Promise.all([API.getCitasBio(agCid),API.getCitasDr(agCid)]).then(function(r){
+      if(r[0]&&Array.isArray(r[0])&&r[0].length){
+        var bMap={};r[0].forEach(function(c){bMap[c.id]=c;});
+        citasBio=Object.values(bMap);
+        S.set('ik_citasBio',citasBio);
+      }
+      if(r[1]&&Array.isArray(r[1])&&r[1].length){
+        var dMap={};r[1].forEach(function(c){dMap[c.id]=c;});
+        citasDr=Object.values(dMap);
+        S.set('ik_citasDr',citasDr);
+      }
       renderAgenda('citas');
-    }
+    }).catch(function(){renderAgenda('citas');});
   }
   if(v==='citas-bio'){renderCitasBio();populateConSelect('citaBioConsultante');document.getElementById('citaBioFecha').value=new Date().toISOString().slice(0,10);}
   if(v==='citas-dr'){renderCitasDr();populateConSelect('citaDrConsultante');document.getElementById('citaDrFecha').value=new Date().toISOString().slice(0,10);}
@@ -2064,8 +2080,6 @@ function populateConSelect(elId){
     lista=clientes.filter(function(c){
       return !c.consultor_id||c.consultor_id===cid||(currentUser&&c.consultor_id===currentUser.id);
     });
-    // Fallback: if filter returns empty but clientes has data, show all
-    if(!lista.length&&clientes.length)lista=clientes;
   }
   el.innerHTML='<option value="">— Cliente —</option>'+
     lista.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
@@ -2311,8 +2325,6 @@ function renderConList(){
     myClientes=clientes.filter(function(c){
       return !c.consultor_id||c.consultor_id===myCid||c.consultor_id===(currentUser&&currentUser.id);
     });
-    // Safety fallback: if filter returns empty but we have clients, show all
-    if(!myClientes.length&&clientes.length)myClientes=clientes;
   }
   // Search filter
   const sq=(document.getElementById('conSearch')?.value||'').toLowerCase().trim();
@@ -3899,7 +3911,7 @@ function openCartModal(){
     if(c.discVal){var dv=document.getElementById('discVal');if(dv)dv.value=c.discVal;}
     if(c.discPromo){var dp=document.getElementById('discPromo');if(dp)dp.value=c.discPromo;}
   },150);
-  const tot=c.items.reduce((s,i)=>s+i.p*i.q,0);
+  const {bruto:tot,desc:totDesc,final:totFinal,promo:totPromo}=getCartTotals();
   openMo(1,`
     <div class="m-title">🛒 Carrito · ${c.name}</div>
     <div class="m-sub">Productos seleccionados para esta venta</div>
@@ -3986,7 +3998,8 @@ function openCartModal(){
         <div class="cart-total" id="cartTotalRow">
           <span class="ct-lbl">Total</span>
           <div style="text-align:right">
-            <div class="ct-val" id="cartTotalVal">$${tot.toLocaleString()} MXN</div>
+            <div class="ct-val" id="cartTotalVal">$${totFinal.toLocaleString()} MXN</div>
+            <div id="cartDiscRow" style="${totDesc>0?'display:block':'display:none'};font-size:11px;color:#1a7f3c;margin-top:2px">${totDesc>0?`Desc: -$${totDesc.toLocaleString()} | Sub: $${tot.toLocaleString()}`:''}</div>
             <div id="cartDiscRow" style="display:none;font-size:11px;color:#1a7f3c"></div>
           </div>
         </div>
@@ -4163,9 +4176,9 @@ function confirmSale(){
   const method=methodEl.value;
   const nota=document.getElementById('payNota')?.value||'';
   const {bruto,desc,final,promo}=getCartTotals();
-  const cuentas=S.get('ik_cuentas',[{id:'ef',nombre:'Efectivo'},{id:'tr',nombre:'Transferencia'}]);
-  const cuenta=cuentas.find(cu=>cu.id===method);
-  const methodLabel=method==='transito'?'Pago en transito':(cuenta?.nombre||method);
+  const cuentasAll=[...getCuentasGasto(),...[{id:'ef',lbl:'Efectivo'},{id:'tr',lbl:'Transferencia'}]];
+  const cuenta=cuentasAll.find(cu=>cu.id===method);
+  const methodLabel=method==='transito'?'Pago en transito':(cuenta?.lbl||cuenta?.nombre||method);
   const sale={
     id:'s_'+Date.now(),
     cliId:c.id,client:c.name,
@@ -5151,12 +5164,17 @@ function renderCitasDr(){
   const list=document.getElementById('citasDrList');
   if(!citasDr.length){list.innerHTML='<div class="empty"><div class="empty-icon">👨‍⚕️</div>Sin derivaciones</div>';return;}
   const STATUS_DR={agendada:{lbl:'⏳ Agendada',c:'#1a56db'},realizada:{lbl:'✅ Realizada',c:'#1a7f3c'},cobrada:{lbl:'💰 Cobrada',c:'#b8960c'}};
-  list.innerHTML=citasDr.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(d=>{
+  list.innerHTML=citasDr.slice().sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).map(d=>{
+    // Resolve undefined client name
+    if(!d.cliName||d.cliName==='undefined'||d.cliName==='null'){
+      const cli2=clientes.find(c=>c.id===d.cliId);
+      if(cli2)d.cliName=cli2.name;
+    }
     const st=STATUS_DR[d.status]||STATUS_DR.agendada;
-    return `<div class="list-item" style="flex-wrap:wrap">
-      <div class="li-avatar" style="background:#fff5fa;color:#8b1a5a">👨‍⚕️</div>
+    return `<div class="list-item" style="flex-wrap:wrap;cursor:pointer" onclick="openEditCitaDr('${d.id}')">
+      <div class="li-avatar" style="background:#fff5fa;color:#8b1a5a">🏥</div>
       <div class="li-info">
-        <div class="li-name">${d.cliName} → Dr. ${d.doctor}</div>
+        <div class="li-name">${d.cliName||'Sin cliente'} → ${d.doctor||'Sin especialista'}</div>
         <div class="li-meta">${d.especialidad?d.especialidad+' · ':''}📅 ${d.fecha}${d.hora?' · '+d.hora:''}</div>
         <div style="margin-top:3px">
           <span class="status-pill" style="background:${st.c}22;color:${st.c}">${st.lbl}</span>
@@ -5173,6 +5191,43 @@ function renderCitasDr(){
       </div>
     </div>`;
   }).join('');
+}
+
+function openEditCitaDr(id){
+  var d=citasDr.find(function(c){return c.id===id;});if(!d)return;
+  // Resolve name
+  if(!d.cliName||d.cliName==='undefined'){
+    var cli=clientes.find(function(c){return c.id===d.cliId;});
+    if(cli)d.cliName=cli.name;
+  }
+  openMo(2,'<div class="m-title">🏥 Editar derivación</div>'
+    +'<div style="font-size:12px;color:var(--muted);margin-bottom:12px">'+( d.cliName||'')+'</div>'
+    +'<div class="in-row" style="margin-bottom:8px">'
+      +'<input class="in" id="eDrDoctor" value="'+(d.doctor||'')+'" placeholder="Especialista">'
+      +'<input class="in" id="eDrEspec" value="'+(d.especialidad||'')+'" placeholder="Especialidad" style="flex:.8">'
+    +'</div>'
+    +'<div class="in-row" style="margin-bottom:8px">'
+      +'<input class="in" type="date" id="eDrFecha" value="'+(d.fecha||'')+'">'
+      +'<input class="in" type="time" id="eDrHora" value="'+(d.hora||'')+'">'
+    +'</div>'
+    +'<input class="in" id="eDrNota" value="'+(d.nota||'')+'" placeholder="Notas" style="margin-bottom:8px">'
+    +'<div style="display:flex;gap:7px;margin-top:10px">'
+      +'<button class="btn btn-p" style="flex:2" data-id="'+id+'" onclick="saveEditCitaDr(this.dataset.id)">💾 Guardar</button>'
+      +'<button class="btn btn-d btn-sm" style="flex:1" data-id="'+id+'" onclick="deleteCitaDr(this.dataset.id);closeMo(2)">🗑️ Eliminar</button>'
+    +'</div>');
+}
+
+function saveEditCitaDr(id){
+  var d=citasDr.find(function(c){return c.id===id;});if(!d)return;
+  d.doctor=document.getElementById('eDrDoctor')?.value||d.doctor;
+  d.especialidad=document.getElementById('eDrEspec')?.value||d.especialidad;
+  d.fecha=document.getElementById('eDrFecha')?.value||d.fecha;
+  d.hora=document.getElementById('eDrHora')?.value||d.hora;
+  d.nota=document.getElementById('eDrNota')?.value||d.nota;
+  S.set('ik_citasDr',citasDr);
+  saveAll();
+  API.call('/citas-dr/'+id,'PUT',{...d,consultor_id:getConsultorId()}).catch(function(){});
+  closeMo(2);renderCitasDr();showT('Derivación actualizada');
 }
 
 function updateCitaDrStatus(id,status){
