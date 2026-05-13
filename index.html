@@ -255,6 +255,10 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 </style>
 </head>
 <body>
+<div id="demoOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:8888">
+  <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:100px;font-weight:900;color:rgba(180,80,0,0.07);letter-spacing:10px;pointer-events:none;user-select:none;white-space:nowrap">DEMO</div>
+  <div style="position:fixed;top:8px;right:70px;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px">🧪 MODO DEMO</div>
+</div>
 
 <!-- ════════════ LOGIN ════════════ -->
 <div class="login-screen" id="loginScreen">
@@ -463,9 +467,9 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
     <button class="subnav-tab" onclick="goBoView('ventas')" id="sb-ventas">🛒 Ventas</button>
     <button class="subnav-tab" onclick="goBoView('gastos')" id="sb-gastos">💸 Gastos</button>
     <button class="subnav-tab" onclick="goBoView('whatsapp')" id="sb-whatsapp">💬 WA Bot</button>
-    <button class="subnav-tab" onclick="goBoView('mi-config')" id="sb-mi-config">🎨 Config</button>
     <button class="subnav-tab" onclick="goBoView('inventario')" id="sb-inventario">📦 Inventario</button>
     <button class="subnav-tab" onclick="goBoView('precios')" id="sb-precios">🏷️ Precios</button>
+    <button class="subnav-tab" onclick="goBoView('mi-config')" id="sb-mi-config">🎨 Config</button>
   </div>
 
   <!-- BO: Ventas -->
@@ -1265,7 +1269,7 @@ async function sbSaveCita(cita,tipo){
 const STATUS={
   prospecto:{lbl:'🔵 Prospecto',color:'#1a56db'},
   agendado:{lbl:'🔬 Agendado BioCuántico',color:'#1a2a3e'},
-  derivado:{lbl:'👨‍⚕️ Derivado a Dr.',color:'#8b1a5a'},
+  derivado:{lbl:'👨‍⚕️ Derivado',color:'#8b1a5a'},
   activo:{lbl:'✅ Cliente activo',color:'#1a7f3c'},
   inactivo:{lbl:'⚫ Inactivo',color:'#999'}
 };
@@ -1705,6 +1709,12 @@ function doLogin(){
     const boCfg=S.get('ik_boconfig_'+u.id,null);
     if(boCfg)setTimeout(function(){applyBoConfig(boCfg);},300);
     showT('Bienvenido/a, '+u.name);
+    // Show DEMO watermark for admin
+    var demoOv=document.getElementById('demoOverlay');
+    if(demoOv){
+      var isAdmDemo=u.id==='u_admin'||u.role==='admin'||u.role==='admin_op';
+      demoOv.style.display=isAdmDemo?'block':'none';
+    }
   }
 
   // Verify with server + sync data
@@ -1898,12 +1908,7 @@ function applyModulosTabs(u){
     var sp=document.getElementById('sb-precios');if(sp)sp.style.display='none';
     var ntAdmin=document.getElementById('nt-admin');if(ntAdmin)ntAdmin.style.display='flex';
 
-    // Admin BO Consultor: hide all data tabs, only show structural ones
-    setTimeout(function(){
-      ['sb-todos-con','sb-gastos','sb-agenda','sb-inventario','sb-precios','sb-ventas'].forEach(function(id){
-        var el=document.getElementById(id);if(el)el.style.display='none';
-      });
-    },100);
+    // Admin sees all BO Consultor tabs in DEMO mode — own data only
 
     // ── ADMIN_OP: hide restricted actions in config tab ──
     if(u.role==='admin_op'){
@@ -5152,7 +5157,7 @@ function saveCitaDr(){
   if(c)sbSaveConsultante(c).catch(function(){});
   ['citaDrDoctor','citaDrEspecialidad','citaDrComision','citaDrNota'].forEach(id=>document.getElementById(id).value='');
   renderCitasDr();
-  if(c)addToHistoryFor(cliId,'cita','👨‍⚕️ Derivado a Dr. '+doctor+' · '+fecha,{doctor,especialidad,fecha,hora,comision,nota});
+  if(c)addToHistoryFor(cliId,'cita','👨‍⚕️ Derivado '+doctor+' · '+fecha,{doctor,especialidad,fecha,hora,comision,nota});
   renderCitaAlerts();
   showT('✓ Derivación registrada');
 }
@@ -5239,11 +5244,16 @@ function updateCitaDrStatus(id,status){
 function deleteCitaDr(id){
   var cita=citasDr.find(function(c){return c.id===id;});
   citasDr=citasDr.filter(function(c){return c.id!==id;});
-  // Also remove from client history
   if(cita&&cita.cliId){
     var cli=clientes.find(function(x){return x.id===cita.cliId;});
-    if(cli&&cli.history){
-      cli.history=cli.history.filter(function(h){return !(h.type==='cita'&&h.data&&h.data.fecha===cita.fecha&&h.data.doctor===cita.doctor);});
+    if(cli){
+      // Remove from history
+      if(cli.history)cli.history=cli.history.filter(function(h){
+        return !(h.type==='cita'&&h.data&&h.data.fecha===cita.fecha&&h.data.doctor===cita.doctor);
+      });
+      // Remove derivado status if no more citasDr for this client
+      var remaining=citasDr.filter(function(c){return c.cliId===cita.cliId;});
+      if(!remaining.length&&cli.status==='derivado')cli.status='activo';
       sbSaveConsultante(cli).catch(function(){});
     }
   }
