@@ -1097,12 +1097,12 @@ const API={
   async getGastos(cid){return this.call('/gastos?consultor_id='+cid);},
   async createGasto(data){return this.call('/gastos','POST',data);},
   async deleteGasto(id){return this.call('/gastos/'+id,'DELETE');},
-  async getCitasBio(cid){return this.call('/citas_bio?consultor_id='+cid);},
-  async createCitaBio(data){return this.call('/citas_bio','POST',data);},
-  async deleteCitaBio(id){return this.call('/citas_bio/'+id,'DELETE');},
-  async getCitasDr(cid){return this.call('/citas_dr?consultor_id='+cid);},
-  async createCitaDr(data){return this.call('/citas_dr','POST',data);},
-  async deleteCitaDr(id){return this.call('/citas_dr/'+id,'DELETE');},
+  async getCitasBio(cid){return this.call('/citas-bio?consultor_id='+cid);},
+  async createCitaBio(data){return this.call('/citas-bio','POST',data);},
+  async deleteCitaBio(id){return this.call('/citas-bio/'+id,'DELETE');},
+  async getCitasDr(cid){return this.call('/citas-dr?consultor_id='+cid);},
+  async createCitaDr(data){return this.call('/citas-dr','POST',data);},
+  async deleteCitaDr(id){return this.call('/citas-dr/'+id,'DELETE');},
   async getPagos(uid){return this.call('/pagos_suscripcion?user_id='+uid);},
   async createPago(data){return this.call('/pagos_suscripcion','POST',data,true);},
   async deletePago(id){return this.call('/pagos_suscripcion/'+id,'DELETE',null,true);},
@@ -1709,11 +1709,10 @@ function doLogin(){
     const boCfg=S.get('ik_boconfig_'+u.id,null);
     if(boCfg)setTimeout(function(){applyBoConfig(boCfg);},300);
     showT('Bienvenido/a, '+u.name);
-    // Show DEMO watermark for admin
-    var demoOv=document.getElementById('demoOverlay');
-    if(demoOv){
-      var isAdmDemo=u.id==='u_admin'||u.role==='admin'||u.role==='admin_op';
-      demoOv.style.display=isAdmDemo?'block':'none';
+    // Show DEMO watermark for admin (not on BO Admin)
+    if(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op'){
+      window._isAdmin=true;
+      updateDemoOverlay('clientes');
     }
   }
 
@@ -1819,6 +1818,9 @@ function doLogin(){
         saveInv();
       } else if(isAdminU){
         inventario=[];S.set('ik_inventario',[]);
+        // Admin has no own clients — clear any leaked data
+        clientes=clientes.filter(function(c){return c.consultor_id==='u_admin'||c.consultor_id===cid;});
+        S.set('ik_consultantes',clientes);
       }
 
       renderConList();refreshAllConSelects();
@@ -1981,6 +1983,14 @@ function applyModulosTabs(u){
 /* ═══════════════════════════════════════════════════
    NAVIGATION
    ═══════════════════════════════════════════════════ */
+function updateDemoOverlay(v){
+  var demoOv=document.getElementById('demoOverlay');
+  if(!demoOv||!window._isAdmin)return;
+  // Show DEMO on client-facing views, hide on BO Admin
+  var demoViews=['clientes','catalogo','bo'];
+  demoOv.style.display=demoViews.indexOf(v)>=0?'block':'none';
+}
+
 function goView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('on'));
@@ -1991,6 +2001,7 @@ function goView(v){
   curView=v;
 
   if(v==='clientes'){renderConSelect();renderActiveConPanel();renderConList();}
+  updateDemoOverlay(v);
   if(v==='catalogo')initCat();
   if(v==='bo'){
     const isAdmBO=currentUser&&(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
@@ -5253,7 +5264,7 @@ function deleteCitaDr(id){
       });
       // Remove derivado status if no more citasDr for this client
       var remaining=citasDr.filter(function(c){return c.cliId===cita.cliId;});
-      if(!remaining.length&&cli.status==='derivado')cli.status='activo';
+      if(!remaining.length&&cli.status==='derivado')cli.status='prospecto';
       sbSaveConsultante(cli).catch(function(){});
     }
   }
