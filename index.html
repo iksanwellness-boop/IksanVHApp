@@ -3602,17 +3602,261 @@ REGLAS:
   }
 }
 
+
+
+// ═══════════════════════════════════════════════════════════════
+// PARAM_TABLE — 184 parámetros del escáner
+// Clave: nombre en minúsculas  |  .d=display .s=section .a=si_alto .b=si_bajo .t=sistemas
+// ═══════════════════════════════════════════════════════════════
+var PARAM_TABLE={
+  "cristal de colesterol":{d:"Cristal de Colesterol",s:"Cardiovascular",a:"Colesterol elevado en sangre; mayor riesgo de obstrucción arterial e infarto.",b:"Colesterol bajo; puede afectar producción hormonal y función celular.",t:["colesterol", "cardiovascular", "arterias", "corazón"]},
+  "elasticidad vascular":{d:"Elasticidad Vascular",s:"Cardiovascular",a:"Vasos sanguíneos tensos o dilatados; riesgo de hipertensión.",b:"Vasos sanguíneos rígidos; mayor riesgo de presión alta y arteriosclerosis.",t:["cardiovascular", "vasos", "circulación", "presión"]},
+  "volumen de perfusión sanguínea miocardial":{d:"Perfusión Sanguínea Cardíaca",s:"Cardiovascular",a:"El corazón recibe más sangre de la necesaria; posible sobrecarga.",b:"El corazón recibe menos sangre; riesgo de isquemia cardíaca.",t:["corazón", "cardiovascular", "oxígeno", "circulación"]},
+  "consumo de oxígeno miocardial":{d:"Consumo de Oxígeno Cardíaco",s:"Cardiovascular",a:"El corazón consume más oxígeno del necesario; señal de sobrecarga cardíaca.",b:"El corazón consume poco oxígeno; función cardíaca reducida.",t:["corazón", "oxígeno", "cardiovascular"]},
+  "volumen de latido":{d:"Volumen de Latido",s:"Cardiovascular",a:"El corazón bombea demasiada sangre por latido; posible dilatación.",b:"El corazón bombea poca sangre por latido; fatiga y bajo rendimiento.",t:["corazón", "cardiovascular", "circulación"]},
+  "resistencia vascular":{d:"Resistencia Vascular",s:"Cardiovascular",a:"Resistencia alta en arterias; mayor esfuerzo cardíaco y riesgo de hipertensión.",b:"Resistencia baja; posible hipotensión o vasodilatación excesiva.",t:["cardiovascular", "presión", "vasos"]},
+  "viscosidad de la sangre":{d:"Viscosidad Sanguínea",s:"Lípidos Sanguíneos",a:"Sangre espesa; mayor riesgo de coágulos y accidente cardiovascular.",b:"Sangre muy fluida; posible riesgo de sangrado.",t:["sangre", "cardiovascular", "circulación"]},
+  "colesterol total":{d:"Colesterol Total (TC)",s:"Lípidos Sanguíneos",a:"Colesterol total alto; riesgo de placas en arterias e infarto.",b:"Colesterol bajo; puede afectar hormonas y membranas celulares.",t:["colesterol", "corazón", "cardiovascular", "arterias"]},
+  "trigliceridos":{d:"Triglicéridos (TG)",s:"Lípidos Sanguíneos",a:"Triglicéridos altos; sobrecarga el hígado y el corazón, favorece obesidad.",b:"Triglicéridos bajos; puede indicar malnutrición.",t:["triglicéridos", "corazón", "hígado", "obesidad"]},
+  "lipo proteinas de alta dencidad":{d:"HDL-C (Colesterol Bueno)",s:"Lípidos Sanguíneos",a:"HDL elevado; generalmente protector del corazón.",b:"HDL bajo; mayor riesgo de enfermedad cardiovascular.",t:["colesterol", "corazón", "cardiovascular"]},
+  "la lipoproteína de baja densidad":{d:"LDL-C (Colesterol Malo)",s:"Lípidos Sanguíneos",a:"LDL alto; mayor riesgo de placas arteriales e infarto.",b:"LDL bajo; generalmente favorable.",t:["colesterol", "arterias", "corazón", "cardiovascular"]},
+  "grasas neutras":{d:"Grasas Neutras (MB)",s:"Lípidos Sanguíneos",a:"Exceso de grasas neutras en sangre; riesgo metabólico y cardiovascular.",b:"Grasas neutras bajas; puede indicar déficit energético.",t:["grasa", "metabolismo", "cardiovascular"]},
+  "coeficiente de secreción de pepsina":{d:"Secreción de Pepsina",s:"Gastrointestinal",a:"Exceso de pepsina; puede irritar la mucosa gástrica y causar gastritis.",b:"Poca pepsina; digestión deficiente de proteínas.",t:["estómago", "digestión", "absorción"]},
+  "coeficiente de función de peristalsis gástrica":{d:"Peristalsis Gástrica",s:"Gastrointestinal",a:"El estómago se mueve demasiado rápido; mala absorción y diarrea.",b:"Movimientos gástricos lentos; digestión lenta, distensión y gases.",t:["digestión", "estómago", "intestino", "absorción"]},
+  "coeficiente de función de absorción gástrica":{d:"Absorción Gástrica",s:"Gastrointestinal",a:"El estómago absorbe en exceso; posible irritación de mucosa.",b:"El estómago no absorbe bien los nutrientes; posible déficit nutricional.",t:["digestión", "absorción", "estómago", "nutrientes"]},
+  "coeficiente de función de peristalsis del intestino delgado":{d:"Peristalsis Intestinal",s:"Gastrointestinal",a:"Tránsito intestinal acelerado; mala absorción de nutrientes.",b:"Tránsito intestinal lento; estreñimiento y acumulación de toxinas.",t:["intestino", "digestión", "tránsito", "absorción"]},
+  "coeficiente de función de absorción del intestino delgado":{d:"Absorción del Intestino Delgado",s:"Gastrointestinal",a:"Absorción intestinal excesiva; puede generar sobrecarga metabólica.",b:"El intestino no absorbe bien; déficit de vitaminas y minerales.",t:["intestino", "absorción", "digestión", "nutrientes"]},
+  "coeficiente intestinal bacteriano":{d:"Flora Intestinal Bacteriana",s:"Gastrointestinal",a:"Exceso de bacterias; riesgo de disbiosis e infección intestinal.",b:"Flora intestinal escasa; menor defensa digestiva e inmunológica.",t:["intestino", "flora", "bacterias", "digestión", "inmunidad"]},
+  "contenido de grasa en el hígado":{d:"Contenido de Grasa en el Hígado",s:"Función Hepática",a:"El hígado acumula grasa en exceso (hígado graso); riesgo de daño hepático crónico.",b:"Grasa hepática baja; puede indicar déficit de lípidos esenciales.",t:["hígado", "grasa", "hepático", "desintoxicación"]},
+  "función de desintoxicación":{d:"Función de Desintoxicación Hepática",s:"Función Hepática",a:"El hígado trabaja en exceso eliminando toxinas; señal de sobrecarga.",b:"Capacidad de limpieza del hígado reducida; toxinas se acumulan fácilmente.",t:["hígado", "toxinas", "desintoxicación"]},
+  "función de secreción de bilis":{d:"Secreción de Bilis",s:"Función Hepática",a:"Producción excesiva de bilis; puede irritar vesícula e intestino.",b:"El hígado produce poca bilis; digestión de grasas deficiente.",t:["hígado", "bilis", "digestión", "vesícula"]},
+  "metabolismo de las proteínas":{d:"Metabolismo de Proteínas Hepático",s:"Función Hepática",a:"Catabolismo proteico excesivo; puede indicar estrés o enfermedad hepática.",b:"El hígado produce pocas proteínas; señal de función hepática reducida.",t:["hígado", "proteínas", "metabolismo"]},
+  "función de producción de energía":{d:"Producción de Energía Hepática",s:"Función Hepática",a:"El hígado produce energía en exceso; posible desequilibrio metabólico.",b:"El hígado produce poca energía; fatiga crónica y metabolismo lento.",t:["hígado", "energía", "metabolismo"]},
+  "ácidos biliares totales séricos":{d:"Ácidos Biliares Totales (TBA)",s:"Vesícula Biliar",a:"La vesícula no drena correctamente; riesgo de cálculos y acumulación de bilis.",b:"Producción insuficiente de bilis; digestión de grasas deficiente.",t:["vesícula", "bilis", "digestión", "hígado"]},
+  "bilirrubina total":{d:"Bilirrubina Total (TBIL)",s:"Vesícula Biliar",a:"Bilirrubina alta; posible ictericia, obstrucción biliar o daño hepático.",b:"Bilirrubina baja; generalmente sin riesgo clínico.",t:["hígado", "bilis", "vesícula"]},
+  "fosfatasa alcalina":{d:"Fosfatasa Alcalina (ALP)",s:"Vesícula Biliar",a:"Posible obstrucción biliar, enfermedad hepática o ósea.",b:"Niveles bajos; puede indicar hipotiroidismo o desnutrición.",t:["hígado", "huesos", "vesícula"]},
+  "bilirrubina directa":{d:"Bilirrubina Directa (DBIL)",s:"Vesícula Biliar",a:"Obstrucción biliar o daño hepático; bilis no fluye correctamente.",b:"Normal.",t:["hígado", "bilis", "vesícula"]},
+  "insulina":{d:"Insulina",s:"Función Pancreática",a:"El páncreas produce demasiada insulina; riesgo de hipoglucemia reactiva.",b:"El páncreas produce poca insulina; riesgo elevado de diabetes.",t:["glucosa", "insulina", "páncreas", "metabolismo", "diabetes"]},
+  "polipéptido pancreático":{d:"Polipéptido Pancreático (PP)",s:"Función Pancreática",a:"Función pancreática exocrina elevada; posible irritación.",b:"Función pancreática reducida; mala digestión de grasas y proteínas.",t:["páncreas", "digestión", "enzimas"]},
+  "glucagón":{d:"Glucagón",s:"Función Pancreática",a:"Glucagón alto; el cuerpo libera demasiada glucosa al torrente sanguíneo.",b:"Glucagón bajo; riesgo de hipoglucemia sin respuesta adecuada.",t:["glucosa", "páncreas", "metabolismo", "azúcar"]},
+  "índice de proteinuria":{d:"Proteinuria",s:"Función Renal",a:"Los riñones pierden proteínas en orina; señal de daño en el filtro renal.",b:"Sin proteínas en orina; normal.",t:["riñón", "proteínas", "renal"]},
+  "índice de ácido úrico":{d:"Ácido Úrico",s:"Función Renal",a:"Ácido úrico elevado; riesgo de gota, cálculos renales e inflamación articular.",b:"Ácido úrico bajo; puede indicar enfermedad hepática o dieta baja en proteínas.",t:["riñón", "articulaciones", "gota", "inflamación"]},
+  "índice de nitrógeno ureico en la sangre":{d:"Nitrógeno Ureico (BUN)",s:"Función Renal",a:"Los riñones no eliminan bien los desechos; posible insuficiencia renal.",b:"BUN bajo; puede indicar baja ingesta proteica o enfermedad hepática.",t:["riñón", "renal", "proteínas"]},
+  "índice de urobilinógeno":{d:"Urobilinógeno",s:"Función Renal",a:"Posible daño hepático o anemia hemolítica.",b:"Obstrucción biliar; la bilis no llega al intestino.",t:["riñón", "hígado", "bilis"]},
+  "capacidad vital":{d:"Capacidad Vital Pulmonar",s:"Función Pulmonar",a:"Capacidad pulmonar aumentada; puede ser normal en atletas o indicar enfisema.",b:"Capacidad pulmonar reducida; dificultad para respirar profundo.",t:["pulmón", "respiración", "oxígeno"]},
+  "resistencia de las vías aéreas":{d:"Resistencia de Vías Aéreas",s:"Función Pulmonar",a:"Obstrucción de vías aéreas; asma, bronquitis o inflamación respiratoria.",b:"Vías aéreas con poca resistencia; puede indicar hipotensión respiratoria.",t:["pulmón", "respiración", "inflamación"]},
+  "contenido de oxígeno arterial":{d:"Oxígeno Arterial (PaCO2)",s:"Función Pulmonar",a:"Exceso de CO2 en sangre; el pulmón no ventila bien.",b:"Oxígeno arterial bajo; dificultad respiratoria o anemia.",t:["pulmón", "oxígeno", "respiración"]},
+  "índice de memoria":{d:"Índice de Memoria (ZS)",s:"Nervio Cerebral",a:"Actividad cerebral elevada; puede indicar ansiedad o estrés crónico.",b:"Memoria y concentración reducidas; riesgo de deterioro cognitivo.",t:["cerebro", "memoria", "concentración", "sistema nervioso"]},
+  "índice de suministro sanguíneo cerebral":{d:"Suministro Sanguíneo Cerebral",s:"Nervio Cerebral",a:"Exceso de flujo sanguíneo al cerebro; posibles cefaleas.",b:"Flujo insuficiente al cerebro; mareos y falta de concentración.",t:["cerebro", "circulación", "memoria"]},
+  "arterioesclerosis cerebral":{d:"Arterioesclerosis Cerebral",s:"Nervio Cerebral",a:"Arterias cerebrales endurecidas; riesgo de accidente cerebrovascular.",b:"Arterias cerebrales en buen estado.",t:["cerebro", "arterias", "circulación"]},
+  "coeficiente de osteoclasto":{d:"Actividad de Osteoclastos",s:"Densidad Mineral Ósea",a:"Destrucción ósea acelerada; riesgo de osteoporosis.",b:"Remodelación ósea lenta.",t:["huesos", "calcio", "densidad ósea"]},
+  "cantidad de pérdida de calcio":{d:"Pérdida de Calcio Óseo",s:"Densidad Mineral Ósea",a:"Alta pérdida de calcio; huesos débiles y riesgo de fractura.",b:"Pérdida de calcio baja; huesos en buen estado.",t:["calcio", "huesos", "densidad ósea"]},
+  "grado de hiperplasia ósea":{d:"Grado de Hiperplasia Ósea",s:"Densidad Mineral Ósea",a:"Crecimiento óseo anormal; señal de inflamación crónica articular.",b:"Remodelación ósea insuficiente.",t:["huesos", "articulaciones", "inflamación"]},
+  "grado de osteoporosis":{d:"Grado de Osteoporosis",s:"Densidad Mineral Ósea",a:"Pérdida ósea moderada a severa; consultar médico para prevenir fracturas.",b:"Huesos en buen estado.",t:["huesos", "calcio", "densidad ósea"]},
+  "coeficiente de hiperplasia ósea":{d:"Hiperplasia Ósea Reumatoide",s:"Hueso Reumatoide",a:"Inflamación articular severa; riesgo de desgaste y deformación ósea.",b:"Regeneración ósea baja.",t:["huesos", "articulaciones", "inflamación", "reumatismo"]},
+  "coeficiente de osteoporosis":{d:"Osteoporosis Reumatoide",s:"Hueso Reumatoide",a:"Alta pérdida de densidad ósea; riesgo elevado de fracturas.",b:"Densidad ósea adecuada.",t:["huesos", "calcio", "densidad ósea"]},
+  "coeficiente de reumatismo":{d:"Coeficiente de Reumatismo",s:"Hueso Reumatoide",a:"Proceso inflamatorio articular activo; dolor, rigidez y desgaste articular.",b:"Sin indicios de proceso reumatoide activo.",t:["articulaciones", "inflamación", "reumatismo"]},
+  "grado de calcificación cervical":{d:"Calcificación Cervical",s:"Hueso Reumatoide",a:"Calcificación en columna cervical; puede causar dolor de cuello y mareos.",b:"Sin calcificación cervical.",t:["huesos", "columna", "calcio", "inflamación"]},
+  "grado de calcificación lumbar":{d:"Calcificación Lumbar",s:"Hueso Reumatoide",a:"Calcificación en columna lumbar; dolor de espalda baja y rigidez.",b:"Sin calcificación lumbar.",t:["huesos", "columna", "calcio", "espalda"]},
+  "coeficiente de glucosa en sangre":{d:"Glucosa en Sangre",s:"Glucosa",a:"Nivel de azúcar elevado; precursor de diabetes tipo 2.",b:"Azúcar baja (hipoglucemia); mareos, fatiga y dificultad para concentrarse.",t:["glucosa", "azúcar", "metabolismo", "diabetes", "insulina"]},
+  "coeficiente de glucosa en orina":{d:"Glucosa en Orina",s:"Glucosa",a:"Azúcar en orina (glucosuria); posible diabetes o daño renal.",b:"Sin glucosa en orina; normal.",t:["glucosa", "riñón", "diabetes"]},
+  "coeficiente de secreción de insulina":{d:"Secreción de Insulina",s:"Glucosa",a:"El páncreas produce demasiada insulina; riesgo de hipoglucemia reactiva.",b:"El páncreas produce poca insulina; riesgo elevado de diabetes.",t:["glucosa", "insulina", "páncreas", "metabolismo"]},
+  "coeficiente anormal de contenido de triglicéridos":{d:"Triglicéridos (Obesidad)",s:"Obesidad",a:"Triglicéridos muy altos; sobrecarga corazón e hígado, favorece obesidad.",b:"Triglicéridos bajos; puede indicar malnutrición.",t:["triglicéridos", "corazón", "hígado", "obesidad"]},
+  "coeficiente anormal de metabolismo lipídico":{d:"Metabolismo Lipídico",s:"Obesidad",a:"Metabolismo de grasas acelerado en exceso; posible hipertiroidismo.",b:"El cuerpo no procesa bien las grasas; favorece acumulación y sobrepeso.",t:["obesidad", "metabolismo", "grasa", "tiroides"]},
+  "coeficiente de anormalidad de tejido adiposo marrón":{d:"Tejido Adiposo Marrón",s:"Glucosa",a:"Exceso de grasa activa; altera el metabolismo energético.",b:"Poca grasa parda activa; metabolismo lento, acumulación de grasa.",t:["metabolismo", "grasa", "obesidad", "energía"]},
+  "calcio":{d:"Calcio",s:"Oligoelementos",a:"Exceso de calcio; puede calcificar tejidos y formar cálculos renales.",b:"Déficit de calcio; debilita huesos, dientes y aumenta riesgo de osteoporosis.",t:["calcio", "huesos", "dientes", "músculos"]},
+  "hierro":{d:"Hierro",s:"Oligoelementos",a:"Exceso de hierro; puede dañar hígado y corazón.",b:"Déficit de hierro; anemia, fatiga crónica y debilidad.",t:["hierro", "sangre", "anemia", "energía"]},
+  "selenio":{d:"Selenio",s:"Oligoelementos",a:"Exceso de selenio; pérdida de cabello y daño neurológico.",b:"Déficit de selenio; sistema inmune débil y mayor estrés oxidativo.",t:["selenio", "inmunidad", "tiroides", "antioxidante"]},
+  "fósforo":{d:"Fósforo",s:"Oligoelementos",a:"Exceso de fósforo; interfiere con absorción de calcio y debilita huesos.",b:"Déficit de fósforo; debilidad muscular y ósea.",t:["fósforo", "huesos", "calcio", "músculos"]},
+  "potasio":{d:"Potasio",s:"Oligoelementos",a:"Exceso de potasio; riesgo de arritmias cardíacas.",b:"Déficit de potasio; calambres musculares, fatiga y arritmias leves.",t:["potasio", "corazón", "músculos", "electrolitos"]},
+  "magnesio":{d:"Magnesio",s:"Oligoelementos",a:"Exceso de magnesio; puede causar diarrea o presión baja.",b:"Déficit de magnesio; calambres, insomnio, ansiedad y presión alta.",t:["magnesio", "músculos", "sistema nervioso", "huesos", "estrés"]},
+  "cobre":{d:"Cobre",s:"Oligoelementos",a:"Exceso de cobre; daño hepático y neurológico.",b:"Déficit de cobre; anemia, debilidad ósea y problemas del sistema nervioso.",t:["cobre", "hígado", "sistema nervioso", "sangre"]},
+  "cobalto":{d:"Cobalto",s:"Oligoelementos",a:"Exceso de cobalto; toxicidad cardíaca y tiroidea.",b:"Déficit de cobalto; relacionado con déficit de vitamina B12.",t:["vitaminas", "sangre", "sistema nervioso"]},
+  "manganeso":{d:"Manganeso",s:"Oligoelementos",a:"Exceso de manganeso; puede afectar el sistema nervioso.",b:"Déficit de manganeso; afecta metabolismo óseo y función cerebral.",t:["manganeso", "huesos", "cerebro", "metabolismo"]},
+  "níquel":{d:"Níquel",s:"Oligoelementos",a:"Exceso de níquel; alergias cutáneas e irritación de mucosas.",b:"Sin déficit clínicamente relevante.",t:["alergias", "piel"]},
+  "flúor":{d:"Flúor",s:"Oligoelementos",a:"Exceso de flúor; puede afectar huesos y dientes (fluorosis).",b:"Déficit de flúor; mayor riesgo de caries y debilidad dental.",t:["dientes", "huesos", "flúor"]},
+  "molibdeno":{d:"Molibdeno",s:"Oligoelementos",a:"Exceso de molibdeno; puede afectar metabolismo del cobre.",b:"Déficit de molibdeno; acumulación de sulfitos y fatiga.",t:["metabolismo", "enzimas"]},
+  "vanadio":{d:"Vanadio",s:"Oligoelementos",a:"Exceso de vanadio; puede ser tóxico en altas concentraciones.",b:"Déficit de vanadio; puede afectar metabolismo de glucosa.",t:["glucosa", "metabolismo"]},
+  "silicio":{d:"Silicio",s:"Oligoelementos",a:"Exceso de silicio; raro, puede irritar tejidos.",b:"Déficit de silicio; afecta colágeno, piel, cabello y uñas.",t:["colágeno", "piel", "cabello", "uñas", "silicio"]},
+  "zinc":{d:"Zinc",s:"Oligoelementos",a:"Exceso de zinc; interfiere con absorción de cobre.",b:"Déficit de zinc; afecta sistema inmune, cicatrización, piel y cabello.",t:["zinc", "inmunidad", "piel", "cicatrización", "cabello"]},
+  "estroncio":{d:"Estroncio",s:"Oligoelementos",a:"Exceso de estroncio; puede competir con el calcio en huesos.",b:"Déficit de estroncio; puede relacionarse con menor densidad ósea.",t:["huesos", "calcio"]},
+  "vitamina a":{d:"Vitamina A",s:"Vitaminas",a:"Toxicidad por vitamina A; náuseas, visión borrosa y daño hepático.",b:"Déficit de vitamina A; visión nocturna reducida, piel seca e inmunidad baja.",t:["vitaminas", "visión", "piel", "inmunidad"]},
+  "vitamina b1":{d:"Vitamina B1 (Tiamina)",s:"Vitaminas",a:"Exceso raro; se elimina por orina.",b:"Déficit de B1; fatiga, irritabilidad y problemas neurológicos.",t:["vitaminas", "sistema nervioso", "energía"]},
+  "vitamina b2":{d:"Vitamina B2 (Riboflavina)",s:"Vitaminas",a:"Exceso raro.",b:"Déficit de B2; llagas en boca, piel seca y fatiga.",t:["vitaminas", "piel", "energía", "metabolismo"]},
+  "vitamina b6":{d:"Vitamina B6",s:"Vitaminas",a:"Exceso de B6; puede causar daño nervioso (neuropatía).",b:"Déficit de B6; anemia, dermatitis e irritabilidad.",t:["vitaminas", "sistema nervioso", "metabolismo", "inmunidad"]},
+  "vitamina b12":{d:"Vitamina B12",s:"Vitaminas",a:"B12 elevada; puede indicar enfermedad hepática.",b:"Déficit de B12; anemia, entumecimiento y deterioro cognitivo.",t:["vitaminas", "sangre", "sistema nervioso", "energía"]},
+  "vitamina c":{d:"Vitamina C",s:"Vitaminas",a:"Exceso de vitamina C; puede causar cálculos renales en altas dosis.",b:"Déficit de vitamina C; encías débiles, piel dañada e inmunidad baja.",t:["vitaminas", "inmunidad", "colágeno", "antioxidante"]},
+  "vitamina d":{d:"Vitamina D",s:"Vitaminas",a:"Exceso de vitamina D; hipercalcemia y daño renal.",b:"Déficit de vitamina D; huesos débiles, depresión e inmunidad baja.",t:["vitaminas", "huesos", "calcio", "inmunidad"]},
+  "vitamina e":{d:"Vitamina E",s:"Vitaminas",a:"Exceso de vitamina E; puede aumentar el riesgo de sangrado.",b:"Déficit de vitamina E; daño oxidativo en células y músculos.",t:["vitaminas", "antioxidante", "piel", "sistema nervioso"]},
+  "vitamina k":{d:"Vitamina K",s:"Vitaminas",a:"Exceso de vitamina K; puede interferir con anticoagulantes.",b:"Déficit de vitamina K; sangrado fácil y huesos débiles.",t:["vitaminas", "huesos", "coagulación"]},
+  "ácido fólico":{d:"Ácido Fólico",s:"Vitaminas",a:"Exceso de folato; puede enmascarar déficit de B12.",b:"Déficit de ácido fólico; anemia, fatiga y riesgo fetal en embarazo.",t:["vitaminas", "sangre", "sistema nervioso"]},
+  "lisina":{d:"Lisina",s:"Aminoácidos",a:"Exceso de lisina; raro, generalmente eliminado.",b:"Déficit de lisina; fatiga, cabello débil y sistema inmune comprometido.",t:["aminoácidos", "proteínas", "inmunidad", "colágeno"]},
+  "triptófano":{d:"Triptófano",s:"Aminoácidos",a:"Exceso de triptófano; puede causar somnolencia excesiva.",b:"Déficit de triptófano; afecta producción de serotonina; ansiedad e insomnio.",t:["aminoácidos", "sistema nervioso", "sueño", "estado de ánimo"]},
+  "fenilalanina":{d:"Fenilalanina",s:"Aminoácidos",a:"Exceso; puede ser neurotóxico en fenilcetonuria.",b:"Déficit; afecta producción de dopamina y noradrenalina.",t:["aminoácidos", "sistema nervioso", "cerebro"]},
+  "metionina":{d:"Metionina",s:"Aminoácidos",a:"Exceso de metionina; puede elevar homocisteína, riesgo cardiovascular.",b:"Déficit de metionina; afecta desintoxicación hepática.",t:["aminoácidos", "hígado", "desintoxicación", "cardiovascular"]},
+  "treonina":{d:"Treonina",s:"Aminoácidos",a:"Exceso; raro.",b:"Déficit de treonina; afecta sistema inmune y función hepática.",t:["aminoácidos", "inmunidad", "hígado"]},
+  "isoleucina":{d:"Isoleucina",s:"Aminoácidos",a:"Exceso; puede alterar niveles de glucosa.",b:"Déficit de isoleucina; pérdida muscular y fatiga.",t:["aminoácidos", "músculos", "glucosa", "energía"]},
+  "leucina":{d:"Leucina",s:"Aminoácidos",a:"Exceso; puede alterar glucosa en sangre.",b:"Déficit de leucina; pérdida muscular y fatiga.",t:["aminoácidos", "músculos", "energía"]},
+  "valina":{d:"Valina",s:"Aminoácidos",a:"Elevado; raro.",b:"Déficit de valina; pérdida muscular y dificultad para concentrarse.",t:["aminoácidos", "músculos", "sistema nervioso"]},
+  "histidina":{d:"Histidina",s:"Aminoácidos",a:"Exceso de histidina; puede liberar demasiada histamina, alergias.",b:"Déficit de histidina; afecta reparación de tejidos y función inmune.",t:["aminoácidos", "alergias", "inmunidad"]},
+  "arginina":{d:"Arginina",s:"Aminoácidos",a:"Exceso; puede reducir presión arterial en exceso.",b:"Déficit de arginina; cicatrización lenta y función inmune reducida.",t:["aminoácidos", "cardiovascular", "cicatrización", "inmunidad"]},
+  "nicotinamida":{d:"Nicotinamida (B3/NAD)",s:"Coenzimas",a:"Exceso; puede causar enrojecimiento y problemas hepáticos en dosis altas.",b:"Déficit de B3; pelagra, fatiga, depresión y problemas digestivos.",t:["vitaminas", "energía", "metabolismo", "sistema nervioso"]},
+  "biotina":{d:"Biotina (B7)",s:"Coenzimas",a:"Exceso de biotina; puede falsear resultados de análisis clínicos.",b:"Déficit de biotina; cabello frágil, piel inflamada y uñas débiles.",t:["cabello", "piel", "uñas", "metabolismo"]},
+  "ácido pantoténico":{d:"Ácido Pantoténico (B5)",s:"Coenzimas",a:"Exceso; raro, no tóxico.",b:"Déficit de B5; fatiga, irritabilidad y problemas digestivos.",t:["vitaminas", "metabolismo", "energía", "suprarrenales"]},
+  "ácido fólico (coenzima)":{d:"Ácido Fólico (Coenzima)",s:"Coenzimas",a:"Exceso; puede enmascarar déficit de B12.",b:"Déficit; anemia, fatiga y problemas neurológicos.",t:["vitaminas", "sangre", "sistema nervioso"]},
+  "glutatión":{d:"Glutatión",s:"Coenzimas",a:"Niveles altos de glutatión; buen estado antioxidante.",b:"Déficit de glutatión; estrés oxidativo, toxinas acumuladas y envejecimiento acelerado.",t:["antioxidante", "hígado", "toxinas", "inmunidad", "piel", "desintoxicación"]},
+  "coenzima q10":{d:"Coenzima Q10",s:"Coenzimas",a:"Coenzima Q10 elevada; generalmente sin riesgo.",b:"Déficit de CoQ10; falta de energía celular, corazón y músculos más afectados.",t:["energía", "coenzima", "corazón", "músculo", "fatiga"]},
+  "ácido linoleico":{d:"Ácido Linoleico (Omega-6)",s:"Ácidos Grasos",a:"Exceso de omega-6; puede favorecer inflamación crónica.",b:"Déficit de omega-6; piel seca, inflamación y problemas hormonales.",t:["ácidos grasos", "omega", "piel", "inflamación"]},
+  "α-ácido linolénico":{d:"Ácido α-Linolénico (Omega-3)",s:"Ácidos Grasos",a:"Exceso de omega-3; puede reducir coagulación.",b:"Déficit de omega-3; inflamación, problemas cardiovasculares y cerebrales.",t:["ácidos grasos", "omega", "cardiovascular", "cerebro", "inflamación"]},
+  "γ-ácido linolénico":{d:"Ácido γ-Linolénico (GLA)",s:"Ácidos Grasos",a:"Exceso; puede causar inflamación en dosis muy altas.",b:"Déficit de GLA; piel seca, síndrome premenstrual y problemas articulares.",t:["ácidos grasos", "piel", "inflamación", "hormonas"]},
+  "ácido araquidónico":{d:"Ácido Araquidónico",s:"Ácidos Grasos",a:"Exceso; favorece procesos inflamatorios.",b:"Déficit; afecta función cerebral y respuesta inmune.",t:["ácidos grasos", "inflamación", "cerebro"]},
+  "índice de ácidos grasos insaturados":{d:"Ácidos Grasos Insaturados",s:"Ácidos Grasos",a:"Nivel alto de grasas buenas; generalmente favorable.",b:"Bajo nivel de grasas saludables; mayor riesgo cardiovascular.",t:["ácidos grasos", "omega", "cardiovascular", "inflamación"]},
+  "índice de ácidos grasos esenciales":{d:"Ácidos Grasos Esenciales",s:"Ácidos Grasos",a:"Exceso de ácidos grasos; puede desequilibrar metabolismo lipídico.",b:"Déficit de ácidos grasos esenciales; piel seca, problemas hormonales e inflamación.",t:["ácidos grasos", "omega", "piel", "hormonas", "metabolismo"]},
+  "índice de triglicéridos":{d:"Índice de Triglicéridos (Ácidos Grasos)",s:"Ácidos Grasos",a:"Triglicéridos altos; riesgo cardiovascular y metabólico.",b:"Triglicéridos bajos; puede indicar déficit energético.",t:["triglicéridos", "cardiovascular", "metabolismo"]},
+  "índice de secreción de las glándulas":{d:"Secreción Glandular General",s:"Sistema Endocrino",a:"Glándulas hiperactivas; posible desequilibrio hormonal general.",b:"Glándulas con baja secreción; fatiga, cambios de peso y humor.",t:["hormonas", "tiroides", "suprarrenales", "metabolismo"]},
+  "índice de las glándulas suprarrenales":{d:"Glándulas Suprarrenales",s:"Sistema Endocrino",a:"Suprarrenales hiperactivas; exceso de cortisol, estrés crónico.",b:"Suprarrenales agotadas; fatiga severa, presión baja y poca resistencia al estrés.",t:["suprarrenales", "hormonas", "estrés", "energía"]},
+  "índice de secreción de la glándula pituitaria":{d:"Glándula Pituitaria",s:"Sistema Endocrino",a:"Hipófisis hiperactiva; exceso de hormonas trópicas.",b:"Hipófisis poco activa; deficiencia de múltiples hormonas.",t:["hormonas", "metabolismo", "tiroides"]},
+  "índice de secreción de la glándula pineal":{d:"Glándula Pineal (Melatonina)",s:"Sistema Endocrino",a:"Exceso de melatonina; somnolencia excesiva y ritmo circadiano alterado.",b:"Déficit de melatonina; insomnio y desajuste del ciclo sueño-vigilia.",t:["sueño", "hormonas", "sistema nervioso"]},
+  "índice de secreción del timo":{d:"Timo (Inmunidad)",s:"Sistema Endocrino",a:"Timo hiperactivo; puede indicar proceso autoinmune.",b:"Timo poco activo; inmunidad celular reducida.",t:["inmunidad", "hormonas", "defensas"]},
+  "índice de secreción glandular":{d:"Índice de Secreción Glandular",s:"Sistema Endocrino",a:"Secreción glandular excesiva; desequilibrio hormonal.",b:"Secreción glandular insuficiente; fatiga y metabolismo lento.",t:["hormonas", "metabolismo", "tiroides"]},
+  "tiroxina libre":{d:"Tiroxina Libre (FT4)",s:"Tiroides",a:"Hipertiroidismo; taquicardia, pérdida de peso y ansiedad.",b:"Hipotiroidismo; metabolismo lento, fatiga y aumento de peso.",t:["tiroides", "metabolismo", "hormonas", "energía"]},
+  "la tiroglobulina":{d:"Tiroglobulina",s:"Tiroides",a:"Puede indicar cáncer o enfermedad tiroidea activa.",b:"Niveles bajos; generalmente normal.",t:["tiroides", "hormonas"]},
+  "los anticuerpos antitiroglobulina":{d:"Anticuerpos Antitiroglobulina",s:"Tiroides",a:"Posible enfermedad autoinmune tiroidea (Hashimoto).",b:"Sin anticuerpos; tiroides sin proceso autoinmune.",t:["tiroides", "inmunidad", "autoinmune"]},
+  "tres triyodotironina":{d:"T3 (Triyodotironina)",s:"Tiroides",a:"T3 alta; hipertiroidismo o conversión excesiva de T4.",b:"T3 baja; hipotiroidismo; metabolismo lento.",t:["tiroides", "metabolismo", "hormonas", "energía"]},
+  "índice de ganglios linfáticos":{d:"Ganglios Linfáticos",s:"Sistema Inmunológico",a:"Inflamación de ganglios; posible infección o proceso autoinmune.",b:"Actividad ganglionar baja; respuesta inmune disminuida.",t:["inmunidad", "linfático", "inflamación"]},
+  "índice inmunológico de amígdalas":{d:"Amígdalas (Inmunidad)",s:"Sistema Inmunológico",a:"Amígdalas inflamadas; infección recurrente del tracto respiratorio.",b:"Amígdalas con baja actividad inmune.",t:["inmunidad", "respiración", "inflamación"]},
+  "índice de médula ósea":{d:"Médula Ósea",s:"Sistema Inmunológico",a:"Médula hiperactiva; puede indicar inflamación o anemia compensatoria.",b:"Médula poco activa; producción reducida de células sanguíneas.",t:["inmunidad", "sangre", "médula"]},
+  "índice de bazo":{d:"Bazo (Inmunidad)",s:"Sistema Inmunológico",a:"Bazo inflamado; posible infección o enfermedad autoinmune.",b:"Actividad esplénica reducida; menor filtración de sangre.",t:["inmunidad", "sangre", "hígado"]},
+  "índice de timo":{d:"Timo (Sistema Inmunológico)",s:"Sistema Inmunológico",a:"Timo hiperactivo; puede indicar proceso autoinmune.",b:"Timo atrofiado; inmunidad celular reducida.",t:["inmunidad", "hormonas", "defensas"]},
+  "índice de inmunoglobulina":{d:"Inmunoglobulinas",s:"Sistema Inmunológico",a:"Anticuerpos elevados; respuesta inmune activa o inflamación crónica.",b:"Anticuerpos bajos; mayor susceptibilidad a infecciones.",t:["inmunidad", "defensas", "inflamación"]},
+  "índice inmuno respiratorio":{d:"Inmunidad Respiratoria",s:"Sistema Inmunológico",a:"Sistema inmune respiratorio hiperactivo; posible asma o alergias.",b:"Defensas respiratorias bajas; mayor riesgo de infecciones pulmonares.",t:["inmunidad", "respiración", "pulmón"]},
+  "índice inmunológico gastrointestinal":{d:"Inmunidad Gastrointestinal",s:"Sistema Inmunológico",a:"Inflamación intestinal activa; colitis o intestino irritable.",b:"Defensas intestinales bajas; mayor riesgo de infecciones digestivas.",t:["inmunidad", "intestino", "digestión", "inflamación"]},
+  "índice inmunológico de mucosa":{d:"Inmunidad de Mucosas",s:"Sistema Inmunológico",a:"Inflamación de mucosas; posible alergia o infección activa.",b:"Mucosas con baja defensa; vulnerabilidad a infecciones.",t:["inmunidad", "mucosas", "inflamación"]},
+  "bebidas carbonatadas":{d:"Toxinas — Bebidas Carbonatadas",s:"Toxinas",a:"Alto impacto de bebidas carbonatadas; acidifica el organismo y desmineraliza huesos.",b:"Bajo impacto; dentro del rango seguro.",t:["toxinas", "huesos", "acidez", "ph"]},
+  "radiación electromagnética":{d:"Radiación Electromagnética",s:"Toxinas",a:"Exposición elevada a radiación; puede afectar sistema nervioso y causar fatiga.",b:"Exposición baja; dentro del rango seguro.",t:["toxinas", "sistema nervioso", "fatiga"]},
+  "radicales libres":{d:"Radicales Libres",s:"Toxinas",a:"Exceso de radicales libres; envejecimiento acelerado y daño celular oxidativo.",b:"Pocos radicales libres; buen estado antioxidante.",t:["antioxidante", "toxinas", "envejecimiento", "piel"]},
+  "residuos de pesticidas tóxicos":{d:"Residuos de Pesticidas",s:"Toxinas",a:"Acumulación de pesticidas; sobrecargan hígado, riñones y sistema nervioso.",b:"Nivel bajo de pesticidas; dentro del rango seguro.",t:["toxinas", "hígado", "riñón", "sistema nervioso", "desintoxicación"]},
+  "plomo":{d:"Plomo (Pb)",s:"Metales Pesados",a:"Plomo elevado en sangre; daña el sistema nervioso, riñones y produce anemia.",b:"Plomo dentro del rango seguro.",t:["metales pesados", "sistema nervioso", "riñón", "toxinas", "desintoxicación"]},
+  "mercurio":{d:"Mercurio (Hg)",s:"Metales Pesados",a:"Mercurio elevado; neurotóxico, daña riñones y sistema inmune.",b:"Mercurio dentro del rango seguro.",t:["metales pesados", "sistema nervioso", "riñón", "toxinas"]},
+  "cadmio":{d:"Cadmio (Cd)",s:"Metales Pesados",a:"Cadmio elevado; daña riñones, huesos y pulmones.",b:"Cadmio dentro del rango seguro.",t:["metales pesados", "riñón", "huesos", "toxinas"]},
+  "cromo":{d:"Cromo (Cr)",s:"Metales Pesados",a:"Cromo hexavalente elevado; tóxico y cancerígeno.",b:"Cromo dentro del rango seguro.",t:["metales pesados", "toxinas", "riñón"]},
+  "arsénico":{d:"Arsénico (As)",s:"Metales Pesados",a:"Arsénico elevado; tóxico para piel, sistema nervioso e hígado.",b:"Arsénico dentro del rango seguro.",t:["metales pesados", "piel", "sistema nervioso", "hígado"]},
+  "antimonio":{d:"Antimonio (Sb)",s:"Metales Pesados",a:"Antimonio elevado; tóxico para corazón e hígado.",b:"Antimonio dentro del rango seguro.",t:["metales pesados", "corazón", "hígado", "toxinas"]},
+  "talio":{d:"Talio (Tl)",s:"Metales Pesados",a:"Talio elevado; muy tóxico para sistema nervioso y cabello.",b:"Talio dentro del rango seguro.",t:["metales pesados", "sistema nervioso", "cabello", "toxinas"]},
+  "aluminio":{d:"Aluminio (Al)",s:"Metales Pesados",a:"Aluminio elevado; puede afectar el sistema nervioso y contribuir a demencia.",b:"Aluminio dentro del rango seguro.",t:["metales pesados", "sistema nervioso", "cerebro", "toxinas"]},
+  "capacidad de respuesta":{d:"Capacidad de Respuesta Física",s:"Condición Física",a:"Respuesta física elevada; posible estado de alerta excesiva.",b:"Capacidad de respuesta reducida; posible fatiga adrenal o sobreentrenamiento.",t:["energía", "suprarrenales", "fatiga"]},
+  "capacidad mental":{d:"Capacidad Mental",s:"Condición Física",a:"Actividad mental elevada; ansiedad o estrés crónico.",b:"Capacidad mental reducida; fatiga mental y dificultad de concentración.",t:["cerebro", "sistema nervioso", "estrés", "concentración"]},
+  "falta de agua":{d:"Falta de Agua (Deshidratación)",s:"Condición Física",a:"Deshidratación severa; riesgo para riñones, piel y función celular.",b:"Hidratación adecuada.",t:["hidratación", "riñón", "piel", "metabolismo"]},
+  "hipoxia":{d:"Hipoxia (Falta de Oxígeno)",s:"Condición Física",a:"Hipoxia significativa; oxigenación celular insuficiente, fatiga severa.",b:"Oxigenación adecuada.",t:["oxígeno", "pulmón", "corazón", "energía"]},
+  "índice de alergia a fármacos":{d:"Alergia a Fármacos",s:"Alergias",a:"Alta sensibilidad a medicamentos; riesgo de reacciones adversas.",b:"Sin sensibilidad significativa a fármacos.",t:["alergias", "inmunidad"]},
+  "índice de alergia al alcohol":{d:"Alergia al Alcohol",s:"Alergias",a:"Alta sensibilidad al alcohol; reacciones cutáneas y digestivas.",b:"Sin sensibilidad significativa al alcohol.",t:["alergias", "hígado", "piel"]},
+  "índice de alergia al polen":{d:"Alergia al Polen",s:"Alergias",a:"Alta sensibilidad al polen; rinitis alérgica y asma estacional.",b:"Sin sensibilidad significativa al polen.",t:["alergias", "respiración", "ojos", "inmunidad"]},
+  "índice de alergia a inyección":{d:"Alergia a Inyecciones",s:"Alergias",a:"Alta sensibilidad a inyecciones; riesgo de reacciones locales o sistémicas.",b:"Sin sensibilidad significativa.",t:["alergias", "inmunidad"]},
+  "índice de alergia a productos químicos":{d:"Alergia a Productos Químicos",s:"Alergias",a:"Alta sensibilidad a químicos; riesgo de dermatitis, asma y reacciones severas.",b:"Sin sensibilidad significativa a químicos.",t:["alergias", "piel", "respiración"]},
+  "índice de alergia a la pintura":{d:"Alergia a la Pintura",s:"Alergias",a:"Alta sensibilidad a pinturas y disolventes; riesgo respiratorio y cutáneo.",b:"Sin sensibilidad significativa.",t:["alergias", "respiración", "piel"]},
+  "índice de alergia al polvo":{d:"Alergia al Polvo",s:"Alergias",a:"Alta sensibilidad al polvo; rinoalergia, asma y ojos irritados.",b:"Sin sensibilidad significativa al polvo.",t:["alergias", "respiración", "ojos"]},
+  "índice de alergia al humo":{d:"Alergia al Humo",s:"Alergias",a:"Alta sensibilidad al humo; irritación respiratoria y de mucosas.",b:"Sin sensibilidad significativa al humo.",t:["alergias", "pulmón", "respiración"]},
+  "índice de alergia a tintes de cabello":{d:"Alergia a Tintes de Cabello",s:"Alergias",a:"Alta sensibilidad a tintes; riesgo de reacciones cutáneas severas (dermatitis).",b:"Sin sensibilidad significativa a tintes.",t:["alergias", "piel", "cabello"]},
+  "índice de alergia a la joyería de metal":{d:"Alergia a Metales (Joyería)",s:"Alergias",a:"Sensibilidad a metales; dermatitis de contacto con joyería.",b:"Sin sensibilidad significativa.",t:["alergias", "piel"]},
+  "índice de alergia a los mariscos":{d:"Alergia a Mariscos",s:"Alergias",a:"Alta sensibilidad a mariscos; riesgo de reacciones alérgicas digestivas y cutáneas.",b:"Sin sensibilidad significativa a mariscos.",t:["alergias", "digestión", "piel"]},
+  "índice de alergia a la leche":{d:"Alergia a la Leche",s:"Alergias",a:"Alta sensibilidad a lácteos; intolerancias digestivas y reacciones alérgicas.",b:"Sin sensibilidad significativa a la leche.",t:["alergias", "digestión", "intestino"]},
+  "coeficiente anormal de tejido adiposo":{d:"Tejido Adiposo",s:"Obesidad",a:"Exceso de tejido graso; obesidad con riesgo metabólico y cardiovascular.",b:"Poca grasa corporal; puede indicar desnutrición.",t:["obesidad", "grasa", "metabolismo"]},
+  "índice de radicales libres cutáneos":{d:"Radicales Libres Cutáneos",s:"Piel",a:"Alto estrés oxidativo en la piel; envejecimiento acelerado y daño celular.",b:"Buen estado antioxidante cutáneo.",t:["piel", "antioxidante", "envejecimiento"]},
+  "tejido muscular":{d:"Colágeno — Tejido Muscular",s:"Colágeno",a:"Nivel elevado; generalmente favorable.",b:"Déficit de colágeno muscular; pérdida de masa y tono muscular.",t:["colágeno", "músculo", "fuerza", "proteínas"]},
+  "metabolismo de las grasas":{d:"Colágeno — Metabolismo de Grasas",s:"Colágeno",a:"Metabolismo graso acelerado.",b:"Déficit en el soporte metabólico; favorece acumulación de grasa.",t:["colágeno", "metabolismo", "grasa", "obesidad"]},
+  "desintoxicación y metabolismo":{d:"Desintoxicación y Metabolismo Cutáneo",s:"Piel",a:"El organismo trabaja en exceso eliminando toxinas cutáneas.",b:"Capacidad de desintoxicación cutánea reducida; acumulación de toxinas en piel.",t:["piel", "toxinas", "desintoxicación", "metabolismo"]},
+  "índice de humectación cutánea":{d:"Humectación Cutánea",s:"Colágeno",a:"Exceso de humedad en piel; puede favorecer hongos cutáneos.",b:"Piel seca; falta de lípidos e hidratación en la capa cutánea.",t:["piel", "hidratación", "colágeno"]},
+  "perdida de humectación cutánea":{d:"Pérdida de Humectación Cutánea",s:"Colágeno",a:"La piel pierde agua rápidamente; piel seca y envejecimiento acelerado.",b:"Hidratación cutánea adecuada.",t:["piel", "colágeno", "hidratación", "envejecimiento"]},
+  "índice de dilatación cutánea":{d:"Dilatación Cutánea (Poros)",s:"Colágeno",a:"Poros dilatados y exceso de producción de sebo.",b:"Poros finos; piel dentro de rango.",t:["piel", "poros", "colágeno"]},
+  "índice de elasticidad cutánea":{d:"Elasticidad Cutánea",s:"Colágeno",a:"Piel con exceso de tono; puede indicar deshidratación.",b:"Piel flácida; pérdida de elasticidad y colágeno.",t:["piel", "colágeno", "elastina", "firmeza"]},
+  "índice de melanina cutánea":{d:"Melanina Cutánea",s:"Colágeno",a:"Hiperpigmentación; manchas oscuras y exceso de melanina.",b:"Hipopigmentación; piel más clara de lo normal.",t:["piel", "manchas", "melanina", "sol"]},
+  "círculos oscuros":{d:"Círculos Oscuros (Ojeras)",s:"Colágeno",a:"Ojeras marcadas; mala circulación, toxinas o falta de sueño.",b:"Sin indicios de ojeras.",t:["piel", "circulación", "sueño", "toxinas"]},
+  "obstrucción linfática":{d:"Obstrucción Linfática",s:"Colágeno",a:"Sistema linfático obstruido; toxinas acumuladas, hinchazón y grasa localizada.",b:"Sistema linfático sin obstrucción.",t:["linfático", "toxinas", "piel", "inflamación"]},
+  "flacidez":{d:"Flacidez",s:"Colágeno",a:"Pérdida significativa de firmeza; colágeno y elastina disminuidos.",b:"Piel firme.",t:["piel", "colágeno", "elastina", "firmeza"]},
+  "edema":{d:"Edema",s:"Colágeno",a:"Retención de líquidos; riñones o sistema linfático comprometidos.",b:"Sin edema; hidratación normal.",t:["piel", "riñón", "linfático", "circulación"]},
+  "cabello y piel":{d:"Colágeno — Cabello y Piel",s:"Colágeno",a:"Nivel elevado; generalmente favorable.",b:"Déficit de colágeno en piel y cabello; piel sin brillo, cabello frágil.",t:["colágeno", "piel", "cabello", "envejecimiento"]},
+  "arrugas de colágeno":{d:"Arrugas / Colágeno Dérmico",s:"Colágeno",a:"Formación excesiva de arrugas; degradación acelerada de colágeno.",b:"Colágeno dérmico en buen estado.",t:["piel", "colágeno", "arrugas", "envejecimiento"]},
+  "fatiga visual":{d:"Fatiga Visual",s:"Ojo",a:"Los ojos están bajo mucho estrés; riesgo de deterioro de la visión.",b:"Fatiga ocular dentro del rango normal.",t:["ojo", "visión", "fatiga", "pantallas"]},
+  "dientes":{d:"Salud Dental",s:"Ojo",a:"Posible inflamación o infección dental activa.",b:"Salud dental por debajo del rango; posible desgaste o déficit de calcio.",t:["dientes", "calcio", "inflamación"]},
+  "coeficiente de vaginitis":{d:"Vaginitis",s:"Ginecología",a:"Posible inflamación vaginal activa; infección bacteriana o fúngica.",b:"Sin indicios de vaginitis.",t:["ginecología", "inflamación", "inmunidad"]},
+  "coeficiente de enfermedad inflamatoria pélvica":{d:"Enfermedad Inflamatoria Pélvica",s:"Ginecología",a:"Inflamación pélvica activa; requiere atención médica.",b:"Sin indicios de inflamación pélvica.",t:["ginecología", "inflamación", "ovarios"]},
+  "coeficiente de annexitis":{d:"Anexitis (Ovarios/Trompas)",s:"Ginecología",a:"Inflamación de anexos uterinos; posible infección activa.",b:"Sin indicios de anexitis.",t:["ginecología", "ovarios", "inflamación"]},
+  "coeficiente de cervicitis":{d:"Cervicitis",s:"Ginecología",a:"Inflamación del cuello uterino; posible infección o irritación.",b:"Sin indicios de cervicitis.",t:["ginecología", "inflamación", "útero"]},
+  "coeficiente de quistes ováricos":{d:"Quistes Ováricos",s:"Ginecología",a:"Posible presencia de quistes en ovarios; desequilibrio hormonal.",b:"Sin indicios de quistes ováricos.",t:["ginecología", "ovarios", "hormonas"]},
+  "hormona beta":{d:"Hormona Beta (HCG)",s:"Ciclo Menstrual",a:"HCG elevada; posible embarazo o tumor productor de HCG.",b:"HCG baja; fuera del embarazo es normal.",t:["hormonas", "ciclo menstrual", "ginecología"]},
+  "proteina reflejada":{d:"Proteína Reflejada (Ciclo)",s:"Ciclo Menstrual",a:"Indicador elevado; posible desequilibrio en el ciclo.",b:"Indicador bajo; puede señalar ciclo irregular o déficit hormonal.",t:["ciclo menstrual", "hormonas"]},
+  "fibrinogeno":{d:"Fibrinógeno",s:"Ciclo Menstrual",a:"Fibrinógeno alto; mayor riesgo de coágulos y trombosis.",b:"Fibrinógeno bajo; riesgo de sangrado excesivo.",t:["sangre", "coagulación", "cardiovascular"]},
+  "tasa de sedimentacion":{d:"Tasa de Sedimentación",s:"Ciclo Menstrual",a:"Sedimentación alta; señal de inflamación sistémica activa.",b:"Sedimentación baja; generalmente normal.",t:["inflamación", "inmunidad", "sangre"]},
+  "estrógeno":{d:"Estrógeno (E2)",s:"Hormona Femenina",a:"Estrógenos altos; retención de líquidos, ciclo irregular y riesgo de quistes.",b:"Estrógenos bajos; sofocos, sequedad vaginal y pérdida ósea.",t:["hormonas", "ovarios", "huesos", "ciclo menstrual"]},
+  "andrógeno":{d:"Andrógeno",s:"Hormona Femenina",a:"Exceso de andrógenos; acné, vello excesivo y ciclo irregular (SOP).",b:"Andrógenos bajos; fatiga, libido baja y pérdida muscular.",t:["hormonas", "ovarios", "tiroides", "metabolismo"]},
+  "progesterona":{d:"Progesterona (P)",s:"Hormona Femenina",a:"Progesterona elevada; posible embarazo o quiste lúteo.",b:"Progesterona baja; ciclo irregular, ansiedad y dificultad para embarazarse.",t:["hormonas", "ciclo menstrual", "ovarios"]},
+  "hormona luteinizante":{d:"LH (Hormona Luteinizante)",s:"Hormona Femenina",a:"LH alta; posible menopausia, SOP o insuficiencia ovárica.",b:"LH baja; puede indicar problemas hipofisarios.",t:["hormonas", "ovarios", "ciclo menstrual"]},
+  "prolactina":{d:"Prolactina (PRL)",s:"Hormona Femenina",a:"Hiperprolactinemia; ciclo irregular, galactorrea y problemas de fertilidad.",b:"Prolactina baja; generalmente sin impacto clínico fuera del posparto.",t:["hormonas", "ovarios", "ciclo menstrual"]},
+  "hormona estimulante del folículo":{d:"FSH (Hormona Folículo Estimulante)",s:"Hormona Femenina",a:"FSH elevada; posible menopausia o insuficiencia ovárica.",b:"FSH baja; hipotálamo o hipófisis poco activos.",t:["hormonas", "ovarios", "ciclo menstrual"]}
+};
+
+var PRODUCT_TABLE={
+  "Té Detox":{desc:"Limpieza profunda del hígado, vesícula e intestino; elimina toxinas acumuladas.",t:["hígado", "vesícula", "intestino", "digestión", "toxinas", "desintoxicación", "bilis"]},
+  "V-Organex":{desc:"Desintoxica y regenera el hígado; elimina grasa hepática y apoya la función hepatobiliar.",t:["hígado", "grasa", "desintoxicación", "hepático", "toxinas", "bilis", "vesícula"]},
+  "V-Itaren":{desc:"Protege y apoya la función renal; ideal cuando hay metales pesados o proteinuria.",t:["riñón", "renal", "desintoxicación", "metales pesados", "ácido úrico"]},
+  "V-Curcumax":{desc:"Antiinflamatorio natural; protege hígado, vesícula, huesos y articulaciones.",t:["hígado", "inflamación", "articulaciones", "huesos", "vesícula", "reumatismo", "colesterol"]},
+  "V-Control":{desc:"Regula el metabolismo de grasas y apoya la reducción de peso corporal.",t:["obesidad", "metabolismo", "grasa", "triglicéridos", "peso"]},
+  "Thermokafe":{desc:"Activa el metabolismo y estimula la quema de grasa acumulada.",t:["obesidad", "metabolismo", "grasa", "peso", "energía"]},
+  "Ketokafe BHB":{desc:"Apoya la transformación de grasas en energía mediante cetosis.",t:["obesidad", "grasa", "metabolismo", "energía", "triglicéridos"]},
+  "V-Omega 3":{desc:"Regula colesterol y triglicéridos; protege el corazón, cerebro y reduce inflamación.",t:["colesterol", "triglicéridos", "corazón", "cerebro", "inflamación", "cardiovascular", "ácidos grasos"]},
+  "V-Asculax":{desc:"Mejora la elasticidad vascular y la circulación sanguínea.",t:["cardiovascular", "vasos", "circulación", "presión", "elasticidad", "sangre"]},
+  "V-Italix":{desc:"Elimina metales pesados y toxinas del organismo; apoya riñones e hígado.",t:["metales pesados", "toxinas", "riñón", "hígado", "desintoxicación", "plomo", "mercurio", "cadmio"]},
+  "V-Nitro":{desc:"Favorece la oxigenación celular y el rendimiento cardiovascular.",t:["oxígeno", "cardiovascular", "corazón", "circulación", "energía", "pulmón"]},
+  "V-FortyFlora":{desc:"Probiótico que restaura la flora intestinal y mejora la absorción de nutrientes.",t:["intestino", "flora", "bacterias", "absorción", "digestión", "inmunidad"]},
+  "V-Glucalose":{desc:"Ayuda a regular y estabilizar los niveles de glucosa en sangre.",t:["glucosa", "insulina", "diabetes", "metabolismo", "azúcar", "páncreas"]},
+  "V-Glutation":{desc:"Potente antioxidante maestro; elimina toxinas, pesticidas y metales pesados.",t:["antioxidante", "toxinas", "pesticidas", "metales pesados", "hígado", "piel", "inmunidad", "desintoxicación"]},
+  "V-Collagen":{desc:"Regenera colágeno en piel, articulaciones y tejido muscular.",t:["colágeno", "piel", "articulaciones", "músculo", "arrugas", "flacidez", "elastina"]},
+  "Vitalage Collagen":{desc:"Colágeno marino hidrolizado; rejuvenece piel, cabello y uñas.",t:["colágeno", "piel", "cabello", "uñas", "hidratación", "envejecimiento"]},
+  "Vitarly-L":{desc:"Suplemento de calcio y minerales para fortalecer huesos y articulaciones.",t:["huesos", "calcio", "articulaciones", "densidad ósea", "dientes", "osteoporosis"]},
+  "V-NRGY":{desc:"Aumenta la energía celular compensando la deficiencia de Coenzima Q10.",t:["energía", "coenzima", "corazón", "músculo", "fatiga", "metabolismo"]},
+  "V-Itax":{desc:"Complejo de vitaminas y minerales esenciales; incluye Zinc y oligoelementos.",t:["zinc", "vitaminas", "oligoelementos", "inmunidad", "metabolismo", "selenio", "magnesio"]},
+  "VitalPro":{desc:"Suplemento nutricional completo con aminoácidos y proteínas esenciales.",t:["aminoácidos", "proteínas", "músculos", "metabolismo", "nutrientes", "colágeno"]},
+  "V-Italboost":{desc:"Refuerza el sistema inmunológico y reduce la respuesta alérgica.",t:["inmunidad", "alergias", "defensas", "inflamación", "autoinmune"]},
+  "Neurokafe":{desc:"Apoya la memoria, concentración y función del sistema nervioso.",t:["cerebro", "memoria", "concentración", "sistema nervioso", "energía"]},
+  "V-Italay":{desc:"Relaja el sistema nervioso; reduce estrés crónico y mejora el sueño.",t:["sistema nervioso", "estrés", "sueño", "ansiedad", "cerebro", "melatonina"]},
+  "V-Itadol":{desc:"Soporte para dolor articular e inflamación ósea crónica.",t:["articulaciones", "inflamación", "reumatismo", "huesos", "dolor", "calcificación"]},
+  "V-Talboost":{desc:"Refuerza defensas y apoya la función pulmonar y cerebral.",t:["inmunidad", "pulmón", "cerebro", "respiración", "defensas"]}
+};
+
+function lookupParam(name){
+  var nl=name.toLowerCase().trim().replace(/[()]/g,'');
+  if(PARAM_TABLE[nl])return PARAM_TABLE[nl];
+  for(var k in PARAM_TABLE){
+    if(nl.indexOf(k)>=0||(k.length>6&&k.indexOf(nl)>=0))return PARAM_TABLE[k];
+  }
+  var words=nl.split(/[\s\-\/]+/).filter(function(w){return w.length>3;});
+  var best=null,bestN=0;
+  for(var k in PARAM_TABLE){
+    var n=words.filter(function(w){return k.indexOf(w)>=0;}).length;
+    if(n>bestN){bestN=n;best=k;}
+  }
+  if(bestN>=2)return PARAM_TABLE[best];
+  return null;
+}
+
+function getProductDesc(nombre,activeSystems){
+  var info=PRODUCT_TABLE[nombre];
+  if(!info)return '';
+  return info.desc;
+}
+
+
 // ── PARSER LOCAL DEL REPORTE BIOCUÁNTICO ──────────────────────────────
 function parsearReporteBiocuantico(texto,c){
   var today=new Date().toLocaleDateString('es-MX');
-  var sexLbl2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':c.sex==='N'?'Niñ@':'';
+  var sexLbl=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':c.sex==='N'?'Niñ@':'';
 
   // ── Product name normalizer ──
   var PM={
     'V-ORGANEX':'V-Organex','ORGANEX':'V-Organex',
     'TÉ DETOX':'Té Detox','TE DETOX':'Té Detox','DETOX':'Té Detox','V-TEDETOX':'Té Detox',
     'CURCUMAX':'V-Curcumax','V-CURCUMAX':'V-Curcumax',
-    'OMEGA':'V-Omega 3','V-OMEGA':'V-Omega 3','V-OMEGA3':'V-Omega 3','V-OMEGA 3':'V-Omega 3',
+    'OMEGA':'V-Omega 3','V-OMEGA 3':'V-Omega 3','V-OMEGA':'V-Omega 3','V-OMEGA3':'V-Omega 3',
     'V-ASCULAX':'V-Asculax','ASCULAX':'V-Asculax',
     'V-ITALIX':'V-Italix','VITALIX':'V-Italix',
     'NITRO':'V-Nitro','V-NITRO':'V-Nitro',
@@ -3637,273 +3881,302 @@ function parsearReporteBiocuantico(texto,c){
     'V-ITAREN':'V-Itaren',
   };
 
-  // Urgencia descriptions (no API needed for common systems)
-  var SIG_MAP={
-    'Función hepática':'El hígado acumula grasa en exceso y trabaja con dificultad.',
-    'Hígado':'El hígado acumula grasa en exceso y trabaja con dificultad.',
-    'Cardiovascular':'Riesgo elevado de obstrucción arterial y sobrecarga cardíaca.',
-    'Cardiovasculares':'Riesgo elevado de obstrucción arterial y sobrecarga cardíaca.',
-    'Gastrointestinal':'El intestino no absorbe bien los nutrientes del alimento.',
-    'Vesícula':'La vesícula no drena correctamente; puede acumular bilis.',
-    'Pulmonar':'El pulmón trabaja de forma forzada; oxigenación deficiente.',
-    'Nervio Cerebral':'Capacidad de memoria y concentración reducida.',
-    'Índice de Memoria':'Capacidad de memoria y concentración reducida.',
-    'Hueso Reumatoide':'Inflamación en articulaciones con riesgo de desgaste óseo.',
-    'Glucosa':'Nivel de azúcar en sangre elevado; precursor de diabetes.',
-    'Oligoelementos':'Deficiencia de minerales clave como zinc para inmunidad y piel.',
-    'Zinc':'Deficiencia de zinc afecta inmunidad, piel y cicatrización.',
-    'Coenzima':'Falta energía a nivel celular; corazón y músculos más afectados.',
-    'Coenzima Q10':'Falta energía a nivel celular; corazón y músculos más afectados.',
-    'Toxina':'Toxinas acumuladas sobrecargan hígado y riñones.',
-    'Pesticidas':'Residuos tóxicos sobrecargan hígado y riñones.',
-    'Metales Pesados':'Metales tóxicos acumulados afectan sistema nervioso y riñones.',
-    'Plomo':'Acumulación de plomo afecta sistema nervioso y riñones.',
-    'Condición Física':'El organismo necesita mayor equilibrio y actividad física.',
-    'Alergias':'Alta sensibilidad que puede causar reacciones cutáneas e inflamación.',
-    'Tintes':'Alta sensibilidad a químicos de tintes; riesgo de reacción cutánea.',
-    'Obesidad':'El metabolismo de grasas está alterado; favorece sobrepeso.',
-    'Triglicéridos':'Grasa en sangre muy alta; sobrecarga para corazón e hígado.',
-    'Piel':'La piel pierde agua y se endurece; envejecimiento acelerado.',
-    'Humectación':'La piel pierde agua y se endurece; envejecimiento acelerado.',
-    'Ojo':'Los ojos están bajo estrés; riesgo de deterioro visual.',
-    'Fatiga visual':'Los ojos están bajo estrés; riesgo de deterioro visual.',
-    'Colágeno':'Colágeno muy bajo en piel, músculos y articulaciones.',
-    'Cabello':'Falta colágeno en piel y cabello; señal de envejecimiento.',
-  };
-
-  function getSig(sistNombre, paramNombre){
-    var combined=(sistNombre+' '+paramNombre).toLowerCase();
-    for(var k in SIG_MAP){
-      if(combined.indexOf(k.toLowerCase())>=0)return SIG_MAP[k];
-    }
-    return 'Parámetro fuera del rango saludable. Requiere atención.';
-  }
-
-  function normalizeProd(raw){
-    var u=raw.trim().toUpperCase().replace(/[.,;*#()\r\n]/g,'').replace(/\s+/g,' ').trim();
-    // Direct match
+  function normProd(raw){
+    var u=raw.trim().toUpperCase().replace(/[.,;*()\r\n]/g,'').replace(/\s+/g,' ').trim();
     if(PM[u])return PM[u];
-    // Partial match
-    for(var k in PM){if(u===k||u.indexOf(k)===0||(k.length>4&&u.indexOf(k)>=0))return PM[k];}
-    // Catalog match
+    for(var k in PM){if(u===k||(u.length>4&&u.indexOf(k)===0)||(k.length>4&&u.indexOf(k)>=0))return PM[k];}
     var found=PP.find(function(p){
       var pn=p.n.toUpperCase().replace(/[^A-Z0-9]/g,'');
       var un=u.replace(/[^A-Z0-9]/g,'');
-      return un.length>3&&(pn===un||(pn.indexOf(un)>=0)||(un.indexOf(pn)>=0&&pn.length>4));
+      return un.length>3&&(pn===un||(pn.indexOf(un)>=0&&pn.length>4)||(un.indexOf(pn)>=0&&pn.length>4));
     });
     return found?found.n:null;
   }
 
-  // ── Find síntesis section ──
-  var sintIdx=texto.search(/informe de s[ií]ntesis/i);
-  var workText=sintIdx>=0?texto.slice(sintIdx):texto;
-  var lines=workText.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
-
-  // ── Patterns ──
-  var reRange=/^(\d+[,\.]\d+)\s*[-–]\s*(\d+[,\.]\d+)$/;
-  var reVal=/^(\d+[,\.]\d+)$/;
-  var reNoise=/^(Sistema|Objeto Analizado|Rango Normal|Valor Obtenido|Objeto$|Analizado$|Informe de|Nombre:|Complexión:|Sexo:|Edad:|Fecha|Page \d|Acerca de|Los resultados)$/i;
-  var reConsejos=/^Consejos(\s+de)?(\s+Experto)?$/i;
-  var reProdLine=/(?:^|,|\s)(V-[A-ZÁÉÍÓÚÜ-]+|TÉ DETOX|TE DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ|KETOCAFE)/gi;
-
-  // System keywords to detect start of a new system block
-  var SIST_KW=['Función hepática','Función Hepática','Cardiovasculares','Función Gastrointestinal',
-    'Función de la Vesícula','Función Pulmonar','Nervio Cerebral','Densidad Mineral',
-    'Enfermedad de Hueso','Índice de crecimiento','Glucosa en la sangre','Oligoelementos',
-    'Coenzima','Toxina Humana','Metales Pesados','Condición Física','Alergias','Obesidad',
-    'Piel','Ojo','Colágeno'];
+  // ── Section keywords ──
+  var SIST_KW=[
+    'Función hepática','Función Hepática',
+    'Cardiovasculares y Cerebrovasculares','Cardiovasculares',
+    'Función Gastrointestinal','Función del Intestino Grueso',
+    'Función de la Vesícula Biliar',
+    'Función Pancreática','Función Renal','Función Pulmonar',
+    'Nervio Cerebral','Padecimientos Óseos','Densidad Mineral Ósea',
+    'Enfermedad de Hueso Reumatoide','Índice de crecimiento óseo',
+    'Glucosa en la sangre','Oligoelementos','Vitamina','Aminoácidos',
+    'Coenzima','Ácido graso esencial','Sistema Endocrino',
+    'Sistema Inmunológico','Tiroides','Toxina Humana','Metales Pesados',
+    'Condición Física Básica','Alergias','Obesidad','Piel','Ojo','Colágeno',
+    'Lípidos Sanguíneos','Lipidos Sanguineos','Ginecología','Senos',
+    'Cyclo Menstrual','Hormona Femenina','Meridianos','Pulso Cerebro',
+  ];
 
   function isSistema(line){
-    return SIST_KW.some(function(k){return line.toLowerCase().indexOf(k.toLowerCase())===0||line===k;});
-  }
-
-  // ── Parse blocks ──
-  var blocks=[];
-  var curBlock=null;
-  var curParamBuf=[];
-  var pendingRange=null;
-  var inConsejos=false;
-  var consejosBuf=[];
-  var idx=0;
-
-  function flushParam(val){
-    if(!curBlock||pendingRange===null)return;
-    var m=pendingRange.match(reRange);
-    if(!m)return;
-    var rmin=parseFloat(m[1].replace(',','.'));
-    var rmax=parseFloat(m[2].replace(',','.'));
-    var v=parseFloat(val.replace(',','.'));
-    var out=v<rmin*0.92||v>rmax*1.08;
-    if(out){
-      var paramName=curParamBuf.join(' ').trim()||'Parámetro';
-      var urg=(v>rmax*1.5||v<rmin*0.55)?'alta':'media';
-      curBlock.params.push({nombre:paramName,rmin:rmin,rmax:rmax,valor:v,urgencia:urg});
-    }
-    curParamBuf=[];
-    pendingRange=null;
-  }
-
-  function extractProdsFromLine(line){
-    if(!curBlock)return;
-    var m,seen={};
-    var re=new RegExp('(?:^|,|\\s)(V-[A-ZÁÉÍÓÚÜ-]+|TÉ DETOX|TE DETOX|ORGANEX|CURCUMAX|OMEGA\\b|NITRO\\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ|KETOCAFE)','gi');
-    while((m=re.exec(line))!==null){
-      var tok=m[1].trim().replace(/\.$/, '');
-      var norm=normalizeProd(tok);
-      if(norm&&!seen[norm]){seen[norm]=true;curBlock.prods_raw.push(norm);}
-    }
-    // Also split by comma for plain names
-    line.split(',').forEach(function(part){
-      var tok=part.trim().replace(/\.$/, '');
-      if(tok.length>3){
-        var norm=normalizeProd(tok);
-        if(norm&&!seen[norm]){seen[norm]=true;curBlock.prods_raw.push(norm);}
-      }
+    return SIST_KW.some(function(k){
+      return line===k||line.toLowerCase()===k.toLowerCase()||
+             line.toLowerCase().indexOf(k.toLowerCase())===0;
     });
   }
 
-  while(idx<lines.length){
-    var line=lines[idx];
+  var reRange=/^(\d+)[,.](\d+)\s*[-–]\s*(\d+)[,.](\d+)$/;
+  var reVal=/^(\d+)[,.](\d+)$/;
+  var reNoise=/^(Sistema|Objeto Analizado|Rango Normal|Valor Obtenido|Objeto$|Analizado$|Informe de|Nombre:|Complexión:|Sexo:|Edad:|Fecha|Page \d|Página|Acerca de|Los resultados|Resultado del|Análisis Biocuántico|Análisis BioCuántico)$/i;
+  var reConsejos=/^Consejos(\s+de)?(\s+Experto)?\.?$/i;
+  var reProdToken=/^(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ|KETOCAFE|THERMOKAFE)/i;
+
+  // ── Extract synthesis section ──
+  var sintIdx=texto.search(/informe de s[ií]ntesis/i);
+  var workText=sintIdx>=0?texto.slice(sintIdx):texto;
+
+  // ── Extract patient info ──
+  var nombreM=workText.match(/Nombre:\s*([^\n]+)/i);
+  var edadM=workText.match(/Edad:\s*(\d+)/i);
+  var sexoM=workText.match(/Sexo:\s*([^\n]+)/i);
+  var fechaM=workText.match(/Fecha[^:]*:\s*([^\n]+)/i);
+
+  // ── Build lines ──
+  var rawLines=workText.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+
+  // Join broken system names (2 consecutive short lines forming a known system)
+  var lines=[];
+  var i=0;
+  while(i<rawLines.length){
+    var line=rawLines[i];
+    if(i+1<rawLines.length){
+      var combined=line+' '+rawLines[i+1];
+      if(isSistema(combined)&&!isSistema(line)){
+        lines.push(combined);
+        i+=2;continue;
+      }
+    }
+    lines.push(line);
+    i++;
+  }
+
+  // ── Parse blocks ──
+  var blocks=[];   // [{sistema, params:[{nombre,rmin,rmax,valor,dir,urg}], prods:[]}]
+  var curBlock=null;
+  var paramBuf=[];
+  var pendingRmin=null,pendingRmax=null;
+  var inConsejos=false;
+  var consejoLines=[];
+
+  function flushParam(valStr){
+    if(!curBlock||pendingRmin===null)return;
+    var m=valStr.match(/^(\d+)[,.](\d+)$/);
+    if(!m)return;
+    var val=parseFloat(m[1]+'.'+m[2]);
+    var isOut=val<pendingRmin*0.95||val>pendingRmax*1.05;
+    if(isOut){
+      var pname=paramBuf.join(' ').trim();
+      // Clean param name: remove product tokens and advice fragments
+      pname=pname.replace(/V-[A-ZÁÉÍÓÚ\-]+/gi,'').replace(/Consuma.*/i,'').replace(/Evite.*/i,'').trim();
+      pname=pname.replace(/\s{2,}/g,' ').trim();
+      if(pname.length>3){
+        var dir=val>pendingRmax?'alto':'bajo';
+        var pct=dir==='alto'?(val-pendingRmax)/pendingRmax:(pendingRmin-val)/pendingRmin;
+        var urg=pct>0.35?'alta':'media';
+        // ── Lookup from PARAM_TABLE ──
+        var info=lookupParam(pname);
+        var displayName=info?info.d:pname;
+        var sig=info?(dir==='alto'?info.a:info.b):'Parámetro fuera del rango saludable.';
+        var sistemas=info?info.t:[];
+        curBlock.params.push({
+          nombre:pname,
+          display:displayName,
+          rmin:pendingRmin,rmax:pendingRmax,valor:val,
+          dir:dir,urgencia:urg,
+          sig:sig,
+          sistemas:sistemas
+        });
+      }
+    }
+    paramBuf=[];
+    pendingRmin=pendingRmax=null;
+  }
+
+  function extractProds(line){
+    if(!curBlock)return;
+    // Split by comma or space, try each token
+    var tokens=line.split(/[,\s]+/);
+    var i2=0;
+    while(i2<tokens.length){
+      var tok=tokens[i2].replace(/[.;*#]/g,'').trim();
+      // Handle "V-OMEGA 3" as two tokens
+      if(tok.toUpperCase()==='V-OMEGA'&&i2+1<tokens.length&&tokens[i2+1]==='3'){
+        tok='V-OMEGA 3';i2++;
+      }
+      if(tok.toUpperCase()==='TÉ'&&i2+1<tokens.length&&tokens[i2+1].toUpperCase()==='DETOX'){
+        tok='TÉ DETOX';i2++;
+      }
+      if(tok.length>2){
+        var norm=normProd(tok);
+        if(norm&&curBlock.prods.indexOf(norm)<0)curBlock.prods.push(norm);
+      }
+      i2++;
+    }
+  }
+
+  i=0;
+  while(i<lines.length){
+    var line=lines[i];
 
     // Skip noise
-    if(reNoise.test(line)||line.length<2){idx++;continue;}
+    if(reNoise.test(line)||line.length<2){i++;continue;}
 
-    // Detect "Consejos de Experto" (may be 1 or 2 tokens)
-    if(reConsejos.test(line)||(line==='Consejos'&&idx+1<lines.length&&/^de(\s+Experto)?$/i.test(lines[idx+1]))){
+    // Detect "Consejos de Experto"
+    if(reConsejos.test(line)||(line==='Consejos'&&i+1<lines.length&&/^de(\s+Experto)?$/i.test(lines[i+1]))){
       inConsejos=true;
-      consejosBuf=[];
-      if(line==='Consejos'){idx++;} // skip "de Experto" line
-      idx++;continue;
+      consejoLines=[];
+      if(line==='Consejos')i++;
+      i++;continue;
     }
 
     if(inConsejos){
-      var rng=line.match(reRange);
-      var vl=line.match(reVal);
-      var newSist=isSistema(line);
-      // Does line contain product tokens?
-      var hasProd=/(V-[A-Z]|TÉ DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ)/i.test(line);
-
+      var isRng=reRange.test(line);
+      var isVl=reVal.test(line)&&pendingRmin!==null;
+      var isSist=isSistema(line);
+      // Product line detection: starts with V- or known product name
+      var hasProd=/(V-[A-ZÁÉÍÓÚÜ]|TÉ DETOX|TE DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|VITAREN\b|VITALPRO\b|FORTYFLORA\b|GLUTATION\b|VITALIX\b|VITALAGE\b|VITAX\b|KETOCAFÉ\b|KETOCAFE\b|THERMOKAFE\b)/i.test(line);
       if(hasProd){
-        extractProdsFromLine(line);
-        // check if there's a next line also with products (wrapped line)
-        if(idx+1<lines.length&&/(V-[A-Z]|TÉ DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|KETOCAFÉ)/i.test(lines[idx+1])&&!reRange.test(lines[idx+1])&&!reVal.test(lines[idx+1])&&!isSistema(lines[idx+1])){
-          idx++;extractProdsFromLine(lines[idx]);
+        extractProds(line);
+        // Peek next line — might continue products
+        if(i+1<lines.length&&/(V-[A-ZÁÉÍÓÚÜ]|TÉ DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|KETOCAFÉ\b)/i.test(lines[i+1])&&!reRange.test(lines[i+1])&&!isSistema(lines[i+1])){
+          i++;extractProds(lines[i]);
         }
-        inConsejos=false;
-        idx++;continue;
-      } else if(rng||vl||newSist){
-        inConsejos=false;
-        // reprocess this line
-        continue;
-      } else {
-        consejosBuf.push(line);
-        idx++;continue;
+        inConsejos=false;paramBuf=[];
+        i++;continue;
       }
+      if(isRng||isVl||isSist){inConsejos=false;continue;}
+      consejoLines.push(line);
+      i++;continue;
     }
 
     // New system
     if(isSistema(line)){
-      // Merge split system names (next line may continue)
-      var sistName=line;
-      if(idx+1<lines.length&&!isSistema(lines[idx+1])&&!reRange.test(lines[idx+1])&&!reVal.test(lines[idx+1])&&lines[idx+1].length>2&&lines[idx+1].length<30&&!/Consejos/i.test(lines[idx+1])&&!/\d/.test(lines[idx+1])){
-        // Could be continuation but usually sistema names are complete. Don't merge.
-      }
-      curBlock={sistema:sistName,params:[],prods_raw:[],consejo:''};
+      curBlock={sistema:line,params:[],prods:[]};
       blocks.push(curBlock);
-      curParamBuf=[];pendingRange=null;inConsejos=false;
-      idx++;continue;
+      paramBuf=[];pendingRmin=pendingRmax=null;inConsejos=false;
+      i++;continue;
     }
 
-    // Numeric range
+    // Range
     if(reRange.test(line)){
-      pendingRange=line;
-      idx++;continue;
+      var rm=line.match(reRange);
+      pendingRmin=parseFloat(rm[1]+'.'+rm[2]);
+      pendingRmax=parseFloat(rm[3]+'.'+rm[4]);
+      i++;continue;
     }
 
-    // Numeric value → close param
-    if(reVal.test(line)&&pendingRange){
+    // Value
+    if(reVal.test(line)&&pendingRmin!==null){
       flushParam(line);
-      idx++;continue;
+      i++;continue;
     }
 
-    // Accumulate param name buffer
-    if(curBlock&&!inConsejos&&!pendingRange){
-      curParamBuf.push(line);
+    // Accumulate param name (skip if looks like advice text)
+    if(curBlock&&!inConsejos&&pendingRmin===null){
+      if(line.length<80&&!/(Consuma|Evite|Tome|Beba|Aumente|Reduzca)/i.test(line)&&!isSistema(line)){
+        paramBuf.push(line);
+      } else if(/(Consuma|Evite|Tome|Beba|Aumente|Reduzca)/i.test(line)){
+        // Advice line — might contain products at end
+        extractProds(line);
+        paramBuf=[];
+      }
     }
-    idx++;
+    i++;
   }
 
   // ── Build sistemas_afectados ──
+  // Collect all active systems for product filtering
+  var activeSystemsList=[];
   var sistemas=[];
-  var sistSeen={};
+  var seenParams={};
+
   blocks.forEach(function(b){
-    var sNorm=b.sistema.replace(/\n/g,' ').trim();
-    // Dedupe sistema names (Obesidad appears twice etc)
-    var key=sNorm.toLowerCase();
-    if(b.params.length===0&&b.prods_raw.length===0)return;
     b.params.forEach(function(p){
+      var key=p.display.toLowerCase();
+      if(seenParams[key])return;
+      seenParams[key]=true;
+      p.sistemas.forEach(function(s){if(activeSystemsList.indexOf(s)<0)activeSystemsList.push(s);});
       sistemas.push({
-        sistema:sNorm,
-        detectado:p.nombre+' — Valor: '+p.valor+' (rango: '+p.rmin+' – '+p.rmax+')',
-        significado:getSig(sNorm,p.nombre),
+        sistema:p.display,
+        detectado:p.nombre+(p.nombre!==p.display?'':'')+' — Valor: '+p.valor+' (rango normal: '+p.rmin+' – '+p.rmax+')',
+        significado:p.sig,
         urgencia:p.urgencia,
-        nivel:p.urgencia==='alta'?'alto':'medio'
+        nivel:p.urgencia==='alta'?'alto':'medio',
+        dir:p.dir
       });
     });
-    if(b.params.length===0&&b.prods_raw.length>0){
-      // System mentioned without numeric params (products only)
-      sistemas.push({
-        sistema:sNorm,
-        detectado:'Alteración detectada por el escáner',
-        significado:getSig(sNorm,''),
-        urgencia:'media',nivel:'medio'
-      });
-    }
   });
 
   // Sort: alta first
-  sistemas.sort(function(a,b){return a.urgencia==='alta'&&b.urgencia!=='alta'?-1:b.urgencia==='alta'&&a.urgencia!=='alta'?1:0;});
-  sistemas.forEach(function(s,i){s.num=i+1;});
+  sistemas.sort(function(a,b){
+    return a.urgencia==='alta'&&b.urgencia!=='alta'?-1:
+           b.urgencia==='alta'&&a.urgencia!=='alta'?1:0;
+  });
+  sistemas.forEach(function(s,idx){s.num=idx+1;});
 
-  // ── Collect all products in urgency order ──
-  var prodSeen={};
+  // ── Collect products ──
+  var prodsSeen={};
   var allProds=[];
-  // First pass: from alta urgency blocks
+
+  function addProd(name){
+    if(!prodsSeen[name]){prodsSeen[name]=true;allProds.push(name);}
+  }
+
+  // ── Fixed base products always first ──
+  // 1. Always start with Té Detox + V-Organex (detox base)
+  ['Té Detox','V-Organex'].forEach(function(base){addProd(base);});
+
+  // 2. Add V-Itaren if kidney/renal system detected
+  var hasRenalOrMetales=activeSystemsList.some(function(s){
+    return ['riñón','renal','metales pesados','plomo','mercurio','cadmio','proteinuria','ácido úrico'].indexOf(s.toLowerCase())>=0;
+  });
+  if(hasRenalOrMetales){addProd('V-Itaren');}
+
+  // 3. Alta urgency products first
   blocks.forEach(function(b){
-    var hasAlta=b.params.some(function(p){return p.urgencia==='alta';});
-    if(hasAlta)b.prods_raw.forEach(function(p){if(!prodSeen[p]){prodSeen[p]=true;allProds.push(p);}});
+    if(b.params.some(function(p){return p.urgencia==='alta';})){
+      b.prods.forEach(function(p){addProd(p);});
+    }
   });
-  // Second pass: rest
-  blocks.forEach(function(b){
-    b.prods_raw.forEach(function(p){if(!prodSeen[p]){prodSeen[p]=true;allProds.push(p);}});
-  });
-  // Always ensure V-Organex and Té Detox are in all packages
-  ['V-Organex','Té Detox'].forEach(function(base){
-    if(!prodSeen[base]){prodSeen[base]=true;allProds.unshift(base);}
-  });
+  // 4. Rest
+  blocks.forEach(function(b){b.prods.forEach(function(p){addProd(p);});});
 
   function buildPkg(prods,max){
     return prods.slice(0,max).map(function(nombre){
       var pp2=PP.find(function(x){return x.n===nombre;});
-      var block=blocks.find(function(b){return b.prods_raw.indexOf(nombre)>=0;});
-      var sistNombre=block?block.sistema:'';
+      // Get product description filtered to active systems
+      var prodInfo=PRODUCT_TABLE[nombre];
+      var desc='';
+      if(prodInfo){
+        var matches=prodInfo.t.filter(function(s){
+          return activeSystemsList.some(function(a){
+            return a.toLowerCase().indexOf(s.toLowerCase())>=0||
+                   s.toLowerCase().indexOf(a.toLowerCase())>=0;
+          });
+        });
+        desc=prodInfo.desc;
+      }else{
+        desc=(pp2&&pp2.pa&&pp2.pa[0])||'Apoyo al organismo.';
+      }
       return{
         nombre:nombre,
-        razon_clinica:getSig(sistNombre,nombre)||((pp2&&pp2.pa&&pp2.pa[0])||'Apoyo al organismo'),
+        razon_clinica:desc,
         dosis:(pp2&&pp2.d)||'Según indicaciones del producto',
         resultado_esperado:(pp2&&pp2.b&&pp2.b[0])||'Mejora del sistema afectado'
       };
     });
   }
 
-  // ── Recomendaciones: extract bullet-like advice from consejo texts ──
+  // ── Recomendaciones ──
   var recsAlim=[
     'Aumentar frutas, verduras frescas, cereales integrales y pescado.',
     'Reducir alimentos fritos, azúcares refinados, harinas blancas y procesados.',
     'Evitar bebidas alcohólicas, refrescos y cigarrillo.',
     'Consumir alimentos ricos en vitaminas A, C, E y complejo B.',
     'Comer porciones pequeñas pero más frecuentes durante el día.',
-    'Masticar bien y comer en ambiente tranquilo.',
+    'Masticar bien y comer en ambiente tranquilo para mejorar la absorción.',
   ];
   var recsVida=[
     'Realizar al menos 30 minutos de actividad física diaria.',
@@ -3914,18 +4187,16 @@ function parsearReporteBiocuantico(texto,c){
     'Consultar con médico para seguimiento de glucosa, hígado y triglicéridos.',
   ];
 
-  var resumen='Análisis biocuántico de '+c.name+' revela '+sistemas.length+' parámetros fuera de rango.';
-  if(sistemas.length)resumen+=' Sistemas prioritarios: '+sistemas.slice(0,4).map(function(s){return s.sistema;}).join(', ')+'. Se recomienda protocolo de suplementación con énfasis en desintoxicación hepática y soporte metabólico.';
-
   return{
-    paciente:c.name,
-    edad:c.age||'',
-    sexo:sexLbl2,
-    fecha:today,
+    paciente:nombreM?nombreM[1].replace(/\d+$/,'').trim():c.name,
+    edad:edadM?edadM[1]:c.age||'',
+    sexo:sexoM?sexoM[1].trim():sexLbl,
+    fecha:fechaM?fechaM[1].split(' ')[0]:today,
     tipo_analisis:'Síntesis de Análisis BioCuántico VitalHealth',
-    resumen_clinico:resumen,
     sistemas_afectados:sistemas,
-    hallazgos_criticos:sistemas.map(function(s){return{sistema:s.sistema,hallazgo:s.detectado,nivel:s.nivel};}),
+    hallazgos_criticos:sistemas.map(function(s){
+      return{sistema:s.sistema,hallazgo:s.significado,nivel:s.nivel};
+    }),
     recomendaciones_alimentacion:recsAlim,
     recomendaciones_vida:recsVida,
     paquetes:{
@@ -3940,15 +4211,13 @@ function parsearReporteBiocuantico(texto,c){
         sistemas_cubiertos:sistemas.slice(0,6).map(function(s){return s.sistema;})
       },
       completo:{
-        productos:buildPkg(allProds,Math.min(allProds.length,15)),
+        productos:buildPkg(allProds,Math.min(allProds.length,16)),
         justificacion:'Protocolo integral 360°. Máxima protección y regeneración celular.',
         sistemas_cubiertos:sistemas.map(function(s){return s.sistema;})
       }
     }
   };
 }
-
-
 
 function renderPlanAlimenticio(plan){
   if(!plan)return '';
