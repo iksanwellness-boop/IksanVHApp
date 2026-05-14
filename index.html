@@ -2913,125 +2913,118 @@ function renderResultVH(r){
   _lastResult=r;
   var boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
   var negocio=boCfg?.appName||APP_CFG.appName||'IKSAN Wellness';
-  var logo=boCfg?.logo?'<img src="'+boCfg.logo+'" style="height:32px;border-radius:5px">':'';
+  var logo=boCfg?.logo?'<img src="'+boCfg.logo+'" style="height:28px;border-radius:4px;margin-bottom:2px">':'';
   var pks=r.paquetes||{};
   var sistemas=r.sistemas_afectados||r.hallazgos_criticos||[];
   var comida=r.recomendaciones_alimentacion||[];
   var vida=r.recomendaciones_vida||[];
-  var pa=r.plan_alimenticio||null;
+
+  // ── Colors ──
+  var TEAL='#0B7E8A',TEAL_BG='#E0F4F6',TEAL_MED='#0D9BAB';
+  var RED='#C0392B',RED_BG='#FDECEA';
+  var ORANGE='#E67E22',ORANGE_BG='#FEF5EC';
+  var DARK='#1C2833',GRAY='#7F8C8D';
 
   var h='';
 
-  // ── HEADER ──
-  h+='<div style="background:linear-gradient(135deg,#1a2a3e,#2a3f5f);color:#fff;border-radius:12px;padding:16px;margin-bottom:14px">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+  // ── HEADER membrete ──
+  h+='<div style="background:linear-gradient(90deg,'+TEAL+','+TEAL_MED+');border-radius:12px 12px 0 0;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">';
   h+='<div>';
-  h+='<div style="font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">VitalHealth</div>';
-  h+='<div style="font-size:15px;font-weight:700">Reporte de Salud Personalizado</div>';
+  if(logo)h+=logo+'<br>';
+  h+='<div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:1px">'+negocio+'</div>';
+  h+='<div style="font-size:10px;color:rgba(255,255,255,.75);margin-top:2px">Reporte de Salud Personalizado</div>';
   h+='</div>';
-  h+='<div style="text-align:right;font-size:10px;opacity:.7">'+logo+'<div>'+r.fecha+'</div><div>Confidencial</div></div>';
+  h+='<div style="text-align:right">';
+  h+='<div style="font-size:10px;color:rgba(255,255,255,.8)">Fecha del análisis</div>';
+  h+='<div style="font-size:13px;font-weight:700;color:#fff">'+r.fecha+'</div>';
+  h+='<div style="font-size:9px;color:rgba(255,255,255,.6);margin-top:2px">Confidencial</div>';
   h+='</div></div>';
 
-  // ── PACIENTE ──
-  h+='<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">';
-  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">1. Información del paciente</div>';
+  // thin accent bar
+  h+='<div style="height:4px;background:linear-gradient(90deg,'+RED+','+ORANGE+');margin-bottom:14px"></div>';
+
+  // ── 1. PACIENTE ──
+  h+='<div style="background:#fff;border:1px solid '+TEAL_BG+';border-radius:10px;overflow:hidden;margin-bottom:12px">';
+  h+='<div style="background:'+TEAL+'20;border-bottom:2px solid '+TEAL+';padding:7px 14px">';
+  h+='<span style="font-size:11px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.5px">1. Información del Paciente</span></div>';
   h+='<table style="width:100%;font-size:12px;border-collapse:collapse">';
-  h+='<tr><td style="padding:4px 8px;color:var(--muted);width:40%">Nombre</td><td style="padding:4px 8px;font-weight:600">'+r.paciente+'</td></tr>';
-  if(r.sexo)h+='<tr style="background:#f8f8f8"><td style="padding:4px 8px;color:var(--muted)">Sexo</td><td style="padding:4px 8px;font-weight:600">'+r.sexo+'</td></tr>';
-  if(r.edad)h+='<tr><td style="padding:4px 8px;color:var(--muted)">Edad</td><td style="padding:4px 8px;font-weight:600">'+r.edad+' años</td></tr>';
-  h+='<tr style="background:#f8f8f8"><td style="padding:4px 8px;color:var(--muted)">Tipo de análisis</td><td style="padding:4px 8px;font-weight:600">'+(r.tipo_analisis||'Análisis BioCuántico VitalHealth')+'</td></tr>';
+  var filas=[['Nombre',r.paciente||'—'],['Sexo',r.sexo||'—'],['Edad',(r.edad?r.edad+' años':'—')],['Análisis',(r.tipo_analisis||'Análisis BioCuántico VitalHealth')]];
+  filas.forEach(function(row,i){
+    h+='<tr style="background:'+(i%2===0?'#fff':'#f8fbfc')+'">';
+    h+='<td style="padding:6px 14px;color:'+TEAL+';font-weight:700;width:38%">'+row[0]+'</td>';
+    h+='<td style="padding:6px 14px;color:'+DARK+'">'+row[1]+'</td></tr>';
+  });
   h+='</table></div>';
 
-  // ── RESUMEN ──
-  if(r.resumen_clinico){
-    h+='<div style="background:#f8f5ff;border-left:3px solid var(--mid);border-radius:0 10px 10px 0;padding:12px;margin-bottom:12px">';
-    h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Resumen clínico</div>';
-    h+='<div style="font-size:12px;line-height:1.7;color:var(--deep)">'+r.resumen_clinico+'</div>';
-    h+='</div>';
-  }
-
-  // ── SISTEMAS AFECTADOS ──
+  // ── 2. SISTEMAS FUERA DE RANGO ──
   if(sistemas.length){
-    h+='<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">';
-    h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">2. Sistemas fuera de rango (orden de urgencia)</div>';
-    // Table header
+    h+='<div style="background:#fff;border:1px solid #f0d0d0;border-radius:10px;overflow:hidden;margin-bottom:12px">';
+    h+='<div style="background:'+RED_BG+';border-bottom:2px solid '+RED+';padding:7px 14px">';
+    h+='<span style="font-size:11px;font-weight:700;color:'+RED+';text-transform:uppercase;letter-spacing:.5px">2. Sistemas Fuera de Rango · Orden de Urgencia</span></div>';
     h+='<table style="width:100%;font-size:11px;border-collapse:collapse">';
-    h+='<tr style="background:#1a2a3e;color:#fff">';
-    h+='<th style="padding:6px;text-align:left;width:5%">#</th>';
-    h+='<th style="padding:6px;text-align:left;width:20%">Sistema</th>';
-    h+='<th style="padding:6px;text-align:left;width:37%">Qué se detectó</th>';
-    h+='<th style="padding:6px;text-align:left;width:38%">Qué significa</th>';
-    h+='</tr>';
-    // Sort by urgencia
+    h+='<tr style="background:'+DARK+';color:#fff">';
+    h+='<th style="padding:6px 8px;width:5%;text-align:center">#</th>';
+    h+='<th style="padding:6px 8px;width:22%">Sistema</th>';
+    h+='<th style="padding:6px 8px;width:37%">Qué se detectó</th>';
+    h+='<th style="padding:6px 8px;width:36%">Qué significa</th></tr>';
     var sorted=sistemas.slice().sort(function(a,b){
       var ord={alto:0,alta:0,medio:1,media:1,bajo:2,baja:2};
-      return (ord[a.nivel||a.urgencia]||1)-(ord[b.nivel||b.urgencia]||1);
+      return(ord[a.nivel||a.urgencia]||1)-(ord[b.nivel||b.urgencia]||1);
     });
     sorted.forEach(function(s,i){
       var urg=s.urgencia||s.nivel||'medio';
-      var bg=i%2===0?'#fff':'#f8f8f8';
-      var urg_color=urg==='alto'||urg==='alta'?'#dc2626':urg==='medio'||urg==='media'?'#d97706':'#16a34a';
-      h+='<tr style="background:'+bg+';border-left:3px solid '+urg_color+'">';
-      h+='<td style="padding:5px 6px;font-weight:700;color:'+urg_color+'">'+(s.num||i+1)+'</td>';
-      h+='<td style="padding:5px 6px;font-weight:700;color:var(--deep)">'+(s.sistema||s.sistema||'')+'</td>';
-      h+='<td style="padding:5px 6px;color:var(--mid)">'+(s.detectado||s.hallazgo||'')+'</td>';
-      h+='<td style="padding:5px 6px;color:var(--deep)">'+(s.significado||s.hallazgo||'')+'</td>';
-      h+='</tr>';
+      var isAlto=urg==='alto'||urg==='alta';
+      var isMed=urg==='medio'||urg==='media';
+      var col=isAlto?RED:isMed?ORANGE:'#16a34a';
+      var rowBg=i%2===0?'#fff':'#f9f9f9';
+      h+='<tr style="background:'+rowBg+';border-left:3px solid '+col+';border-bottom:1px solid #f0f0f0">';
+      h+='<td style="padding:5px 8px;font-weight:800;color:'+col+';text-align:center">'+(s.num||i+1)+'</td>';
+      h+='<td style="padding:5px 8px;font-weight:700;color:'+DARK+';font-size:11px">'+(s.sistema||'')+'</td>';
+      h+='<td style="padding:5px 8px;color:'+GRAY+';font-size:10px">'+(s.detectado||s.hallazgo||'')+'</td>';
+      h+='<td style="padding:5px 8px;color:'+DARK+';font-size:10px">'+(s.significado||s.hallazgo||'—')+'</td></tr>';
     });
     h+='</table></div>';
   }
 
-  // ── RECOMENDACIONES ──
+  // ── 3. RECOMENDACIONES ──
   if(comida.length||vida.length){
-    h+='<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">';
-    h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">3. Recomendaciones generales</div>';
+    h+='<div style="background:#fff;border:1px solid '+TEAL_BG+';border-radius:10px;overflow:hidden;margin-bottom:12px">';
+    h+='<div style="background:'+TEAL+'20;border-bottom:2px solid '+TEAL+';padding:7px 14px">';
+    h+='<span style="font-size:11px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.5px">3. Recomendaciones Generales</span></div>';
+    h+='<div style="padding:10px 14px">';
     if(comida.length){
-      h+='<div style="font-size:11px;font-weight:700;color:var(--deep);margin-bottom:5px">Alimentación</div>';
-      comida.forEach(function(c){h+='<div style="font-size:11px;padding:3px 0;color:var(--mid)">• '+c+'</div>';});
+      h+='<div style="font-size:11px;font-weight:700;color:'+DARK+';margin-bottom:5px">Alimentación</div>';
+      comida.forEach(function(c){h+='<div style="font-size:11px;padding:3px 0 3px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';});
     }
     if(vida.length){
-      h+='<div style="font-size:11px;font-weight:700;color:var(--deep);margin:8px 0 5px">Estilo de vida</div>';
-      vida.forEach(function(c){h+='<div style="font-size:11px;padding:3px 0;color:var(--mid)">• '+c+'</div>';});
+      h+='<div style="font-size:11px;font-weight:700;color:'+DARK+';margin:8px 0 5px">Estilo de vida</div>';
+      vida.forEach(function(c){h+='<div style="font-size:11px;padding:3px 0 3px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';});
     }
-    h+='</div>';
+    h+='</div></div>';
   }
 
-  // ── PAQUETES / CARRITOS ──
-  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">4. Protocolos recomendados</div>';
+  // ── 4. PAQUETES ──
+  h+='<div style="background:#fff;border:1px solid #e8e8e8;border-radius:10px;overflow:hidden;margin-bottom:12px">';
+  h+='<div style="background:#2C3E50;border-bottom:2px solid #2C3E50;padding:7px 14px">';
+  h+='<span style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px">4. Protocolos Recomendados · BioCuántico</span></div>';
+  h+='<div style="padding:10px">';
   h+=renderPkgVH('basico',pks.basico,'BÁSICO','#1a56db','El primer paso. Ataca los sistemas más urgentes.');
-  h+=renderPkgVH('esencial',pks.esencial,'ESENCIAL','#1a7f3c','Cobertura completa. Protección profunda y reconstrucción.');
-  h+=renderPkgVH('completo',pks.completo,'COMPLETO','#b8960c','Protocolo integral 360°. Máxima protección y regeneración.');
-
-  // ── PLAN ALIMENTICIO ──
-  if(pa){
-    h+='<div style="background:linear-gradient(135deg,#f0faf0,#e8f8e8);border-radius:10px;padding:13px;margin-top:10px;border:1px solid #b8e0c0">';
-    h+='<div style="font-size:11px;font-weight:700;color:#1a7f3c;text-transform:uppercase;margin-bottom:8px">🥗 Plan alimenticio personalizado</div>';
-    if(pa.comer&&pa.comer.length){
-      h+='<div style="font-size:11px;font-weight:700;color:#1a7f3c;margin-bottom:4px">✅ Incluir más</div>';
-      pa.comer.forEach(function(a){h+='<div style="font-size:11px;padding:2px 0">• '+a+'</div>';});
-    }
-    if(pa.evitar&&pa.evitar.length){
-      h+='<div style="font-size:11px;font-weight:700;color:#c04040;margin:6px 0 4px">❌ Reducir o evitar</div>';
-      pa.evitar.forEach(function(a){h+='<div style="font-size:11px;padding:2px 0">• '+a+'</div>';});
-    }
-    if(pa.tips&&pa.tips.length){
-      h+='<div style="font-size:11px;font-weight:700;color:#b8960c;margin:6px 0 4px">💡 Consejos</div>';
-      pa.tips.forEach(function(t){h+='<div style="font-size:11px;padding:2px 0">• '+t+'</div>';});
-    }
-    h+='</div>';
-  }
+  h+=renderPkgVH('esencial',pks.esencial,'ESENCIAL','#1a7f3c','Cobertura completa. Protección profunda.');
+  h+=renderPkgVH('completo',pks.completo,'COMPLETO','#b8960c','Protocolo integral 360°. Máxima regeneración.');
+  h+='</div></div>';
 
   // ── ACTIONS ──
-  h+='<div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap">';
+  h+='<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">';
   h+='<button class="btn btn-wa" style="flex:1" onclick="sendResultWA()">💬 WhatsApp</button>';
   h+='<button class="btn btn-p" style="flex:1" onclick="downloadReportePDF2()">📄 PDF</button>';
   h+='<button class="btn btn-o btn-sm" onclick="openVHModal()">🔄 Nuevo</button>';
   h+='</div>';
 
-  h+='<div style="font-size:9px;color:var(--muted);text-align:center;margin-top:12px;font-style:italic">Este reporte es de carácter orientativo y no sustituye el diagnóstico ni tratamiento médico profesional. '+negocio+' • '+r.fecha+'</div>';
+  h+='<div style="font-size:9px;color:'+GRAY+';text-align:center;margin-top:10px;font-style:italic">Este reporte es orientativo y no sustituye diagnóstico médico profesional. '+negocio+' · '+r.fecha+'</div>';
 
   return h;
 }
+
 
 function renderPkgVH(key,pkg,label,color,tagline){
   if(!pkg||!pkg.productos||!pkg.productos.length)return '';
@@ -3241,69 +3234,166 @@ function downloadReportePDF2(){
   if(!r){showT('Sin reporte activo');return;}
   const boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
   const negocio=boCfg?.appName||APP_CFG.appName||'Iksan Wellness';
+  const logo=boCfg?.logo?`<img src="${boCfg.logo}" style="height:40px;border-radius:4px">`:'';
   const pks=r.paquetes||{};
-  const af=r.hallazgos_criticos||[];
-  const pa=r.plan_alimenticio||null;
+  const sis=r.sistemas_afectados||r.hallazgos_criticos||[];
+  const comida=r.recomendaciones_alimentacion||[];
+  const vida=r.recomendaciones_vida||[];
 
+  // pkg block
   const pkgHtml=(tipo,lbl,color)=>{
     const d=pks[tipo];if(!d?.productos?.length)return '';
     const tot=d.productos.reduce((s,p)=>s+getEffPrice(p.nombre),0);
-    return `<div style="margin-bottom:14px;border:1.5px solid ${color};border-radius:8px;overflow:hidden">
-      <div style="background:${color};color:#fff;padding:8px 12px;font-weight:700;font-size:13px">${lbl} — $${tot.toLocaleString()} MXN</div>
-      <div style="padding:10px 12px">
-        <div style="font-size:11px;color:#555;margin-bottom:8px;line-height:1.6">${d.justificacion||''}</div>
-        ${d.productos.map(p=>`<div style="padding:6px 0;border-bottom:1px solid #eee">
-          <div style="font-weight:700;font-size:12px">${p.nombre} <span style="font-size:10px;color:${color};font-weight:400">$${getEffPrice(p.nombre).toLocaleString()}</span></div>
-          <div style="font-size:11px;color:#333;margin:2px 0">${p.razon_clinica||''}</div>
-          <div style="font-size:10px;color:#777">Dosis: ${p.dosis||''}${p.resultado_esperado?' · Resultado: '+p.resultado_esperado:''}</div>
-        </div>`).join('')}
+    const rows=d.productos.map((p,i)=>{
+      const prod=PP.find(x=>x.n===p.nombre);
+      const pr=getEffPrice(p.nombre);
+      return `<tr style="background:${i%2===0?'#fff':'#f9f9f9'};border-bottom:1px solid #eee">
+        <td style="padding:6px 10px;font-weight:700;font-size:11px;color:#1C2833">${prod?prod.e+' ':''} ${p.nombre}</td>
+        <td style="padding:6px 10px;font-size:11px;color:#666">${p.razon_clinica||''}</td>
+        <td style="padding:6px 10px;font-size:11px;color:#999">${p.dosis||''}</td>
+        <td style="padding:6px 10px;font-size:11px;font-weight:700;color:${color};text-align:right">${pr>0?'$'+pr.toLocaleString():'—'}</td>
+      </tr>`;
+    }).join('');
+    return `<div style="margin-bottom:16px;border:1.5px solid ${color};border-radius:8px;overflow:hidden">
+      <div style="background:${color};color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;font-weight:800;letter-spacing:1px">${lbl}</div>
+          <div style="font-size:10px;opacity:.85;margin-top:2px">${d.justificacion||''}</div>
+        </div>
+        <div style="text-align:right">
+          ${tot>0?`<div style="font-size:16px;font-weight:800">$${tot.toLocaleString()} MXN</div>`:''}
+          <div style="font-size:9px;opacity:.8">${d.productos.length} productos</div>
+        </div>
       </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="background:#f0f0f0">
+          <th style="padding:5px 10px;text-align:left;font-size:10px">Producto</th>
+          <th style="padding:5px 10px;text-align:left;font-size:10px">Por qué</th>
+          <th style="padding:5px 10px;text-align:left;font-size:10px">Dosis</th>
+          <th style="padding:5px 10px;text-align:right;font-size:10px">Precio</th>
+        </tr>
+        ${rows}
+      </table>
+      ${d.sistemas_cubiertos?.length?`<div style="padding:7px 14px;background:#fafafa;font-size:9px;color:#999">Sistemas cubiertos: ${d.sistemas_cubiertos.join(', ')}</div>`:''}
     </div>`;
   };
 
-  const logoHTML=boCfg?.logo?`<img src="${boCfg.logo}" style="height:50px;margin-bottom:4px"><br>`:'';
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte ${r.paciente}</title>
-  <style>body{font-family:Georgia,serif;max-width:680px;margin:0 auto;padding:24px;color:#1a1a2e;font-size:13px}
-  @media print{body{padding:8px;max-width:100%}}</style></head><body>
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #6b2d82;padding-bottom:12px;margin-bottom:18px">
-    <div>${logoHTML}<b style="font-size:17px;color:#6b2d82">${negocio}</b></div>
-    <div style="text-align:right;font-size:11px;color:#666"><b>${r.tipo_analisis}</b><br>${r.fecha}</div>
+  // sorted systems
+  const sortedSis=sis.slice().sort((a,b)=>{const o={alto:0,alta:0,medio:1,media:1,bajo:2,baja:2};return(o[a.nivel||a.urgencia]||1)-(o[b.nivel||b.urgencia]||1);});
+  const sisRows=sortedSis.map((s,i)=>{
+    const urg=s.urgencia||s.nivel||'medio';
+    const col=urg==='alto'||urg==='alta'?'#C0392B':urg==='medio'||urg==='media'?'#E67E22':'#16a34a';
+    return `<tr style="background:${i%2===0?'#fff':'#f9f9f9'};border-left:3px solid ${col}">
+      <td style="padding:5px 8px;font-weight:800;color:${col};text-align:center">${s.num||i+1}</td>
+      <td style="padding:5px 8px;font-weight:700;font-size:11px;color:#1C2833">${s.sistema||''}</td>
+      <td style="padding:5px 8px;font-size:10px;color:#666">${s.detectado||s.hallazgo||''}</td>
+      <td style="padding:5px 8px;font-size:10px;color:#1C2833">${s.significado||s.hallazgo||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const recRows=[
+    comida.length?`<div style="font-size:11px;font-weight:700;color:#1C2833;margin-bottom:5px">Alimentación</div>${comida.map(c=>`<div style="font-size:11px;padding:2px 0 2px 14px;color:#666;position:relative"><span style="position:absolute;left:0;color:#0B7E8A">•</span>${c}</div>`).join('')}`:'',
+    vida.length?`<div style="font-size:11px;font-weight:700;color:#1C2833;margin:8px 0 5px">Estilo de vida</div>${vida.map(v=>`<div style="font-size:11px;padding:2px 0 2px 14px;color:#666;position:relative"><span style="position:absolute;left:0;color:#0B7E8A">•</span>${v}</div>`).join('')}`:''
+  ].filter(Boolean).join('');
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Reporte VitalHealth — ${r.paciente||''}</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:720px;margin:0 auto;padding:28px;color:#1C2833;font-size:12px;line-height:1.5}
+    @media print{body{padding:10px;max-width:100%}@page{margin:1.2cm}}
+    table{border-collapse:collapse;width:100%}
+    th{font-weight:700}
+  </style></head><body>
+
+  <!-- MEMBRETE -->
+  <table style="width:100%;margin-bottom:18px">
+    <tr>
+      <td style="background:linear-gradient(90deg,#0B7E8A,#0D9BAB);padding:14px 18px;border-radius:10px 0 0 10px;vertical-align:middle">
+        ${logo}
+        <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:1px">${negocio}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.75);margin-top:2px">Reporte de Salud Personalizado</div>
+      </td>
+      <td style="background:#0D9BAB;padding:14px 18px;border-radius:0 10px 10px 0;text-align:right;vertical-align:middle;min-width:150px">
+        <div style="font-size:10px;color:rgba(255,255,255,.8)">Fecha del análisis</div>
+        <div style="font-size:14px;font-weight:700;color:#fff">${r.fecha}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.6);margin-top:3px">Confidencial</div>
+      </td>
+    </tr>
+  </table>
+  <div style="height:3px;background:linear-gradient(90deg,#C0392B,#E67E22);border-radius:2px;margin-bottom:18px"></div>
+
+  <!-- 1. PACIENTE -->
+  <div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #E0F4F6">
+    <div style="background:#E0F4F6;border-bottom:2px solid #0B7E8A;padding:7px 14px">
+      <span style="font-size:11px;font-weight:700;color:#0B7E8A;text-transform:uppercase;letter-spacing:.5px">1. Información del Paciente</span>
+    </div>
+    <table>
+      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;width:35%;background:#f8fbfc">Nombre</td><td style="padding:6px 14px">${r.paciente||'—'}</td></tr>
+      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f8fbfc">Sexo</td><td style="padding:6px 14px">${r.sexo||'—'}</td></tr>
+      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f8fbfc">Edad</td><td style="padding:6px 14px">${r.edad?r.edad+' años':'—'}</td></tr>
+      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f8fbfc">Tipo de análisis</td><td style="padding:6px 14px">${r.tipo_analisis||'Análisis BioCuántico VitalHealth'}</td></tr>
+    </table>
   </div>
-  <h2 style="color:#6b2d82;margin:0 0 3px">${r.paciente}</h2>
-  <p style="margin:0 0 14px;color:#666;font-size:11px">${r.edad?r.edad+' años':''} ${r.sexo||''}</p>
-  ${r.resumen_clinico?`<div style="background:#f8f5ff;border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.7;border-left:3px solid #6b2d82"><b>Resumen clínico:</b><br>${r.resumen_clinico}</div>`:''}
-  ${af.length?`<p style="font-weight:700;font-size:11px;text-transform:uppercase;color:#666;margin-bottom:6px">Hallazgos (${af.length})</p>
-  ${af.map(p=>{const bg=p.nivel==='alto'?'#fff5f5':p.nivel==='medio'?'#fff8e8':'#f0faf0';const col=p.nivel==='alto'?'#b04040':p.nivel==='medio'?'#a06020':'#308040';
-    return `<div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:5px;margin-bottom:3px;font-size:11px;background:${bg};color:${col}"><span><b>${p.sistema}</b> — ${p.hallazgo}</span><span>${p.nivel}</span></div>`;}).join('')}<br>`:''}
-  <p style="font-weight:700;font-size:12px;text-transform:uppercase;color:#1a7f3c;margin-bottom:10px">Protocolo de suplementación</p>
-  ${pkgHtml('basico','PAQUETE BÁSICO','#1a56db')}
-  ${pkgHtml('esencial','PAQUETE ESENCIAL','#1a7f3c')}
-  ${pkgHtml('completo','PAQUETE COMPLETO','#b8960c')}
-  ${pa?`<div style="background:#f0faf0;border-radius:8px;padding:12px;margin-top:12px;border:1px solid #b8e0c0">
-    <p style="font-weight:700;font-size:12px;color:#1a7f3c;margin:0 0 8px">Plan alimenticio personalizado</p>
-    ${pa.comer?.length?`<p style="font-weight:700;font-size:11px;color:#1a7f3c;margin:0 0 3px">Incluir más:</p><ul style="margin:0 0 8px;padding-left:18px">${pa.comer.map(a=>`<li style="font-size:11px">${a}</li>`).join('')}</ul>`:''}
-    ${pa.evitar?.length?`<p style="font-weight:700;font-size:11px;color:#c04040;margin:0 0 3px">Reducir o evitar:</p><ul style="margin:0 0 8px;padding-left:18px">${pa.evitar.map(a=>`<li style="font-size:11px">${a}</li>`).join('')}</ul>`:''}
-    ${pa.tips?.length?`<p style="font-weight:700;font-size:11px;color:#b8960c;margin:0 0 3px">Consejos:</p><ul style="margin:0;padding-left:18px">${pa.tips.map(t=>`<li style="font-size:11px">${t}</li>`).join('')}</ul>`:''}
+
+  <!-- 2. SISTEMAS -->
+  ${sortedSis.length?`<div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #fca5a5">
+    <div style="background:#FDECEA;border-bottom:2px solid #C0392B;padding:7px 14px">
+      <span style="font-size:11px;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:.5px">2. Sistemas Fuera de Rango · Orden de Urgencia</span>
+    </div>
+    <table>
+      <tr style="background:#1C2833;color:#fff">
+        <th style="padding:6px 8px;width:5%;text-align:center">#</th>
+        <th style="padding:6px 8px;width:22%">Sistema</th>
+        <th style="padding:6px 8px;width:37%">Qué se detectó</th>
+        <th style="padding:6px 8px;width:36%">Qué significa</th>
+      </tr>
+      ${sisRows}
+    </table>
   </div>`:''}
-  <div style="margin-top:20px;padding-top:10px;border-top:1px solid #eee;font-size:10px;color:#999;text-align:center">
-    Reporte generado por ${negocio} · ${r.fecha}<br>
-    Este reporte es orientativo. Consulta con tu médico antes de iniciar cualquier suplementación.
-  </div></body></html>`;
+
+  <!-- 3. RECOMENDACIONES -->
+  ${recRows?`<div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #E0F4F6">
+    <div style="background:#E0F4F6;border-bottom:2px solid #0B7E8A;padding:7px 14px">
+      <span style="font-size:11px;font-weight:700;color:#0B7E8A;text-transform:uppercase;letter-spacing:.5px">3. Recomendaciones Generales</span>
+    </div>
+    <div style="padding:12px 14px">${recRows}</div>
+  </div>`:''}
+
+  <!-- 4. PROTOCOLOS -->
+  <div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0">
+    <div style="background:#2C3E50;padding:7px 14px">
+      <span style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px">4. Productos VitalHealth Recomendados · BioCuántico</span>
+    </div>
+    <div style="padding:12px">
+      ${pkgHtml('basico','PAQUETE BÁSICO','#1a56db')}
+      ${pkgHtml('esencial','PAQUETE ESENCIAL','#1a7f3c')}
+      ${pkgHtml('completo','PAQUETE COMPLETO','#b8960c')}
+    </div>
+  </div>
+
+  <!-- PIE -->
+  <div style="margin-top:14px;padding-top:10px;border-top:1px solid #E0F4F6;font-size:9px;color:#999;text-align:center;font-style:italic">
+    Este reporte es de carácter orientativo y no sustituye el diagnóstico ni tratamiento médico profesional.<br>
+    ${negocio} · ${r.fecha}
+  </div>
+  </body></html>`;
 
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
   if(isIOS){
     const w=window.open('','_blank');
     if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);}
     else showT('Activa ventanas emergentes para imprimir');
-  } else {
+  }else{
     const blob=new Blob([html],{type:'text/html'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    a.href=url;a.download='reporte_'+r.paciente.replace(/\s+/g,'_')+'.html';a.click();
+    a.href=url;a.download='reporte_VH_'+(r.paciente||'').replace(/\s+/g,'_')+'.html';a.click();
     URL.revokeObjectURL(url);
-    showT('Reporte descargado — ábrelo en el navegador para imprimir o guardar como PDF');
+    showT('Reporte descargado — ábrelo en el navegador para imprimir/PDF');
   }
 }
+
+
 
 
 /* ═══════════════════════════════════════════════════
@@ -3363,30 +3453,56 @@ function saveVHText(texto){
   S.set('ik_vhtext_'+c.id,texto);
 }
 
-function runVHTextAnalysis(){
+async function runVHTextAnalysis(){
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
   const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
-
   var spinEl=document.getElementById('anaSpin');
   var resEl=document.getElementById('anaRes');
-  if(spinEl)spinEl.style.display='block';
+  if(spinEl){spinEl.style.display='block';spinEl.querySelector('div:last-child').textContent='Extrayendo datos...';}
   if(resEl)resEl.innerHTML='';
 
-  // ── LOCAL PARSER — no API cost ──
-  setTimeout(function(){
+  // Step 1 — local parser (free)
+  var result;
+  try{result=parsearReporteBiocuantico(texto,c);}
+  catch(err){
+    if(spinEl)spinEl.style.display='none';
+    if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error al leer reporte:</b> '+err.message+'</div>';
+    return;
+  }
+
+  // Step 2 — API call ONLY for significado of each system (~$0.01)
+  var sis=result.sistemas_afectados||[];
+  if(sis.length>0){
     try{
-      var result=parsearReporteBiocuantico(texto,c);
-      if(spinEl)spinEl.style.display='none';
-      _lastResult=result;_fileSource='vh';
-      if(resEl)resEl.innerHTML=renderResultVH(result);
-      addToHistory('vh','🔬 Análisis BioCuántico — '+(result.sistemas_afectados||[]).length+' hallazgos',result);
-      showT('✓ Reporte generado');
-    }catch(err){
-      if(spinEl)spinEl.style.display='none';
-      if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error:</b> '+err.message+'</div>';
-    }
-  },300);
+      if(spinEl){var sd=spinEl.querySelector('div:last-child');if(sd)sd.textContent='Generando explicaciones...';}
+      var listaStr=sis.map(function(s,i){return (i+1)+'. '+s.sistema+': '+s.detectado;}).join('\n');
+      var res=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:800,
+          system:'Eres experto en salud funcional. Para cada sistema con valor fuera de rango, da UNA frase corta (max 15 palabras) en español simple explicando qué significa para la persona, sin tecnicismos. Responde SOLO JSON: {"significados":["frase1","frase2",...]}',
+          messages:[{role:'user',content:'Sistemas fuera de rango:\n'+listaStr}]
+        })
+      });
+      var data=await res.json();
+      var raw=(data.content||[]).map(function(x){return x.text||'';}).join('');
+      var m=raw.match(/\{[\s\S]*\}/);
+      if(m){
+        var parsed=JSON.parse(m[0]);
+        var sigs=parsed.significados||[];
+        sis.forEach(function(s,i){if(sigs[i])s.significado=sigs[i];});
+      }
+    }catch(e){/* API failed, keep default significados */}
+  }
+
+  if(spinEl)spinEl.style.display='none';
+  _lastResult=result;_fileSource='vh';
+  if(resEl)resEl.innerHTML=renderResultVH(result);
+  addToHistory('vh','🔬 Análisis BioCuántico — '+sis.length+' hallazgos',result);
+  showT('✓ Reporte generado');
 }
 
 // ── API VERSION (uses credits) — called manually ──
