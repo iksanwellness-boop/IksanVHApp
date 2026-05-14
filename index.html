@@ -404,7 +404,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
           <span style="font-size:24px">🔬</span>
           <span style="font-size:12px;font-weight:600">Escáner BioCuántico</span>
         </button>
-        <button class="btn btn-o" onclick="openCartModal()" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 8px;height:auto;position:relative">
+        <button class="btn btn-o" onclick="openCartDropdown(this)" style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 8px;height:auto;position:relative">
           <span style="font-size:24px">🛒</span>
           <span style="font-size:12px;font-weight:600">Carrito <span id="conCartBadge" style="background:var(--rose);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:3px;display:none"></span></span>
         </button>
@@ -3921,7 +3921,7 @@ function parsearReporteBiocuantico(texto,c){
 
   var reRange=/^(\d+)[,.](\d+)\s*[-–]\s*(\d+)[,.](\d+)$/;
   var reVal=/^(\d+)[,.](\d+)$/;
-  var reNoise=/^(Sistema|Objeto Analizado|Rango Normal|Valor Obtenido|Objeto$|Analizado$|Informe de|Nombre:|Complexión:|Sexo:|Edad:|Fecha|Page \d|Página|Acerca de|Los resultados|Resultado del|Análisis Biocuántico|Análisis BioCuántico)$/i;
+  var reNoise=/^(Sistema|Objeto Analizado|Rango Normal|Valor Obtenido|Objeto$|Analizado$|Informe de|Nombre:|Complexi[oó]n:|Sexo:|Edad:|Fecha|Page\s+\d|Página\s+\d|Acerca de|Los resultados|Resultado del|Análisis Biocuántico|Análisis BioCuántico|Informe de prueba|Informe de síntesis|Descripción de los)$/i;
   var reConsejos=/^Consejos(\s+de)?(\s+Experto)?\.?$/i;
   var reProdToken=/^(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ|KETOCAFE|THERMOKAFE)/i;
 
@@ -3971,9 +3971,16 @@ function parsearReporteBiocuantico(texto,c){
     var isOut=val<pendingRmin*0.95||val>pendingRmax*1.05;
     if(isOut){
       var pname=paramBuf.join(' ').trim();
-      // Clean param name: remove product tokens and advice fragments
-      pname=pname.replace(/V-[A-ZÁÉÍÓÚ\-]+/gi,'').replace(/Consuma.*/i,'').replace(/Evite.*/i,'').trim();
-      pname=pname.replace(/\s{2,}/g,' ').trim();
+      // Clean param name: remove product tokens, advice, page markers
+      pname=pname.replace(/V-[A-ZÁÉÍÓÚ\-]+/gi,'')
+                 .replace(/Page\s+\d+[^\n]*/gi,'')
+                 .replace(/Informe de[^\n]*/gi,'')
+                 .replace(/Nombre:[^\n]*/gi,'')
+                 .replace(/Consuma[^\n]*/gi,'')
+                 .replace(/Evite[^\n]*/gi,'')
+                 .replace(/Tenga[^\n]*/gi,'')
+                 .replace(/Por favor[^\n]*/gi,'')
+                 .replace(/\s{2,}/g,' ').trim();
       if(pname.length>3){
         var dir=val>pendingRmax?'alto':'bajo';
         var pct=dir==='alto'?(val-pendingRmax)/pendingRmax:(pendingRmin-val)/pendingRmin;
@@ -4030,6 +4037,7 @@ function parsearReporteBiocuantico(texto,c){
     if(reConsejos.test(line)||(line==='Consejos'&&i+1<lines.length&&/^de(\s+Experto)?$/i.test(lines[i+1]))){
       inConsejos=true;
       consejoLines=[];
+      paramBuf=[];
       if(line==='Consejos')i++;
       i++;continue;
     }
@@ -4076,14 +4084,28 @@ function parsearReporteBiocuantico(texto,c){
       i++;continue;
     }
 
-    // Accumulate param name (skip if looks like advice text)
+    // Accumulate param name
     if(curBlock&&!inConsejos&&pendingRmin===null){
-      if(line.length<80&&!/(Consuma|Evite|Tome|Beba|Aumente|Reduzca)/i.test(line)&&!isSistema(line)){
-        paramBuf.push(line);
-      } else if(/(Consuma|Evite|Tome|Beba|Aumente|Reduzca)/i.test(line)){
-        // Advice line — might contain products at end
-        extractProds(line);
+      // Hard reset on any noise pattern
+      var isJunk=(
+        /^Page\s+\d+/i.test(line)||
+        /^Informe de/i.test(line)||
+        /^Nombre:/i.test(line)||
+        /^Acerca de/i.test(line)||
+        /^Los resultados/i.test(line)||
+        /^Resultado del/i.test(line)||
+        /(Consuma|Evite|Tome |Beba |Aumente|Reduzca|Tenga |Preste |Combine|Por favor|Practique|Disminuya|Permanezca)/i.test(line)||
+        line.length>80||
+        isSistema(line)
+      );
+      if(isJunk){
+        // Extract products from advice lines before resetting
+        if(/(V-[A-ZÁÉÍÓÚ]|TÉ DETOX|ORGANEX|CURCUMAX|OMEGA|NITRO|KETOCAFÉ|VITALIX|GLUTATION)/i.test(line)){
+          extractProds(line);
+        }
         paramBuf=[];
+      } else {
+        paramBuf.push(line);
       }
     }
     i++;
@@ -4609,6 +4631,7 @@ function saveCartByName(){
 
 function loadSavedCart(name){
   var c=getActiveCon();if(!c)return;
+  window._cartLoadedName=name;
   var saved=(c.savedCarts||[]).find(function(sc){return sc.name===name;});
   if(!saved){showT('Carrito no encontrado');return;}
   if(!confirm('Cargar "'+name+'"? Reemplaza el carrito actual.'))return;
@@ -4630,6 +4653,88 @@ function deleteSavedCart(name){
   saveAll();
   showT('Carrito eliminado');
   openCartModal();
+}
+
+function closeCartWithCheck(){
+  var c=getActiveCon();if(!c){closeMo(1);return;}
+  var current=JSON.stringify(c.items||[]);
+  var snapshot=window._cartSnapshotOnOpen||'[]';
+  var loadedName=window._cartLoadedName||null;
+  if(current===snapshot){
+    window._cartLoadedName=null;
+    closeMo(1);return;
+  }
+  // Items changed — ask what to do
+  var msg=loadedName
+    ?'El carrito "'+loadedName+'" fue modificado. ¿Guardar cambios?'
+    :'El carrito tiene cambios. ¿Guardar antes de cerrar?';
+  var choice=confirm(msg);
+  if(choice){
+    if(loadedName){
+      // Overwrite existing saved cart
+      var sc={name:loadedName,items:JSON.parse(JSON.stringify(c.items)),date:new Date().toISOString()};
+      if(!c.savedCarts)c.savedCarts=[];
+      var idx=c.savedCarts.findIndex(function(x){return x.name===loadedName;});
+      if(idx>=0)c.savedCarts[idx]=sc;else c.savedCarts.push(sc);
+      saveAll();
+      showT('✓ Cambios guardados en "'+loadedName+'"');
+    }else{
+      // Ask for name
+      var name=prompt('Nombre para guardar el carrito:','Carrito '+(new Date().toLocaleDateString('es-MX')));
+      if(name&&name.trim()){
+        var sc={name:name.trim(),items:JSON.parse(JSON.stringify(c.items)),date:new Date().toISOString()};
+        if(!c.savedCarts)c.savedCarts=[];
+        c.savedCarts.push(sc);
+        saveAll();
+        showT('✓ Carrito guardado como "'+name.trim()+'"');
+      }
+    }
+  }
+  window._cartLoadedName=null;
+  window._cartSnapshotOnOpen=null;
+  closeMo(1);
+}
+
+function openCartDropdown(btn){
+  var c=getActiveCon();if(!c)return;
+  var saved=c.savedCarts||[];
+  var cartQty=(c.items||[]).reduce(function(s,i){return s+i.q;},0);
+  var h='<div class="m-title">🛒 Carritos de '+c.name+'</div>';
+  // Mini table of saved carts
+  if(saved.length){
+    h+='<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px">';
+    h+='<tr style="background:#f0f0f0"><th style="padding:6px 10px;text-align:left;border-radius:6px 0 0 0">Nombre del carrito</th><th style="padding:6px 10px;text-align:center;border-radius:0 6px 0 0">Artículos</th><th style="padding:6px 6px"></th></tr>';
+    saved.forEach(function(sc){
+      var qty=(sc.items||[]).reduce(function(s,i){return s+(i.q||1);},0);
+      var snameEnc=encodeURIComponent(sc.name);
+      h+='<tr style="border-bottom:1px solid #f0f0f0">';
+      h+='<td style="padding:7px 10px;font-weight:600;cursor:pointer;color:var(--mid)" onclick="loadSavedCartAndOpen(decodeURIComponent(\''+snameEnc+'\'))">📂 '+sc.name+'</td>';
+      h+='<td style="padding:7px 10px;text-align:center;color:#555">'+qty+'</td>';
+      h+='<td style="padding:4px 6px"><button class="btn btn-d btn-sm" style="font-size:9px;padding:2px 6px" onclick="deleteSavedCartFromDropdown(decodeURIComponent(\''+snameEnc+'\'))">✕</button></td>';
+      h+='</tr>';
+    });
+    h+='</table>';
+  }else{
+    h+='<div style="font-size:11px;color:#bbb;text-align:center;padding:8px 0;margin-bottom:10px">Sin carritos guardados</div>';
+  }
+  // Current cart row
+  h+='<div style="display:flex;gap:7px">';
+  h+='<button class="btn btn-p" style="flex:1" onclick="closeMo(1);openCartModal()">✏️ '+(cartQty>0?'Carrito actual ('+cartQty+' art.)':'Carrito vacío')+'</button>';
+  h+='</div>';
+  openMo(1,h);
+}
+
+function loadSavedCartAndOpen(name){
+  loadSavedCart(name);
+  closeMo(1);
+  setTimeout(function(){openCartModal();},150);
+}
+
+function deleteSavedCartFromDropdown(name){
+  deleteSavedCart(name);
+  // Refresh dropdown
+  var c=getActiveCon();if(!c)return;
+  openCartDropdown(null);
 }
 
 function openCartModal(){
@@ -4737,6 +4842,7 @@ function openCartModal(){
           <button class="btn btn-p" style="flex:1" onclick="openPayModal()">💰 Registrar pago</button>
           <button class="btn btn-o btn-sm" onclick="downloadCartPDF()">📄</button>
           <button class="btn btn-d btn-sm" onclick="if(confirm('Vaciar carrito?'))clearCart()">🗑️</button>
+          <button class="btn btn-sm" style="background:#fff;border:1.5px solid var(--border);color:var(--muted)" onclick="closeCartWithCheck()">✕ Cerrar</button>
         </div>
       `:''}
     </div>
