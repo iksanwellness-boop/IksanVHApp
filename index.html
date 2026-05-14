@@ -2302,7 +2302,13 @@ function openHistoryDetail(idx){
   const c=getActiveCon();if(!c)return;
   const h=c.history[idx];if(!h)return;
   let body='';
-  if(h.type==='quiz'||h.type==='labs'||h.type==='vh'){
+  if(h.type==='vh'){
+    // Render full report identical to when it was generated
+    const saved=_lastResult;
+    _lastResult=h.data;
+    body=renderResultVH(h.data);
+    _lastResult=saved;
+  } else if(h.type==='quiz'||h.type==='labs'){
     const r=h.data||{};
     const af=r.hallazgos_criticos||[];
     const pks=r.paquetes||{};
@@ -2913,115 +2919,112 @@ function renderResultVH(r){
   _lastResult=r;
   var boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
   var negocio=boCfg?.appName||APP_CFG.appName||'IKSAN Wellness';
-  var logo=boCfg?.logo?'<img src="'+boCfg.logo+'" style="height:28px;border-radius:4px;margin-bottom:2px">':'';
+  var logo=boCfg?.logo?'<img src="'+boCfg.logo+'" style="height:26px;border-radius:4px;margin-bottom:3px;display:block">':'';
   var pks=r.paquetes||{};
   var sistemas=r.sistemas_afectados||r.hallazgos_criticos||[];
   var comida=r.recomendaciones_alimentacion||[];
   var vida=r.recomendaciones_vida||[];
-
-  // ── Colors ──
-  var TEAL='#0B7E8A',TEAL_BG='#E0F4F6',TEAL_MED='#0D9BAB';
+  var TEAL='#0B7E8A',TEAL2='#0D9BAB',TEAL_BG='#E0F4F6';
   var RED='#C0392B',RED_BG='#FDECEA';
-  var ORANGE='#E67E22',ORANGE_BG='#FEF5EC';
-  var DARK='#1C2833',GRAY='#7F8C8D';
-
+  var ORANGE='#E67E22';
+  var DARK='#1C2833',GRAY='#555';
   var h='';
 
-  // ── HEADER membrete ──
-  h+='<div style="background:linear-gradient(90deg,'+TEAL+','+TEAL_MED+');border-radius:12px 12px 0 0;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">';
-  h+='<div>';
-  if(logo)h+=logo+'<br>';
-  h+='<div style="font-size:17px;font-weight:800;color:#fff;letter-spacing:1px">'+negocio+'</div>';
-  h+='<div style="font-size:10px;color:rgba(255,255,255,.75);margin-top:2px">Reporte de Salud Personalizado</div>';
-  h+='</div>';
-  h+='<div style="text-align:right">';
-  h+='<div style="font-size:10px;color:rgba(255,255,255,.8)">Fecha del análisis</div>';
+  // ── MEMBRETE ──
+  h+='<table style="width:100%;border-collapse:collapse;margin-bottom:0;border-radius:10px;overflow:hidden">';
+  h+='<tr>';
+  h+='<td style="background:linear-gradient(90deg,'+TEAL+','+TEAL2+');padding:13px 16px;vertical-align:middle">';
+  h+=logo;
+  h+='<div style="font-size:16px;font-weight:800;color:#fff;letter-spacing:1px">'+negocio+'</div>';
+  h+='<div style="font-size:10px;color:rgba(255,255,255,.75);margin-top:1px">Reporte de Salud Personalizado</div>';
+  h+='</td>';
+  h+='<td style="background:'+TEAL2+';padding:13px 14px;text-align:right;vertical-align:middle;white-space:nowrap">';
+  h+='<div style="font-size:9px;color:rgba(255,255,255,.8)">Fecha del análisis</div>';
   h+='<div style="font-size:13px;font-weight:700;color:#fff">'+r.fecha+'</div>';
-  h+='<div style="font-size:9px;color:rgba(255,255,255,.6);margin-top:2px">Confidencial</div>';
-  h+='</div></div>';
+  h+='<div style="font-size:9px;color:rgba(255,255,255,.55);margin-top:2px">Confidencial</div>';
+  h+='</td></tr></table>';
+  h+='<div style="height:3px;background:linear-gradient(90deg,'+RED+','+ORANGE+');margin-bottom:12px"></div>';
 
-  // thin accent bar
-  h+='<div style="height:4px;background:linear-gradient(90deg,'+RED+','+ORANGE+');margin-bottom:14px"></div>';
-
-  // ── 1. PACIENTE ──
-  h+='<div style="background:#fff;border:1px solid '+TEAL_BG+';border-radius:10px;overflow:hidden;margin-bottom:12px">';
-  h+='<div style="background:'+TEAL+'20;border-bottom:2px solid '+TEAL+';padding:7px 14px">';
-  h+='<span style="font-size:11px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.5px">1. Información del Paciente</span></div>';
-  h+='<table style="width:100%;font-size:12px;border-collapse:collapse">';
-  var filas=[['Nombre',r.paciente||'—'],['Sexo',r.sexo||'—'],['Edad',(r.edad?r.edad+' años':'—')],['Análisis',(r.tipo_analisis||'Análisis BioCuántico VitalHealth')]];
-  filas.forEach(function(row,i){
-    h+='<tr style="background:'+(i%2===0?'#fff':'#f8fbfc')+'">';
-    h+='<td style="padding:6px 14px;color:'+TEAL+';font-weight:700;width:38%">'+row[0]+'</td>';
-    h+='<td style="padding:6px 14px;color:'+DARK+'">'+row[1]+'</td></tr>';
+  // ── 1. INFORMACIÓN DEL PACIENTE ──
+  h+='<div style="border:1px solid '+TEAL_BG+';border-radius:9px;overflow:hidden;margin-bottom:11px">';
+  h+='<div style="background:'+TEAL_BG+';border-bottom:2px solid '+TEAL+';padding:6px 13px">';
+  h+='<span style="font-size:10px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.6px">1. Información del Paciente</span></div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  var rows=[['Nombre',r.paciente||'—'],['Sexo',r.sexo||'—'],['Edad',r.edad?r.edad+' años':'—'],['Análisis',r.tipo_analisis||'Análisis BioCuántico VitalHealth']];
+  rows.forEach(function(row,i){
+    h+='<tr style="background:'+(i%2===0?'#fff':'#f6fbfc')+'">';
+    h+='<td style="padding:6px 13px;color:'+TEAL+';font-weight:700;width:36%">'+row[0]+'</td>';
+    h+='<td style="padding:6px 13px;color:'+DARK+'">'+row[1]+'</td></tr>';
   });
   h+='</table></div>';
 
   // ── 2. SISTEMAS FUERA DE RANGO ──
   if(sistemas.length){
-    h+='<div style="background:#fff;border:1px solid #f0d0d0;border-radius:10px;overflow:hidden;margin-bottom:12px">';
-    h+='<div style="background:'+RED_BG+';border-bottom:2px solid '+RED+';padding:7px 14px">';
-    h+='<span style="font-size:11px;font-weight:700;color:'+RED+';text-transform:uppercase;letter-spacing:.5px">2. Sistemas Fuera de Rango · Orden de Urgencia</span></div>';
-    h+='<table style="width:100%;font-size:11px;border-collapse:collapse">';
-    h+='<tr style="background:'+DARK+';color:#fff">';
-    h+='<th style="padding:6px 8px;width:5%;text-align:center">#</th>';
-    h+='<th style="padding:6px 8px;width:22%">Sistema</th>';
-    h+='<th style="padding:6px 8px;width:37%">Qué se detectó</th>';
-    h+='<th style="padding:6px 8px;width:36%">Qué significa</th></tr>';
     var sorted=sistemas.slice().sort(function(a,b){
-      var ord={alto:0,alta:0,medio:1,media:1,bajo:2,baja:2};
-      return(ord[a.nivel||a.urgencia]||1)-(ord[b.nivel||b.urgencia]||1);
+      var o={alto:0,alta:0,medio:1,media:1,bajo:2,baja:2};
+      return(o[a.nivel||a.urgencia]||1)-(o[b.nivel||b.urgencia]||1);
     });
+    h+='<div style="border:1px solid #f5c0c0;border-radius:9px;overflow:hidden;margin-bottom:11px">';
+    h+='<div style="background:'+RED_BG+';border-bottom:2px solid '+RED+';padding:6px 13px">';
+    h+='<span style="font-size:10px;font-weight:700;color:'+RED+';text-transform:uppercase;letter-spacing:.6px">2. Sistemas Fuera de Rango · Orden de Urgencia</span></div>';
+    h+='<div style="font-size:10px;color:'+GRAY+';padding:5px 13px;background:#fff9f9;border-bottom:1px solid #fde8e8">Los sistemas en rojo requieren atención prioritaria; los anaranjados son de atención intermedia.</div>';
+    h+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+    h+='<tr style="background:'+DARK+';color:#fff">';
+    h+='<th style="padding:6px 7px;width:5%;text-align:center">#</th>';
+    h+='<th style="padding:6px 7px;width:22%">Sistema</th>';
+    h+='<th style="padding:6px 7px;width:37%">Qué se detectó</th>';
+    h+='<th style="padding:6px 7px;width:36%">Qué significa</th></tr>';
     sorted.forEach(function(s,i){
       var urg=s.urgencia||s.nivel||'medio';
       var isAlto=urg==='alto'||urg==='alta';
-      var isMed=urg==='medio'||urg==='media';
-      var col=isAlto?RED:isMed?ORANGE:'#16a34a';
-      var rowBg=i%2===0?'#fff':'#f9f9f9';
-      h+='<tr style="background:'+rowBg+';border-left:3px solid '+col+';border-bottom:1px solid #f0f0f0">';
-      h+='<td style="padding:5px 8px;font-weight:800;color:'+col+';text-align:center">'+(s.num||i+1)+'</td>';
-      h+='<td style="padding:5px 8px;font-weight:700;color:'+DARK+';font-size:11px">'+(s.sistema||'')+'</td>';
-      h+='<td style="padding:5px 8px;color:'+GRAY+';font-size:10px">'+(s.detectado||s.hallazgo||'')+'</td>';
-      h+='<td style="padding:5px 8px;color:'+DARK+';font-size:10px">'+(s.significado||s.hallazgo||'—')+'</td></tr>';
+      var col=isAlto?RED:ORANGE;
+      h+='<tr style="background:'+(i%2===0?'#fff':'#fafafa')+';border-left:3px solid '+col+';border-bottom:1px solid #f0f0f0">';
+      h+='<td style="padding:5px 7px;font-weight:800;color:'+col+';text-align:center">'+(s.num||i+1)+'</td>';
+      h+='<td style="padding:5px 7px;font-weight:700;color:'+DARK+'">'+(s.sistema||'')+'</td>';
+      h+='<td style="padding:5px 7px;color:'+GRAY+';font-size:10px">'+(s.detectado||s.hallazgo||'')+'</td>';
+      h+='<td style="padding:5px 7px;color:'+DARK+';font-size:10px">'+(s.significado||'—')+'</td></tr>';
     });
     h+='</table></div>';
   }
 
-  // ── 3. RECOMENDACIONES ──
+  // ── 3. RECOMENDACIONES GENERALES ──
   if(comida.length||vida.length){
-    h+='<div style="background:#fff;border:1px solid '+TEAL_BG+';border-radius:10px;overflow:hidden;margin-bottom:12px">';
-    h+='<div style="background:'+TEAL+'20;border-bottom:2px solid '+TEAL+';padding:7px 14px">';
-    h+='<span style="font-size:11px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.5px">3. Recomendaciones Generales</span></div>';
-    h+='<div style="padding:10px 14px">';
+    h+='<div style="border:1px solid '+TEAL_BG+';border-radius:9px;overflow:hidden;margin-bottom:11px">';
+    h+='<div style="background:'+TEAL_BG+';border-bottom:2px solid '+TEAL+';padding:6px 13px">';
+    h+='<span style="font-size:10px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.6px">3. Recomendaciones Generales</span></div>';
+    h+='<div style="padding:10px 13px">';
     if(comida.length){
       h+='<div style="font-size:11px;font-weight:700;color:'+DARK+';margin-bottom:5px">Alimentación</div>';
-      comida.forEach(function(c){h+='<div style="font-size:11px;padding:3px 0 3px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';});
+      comida.forEach(function(c){
+        h+='<div style="font-size:11px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';
+      });
     }
     if(vida.length){
-      h+='<div style="font-size:11px;font-weight:700;color:'+DARK+';margin:8px 0 5px">Estilo de vida</div>';
-      vida.forEach(function(c){h+='<div style="font-size:11px;padding:3px 0 3px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';});
+      h+='<div style="font-size:11px;font-weight:700;color:'+DARK+';margin:9px 0 5px">Estilo de vida</div>';
+      vida.forEach(function(c){
+        h+='<div style="font-size:11px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';
+      });
     }
     h+='</div></div>';
   }
 
-  // ── 4. PAQUETES ──
-  h+='<div style="background:#fff;border:1px solid #e8e8e8;border-radius:10px;overflow:hidden;margin-bottom:12px">';
-  h+='<div style="background:#2C3E50;border-bottom:2px solid #2C3E50;padding:7px 14px">';
-  h+='<span style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px">4. Protocolos Recomendados · BioCuántico</span></div>';
+  // ── 4. PROTOCOLOS — 3 paquetes con columna "Para qué sirve" ──
+  h+='<div style="border:1px solid #e0e0e0;border-radius:9px;overflow:hidden;margin-bottom:11px">';
+  h+='<div style="background:#2C3E50;border-bottom:2px solid #2C3E50;padding:6px 13px">';
+  h+='<span style="font-size:10px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px">4. Protocolos Recomendados · BioCuántico</span></div>';
   h+='<div style="padding:10px">';
   h+=renderPkgVH('basico',pks.basico,'BÁSICO','#1a56db','El primer paso. Ataca los sistemas más urgentes.');
-  h+=renderPkgVH('esencial',pks.esencial,'ESENCIAL','#1a7f3c','Cobertura completa. Protección profunda.');
-  h+=renderPkgVH('completo',pks.completo,'COMPLETO','#b8960c','Protocolo integral 360°. Máxima regeneración.');
+  h+=renderPkgVH('esencial',pks.esencial,'ESENCIAL','#1a7f3c','Cobertura completa. Protección profunda de todos los sistemas críticos.');
+  h+=renderPkgVH('completo',pks.completo,'COMPLETO','#b8960c','Protocolo integral 360°. Máxima protección y regeneración celular.');
   h+='</div></div>';
 
-  // ── ACTIONS ──
+  // ── ACCIONES ──
   h+='<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">';
   h+='<button class="btn btn-wa" style="flex:1" onclick="sendResultWA()">💬 WhatsApp</button>';
   h+='<button class="btn btn-p" style="flex:1" onclick="downloadReportePDF2()">📄 PDF</button>';
   h+='<button class="btn btn-o btn-sm" onclick="openVHModal()">🔄 Nuevo</button>';
   h+='</div>';
-
   h+='<div style="font-size:9px;color:'+GRAY+';text-align:center;margin-top:10px;font-style:italic">Este reporte es orientativo y no sustituye diagnóstico médico profesional. '+negocio+' · '+r.fecha+'</div>';
-
   return h;
 }
 
@@ -3032,41 +3035,43 @@ function renderPkgVH(key,pkg,label,color,tagline){
     var prod=PP.find(function(x){return x.n===p.nombre;});
     return s+(prod?getEffPrice(prod.n):0);
   },0);
-
-  var h='<div style="border:2px solid '+color+';border-radius:12px;margin-bottom:12px;overflow:hidden">';
+  var h='<div style="border:2px solid '+color+';border-radius:10px;margin-bottom:12px;overflow:hidden">';
   // Header
-  h+='<div style="background:'+color+';color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">';
-  h+='<div>';
-  h+='<div style="font-size:13px;font-weight:800;letter-spacing:1px">'+label+'</div>';
-  h+='<div style="font-size:10px;opacity:.85;margin-top:2px">'+tagline+'</div>';
-  h+='</div>';
+  h+='<div style="background:'+color+';color:#fff;padding:10px 13px;display:flex;justify-content:space-between;align-items:center">';
+  h+='<div><div style="font-size:13px;font-weight:800;letter-spacing:1px">'+label+'</div>';
+  h+='<div style="font-size:10px;opacity:.85;margin-top:2px">'+tagline+'</div></div>';
   h+='<div style="text-align:right">';
-  if(total>0)h+='<div style="font-size:16px;font-weight:800">$'+total.toLocaleString()+' MXN</div>';
+  if(total>0)h+='<div style="font-size:15px;font-weight:800">$'+total.toLocaleString()+' MXN</div>';
   h+='<div style="font-size:9px;opacity:.8">'+pkg.productos.length+' productos</div>';
   h+='</div></div>';
   // Justification
-  if(pkg.justificacion)h+='<div style="font-size:11px;color:var(--mid);padding:8px 14px;background:#fafafa;border-bottom:1px solid var(--border)">'+pkg.justificacion+'</div>';
-  // Products table
+  if(pkg.justificacion)h+='<div style="font-size:11px;color:#555;padding:7px 13px;background:#fafafa;border-bottom:1px solid #eee">'+pkg.justificacion+'</div>';
+  // Products table WITH "Para qué sirve"
   h+='<table style="width:100%;font-size:11px;border-collapse:collapse">';
-  h+='<tr style="background:#f0f0f0"><th style="padding:5px 8px;text-align:left">Producto</th><th style="padding:5px 8px;text-align:left">Por qué</th><th style="padding:5px 8px;text-align:right">Precio</th></tr>';
+  h+='<tr style="background:#f0f0f0">';
+  h+='<th style="padding:5px 8px;text-align:left;font-size:10px;width:28%">Producto</th>';
+  h+='<th style="padding:5px 8px;text-align:left;font-size:10px;width:42%">Para qué sirve</th>';
+  h+='<th style="padding:5px 8px;text-align:left;font-size:10px;width:18%">Dosis</th>';
+  h+='<th style="padding:5px 8px;text-align:right;font-size:10px;width:12%">Precio</th></tr>';
   pkg.productos.forEach(function(p,i){
     var prod=PP.find(function(x){return x.n===p.nombre;});
     var pr=prod?getEffPrice(p.nombre):0;
-    h+='<tr style="background:'+(i%2===0?'#fff':'#f8f8f8')+';border-bottom:1px solid var(--border)">';
-    h+='<td style="padding:6px 8px;font-weight:600;color:var(--deep)">'+(prod?prod.e+' ':'')+p.nombre+'<br><span style="font-size:9px;color:var(--muted);font-weight:400">'+p.dosis+'</span></td>';
-    h+='<td style="padding:6px 8px;color:var(--mid)">'+p.razon_clinica+'</td>';
-    h+='<td style="padding:6px 8px;text-align:right;font-weight:700;color:'+color+'">'+(pr>0?'$'+pr.toLocaleString():'—')+'</td>';
-    h+='</tr>';
+    h+='<tr style="background:'+(i%2===0?'#fff':'#f9f9f9')+';border-bottom:1px solid #eee">';
+    h+='<td style="padding:6px 8px;font-weight:700;color:#1C2833">'+(prod?prod.e+' ':'')+p.nombre+'</td>';
+    h+='<td style="padding:6px 8px;color:#555;font-size:10px">'+( p.razon_clinica||'—')+'</td>';
+    h+='<td style="padding:6px 8px;color:#888;font-size:10px">'+(p.dosis||'—')+'</td>';
+    h+='<td style="padding:6px 8px;text-align:right;font-weight:700;color:'+color+'">'+(pr>0?'$'+pr.toLocaleString():'—')+'</td></tr>';
   });
   h+='</table>';
-  // Add to cart button
-  h+='<div style="padding:10px 14px;background:#fafafa">';
+  // Footer
+  h+='<div style="padding:9px 13px;background:#fafafa;display:flex;align-items:center;justify-content:space-between;gap:8px">';
   if(pkg.sistemas_cubiertos&&pkg.sistemas_cubiertos.length)
-    h+='<div style="font-size:9px;color:var(--muted);margin-bottom:7px">Sistemas cubiertos: '+pkg.sistemas_cubiertos.join(', ')+'</div>';
-  h+='<button class="btn btn-p btn-full" style="background:'+color+';border-color:'+color+'" data-pkg="'+key+'" onclick="agregarPaqueteVH(this.dataset.pkg)">🛒 Agregar paquete '+label+' al carrito</button>';
+    h+='<div style="font-size:9px;color:#999;flex:1">Sistemas: '+pkg.sistemas_cubiertos.join(', ')+'</div>';
+  h+='<button class="btn btn-sm" style="background:'+color+';color:#fff;border-color:'+color+';white-space:nowrap" data-pkg="'+key+'" onclick="agregarPaqueteVH(this.dataset.pkg)">🛒 Agregar '+label+'</button>';
   h+='</div></div>';
   return h;
 }
+
 
 function agregarPaqueteVH(pkgKey){
   var c=getActiveCon();if(!c)return;
@@ -3234,149 +3239,116 @@ function downloadReportePDF2(){
   if(!r){showT('Sin reporte activo');return;}
   const boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
   const negocio=boCfg?.appName||APP_CFG.appName||'Iksan Wellness';
-  const logo=boCfg?.logo?`<img src="${boCfg.logo}" style="height:40px;border-radius:4px">`:'';
+  const logo=boCfg?.logo?`<img src="${boCfg.logo}" style="height:36px;border-radius:4px;display:block;margin-bottom:3px">`:'';
   const pks=r.paquetes||{};
-  const sis=r.sistemas_afectados||r.hallazgos_criticos||[];
+  const sis=(r.sistemas_afectados||r.hallazgos_criticos||[]).slice().sort((a,b)=>{
+    const o={alto:0,alta:0,medio:1,media:1,bajo:2,baja:2};
+    return(o[a.nivel||a.urgencia]||1)-(o[b.nivel||b.urgencia]||1);
+  });
   const comida=r.recomendaciones_alimentacion||[];
   const vida=r.recomendaciones_vida||[];
 
-  // pkg block
   const pkgHtml=(tipo,lbl,color)=>{
     const d=pks[tipo];if(!d?.productos?.length)return '';
     const tot=d.productos.reduce((s,p)=>s+getEffPrice(p.nombre),0);
-    const rows=d.productos.map((p,i)=>{
-      const prod=PP.find(x=>x.n===p.nombre);
-      const pr=getEffPrice(p.nombre);
-      return `<tr style="background:${i%2===0?'#fff':'#f9f9f9'};border-bottom:1px solid #eee">
-        <td style="padding:6px 10px;font-weight:700;font-size:11px;color:#1C2833">${prod?prod.e+' ':''} ${p.nombre}</td>
-        <td style="padding:6px 10px;font-size:11px;color:#666">${p.razon_clinica||''}</td>
-        <td style="padding:6px 10px;font-size:11px;color:#999">${p.dosis||''}</td>
-        <td style="padding:6px 10px;font-size:11px;font-weight:700;color:${color};text-align:right">${pr>0?'$'+pr.toLocaleString():'—'}</td>
-      </tr>`;
-    }).join('');
-    return `<div style="margin-bottom:16px;border:1.5px solid ${color};border-radius:8px;overflow:hidden">
-      <div style="background:${color};color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:13px;font-weight:800;letter-spacing:1px">${lbl}</div>
-          <div style="font-size:10px;opacity:.85;margin-top:2px">${d.justificacion||''}</div>
-        </div>
-        <div style="text-align:right">
-          ${tot>0?`<div style="font-size:16px;font-weight:800">$${tot.toLocaleString()} MXN</div>`:''}
-          <div style="font-size:9px;opacity:.8">${d.productos.length} productos</div>
-        </div>
+    return `<div style="margin-bottom:14px;border:2px solid ${color};border-radius:8px;overflow:hidden">
+      <div style="background:${color};color:#fff;padding:9px 13px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:13px;font-weight:800;letter-spacing:1px">${lbl}</div>
+        <div style="font-size:10px;opacity:.85">${d.justificacion||''}</div></div>
+        <div style="text-align:right">${tot>0?`<div style="font-size:15px;font-weight:800">$${tot.toLocaleString()} MXN</div>`:''}
+        <div style="font-size:9px;opacity:.8">${d.productos.length} productos</div></div>
       </div>
-      <table style="width:100%;border-collapse:collapse">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
         <tr style="background:#f0f0f0">
-          <th style="padding:5px 10px;text-align:left;font-size:10px">Producto</th>
-          <th style="padding:5px 10px;text-align:left;font-size:10px">Por qué</th>
-          <th style="padding:5px 10px;text-align:left;font-size:10px">Dosis</th>
-          <th style="padding:5px 10px;text-align:right;font-size:10px">Precio</th>
+          <th style="padding:5px 8px;text-align:left;width:28%">Producto</th>
+          <th style="padding:5px 8px;text-align:left;width:42%">Para qué sirve</th>
+          <th style="padding:5px 8px;text-align:left;width:18%">Dosis</th>
+          <th style="padding:5px 8px;text-align:right;width:12%">Precio</th>
         </tr>
-        ${rows}
+        ${d.productos.map((p,i)=>{
+          const prod=PP.find(x=>x.n===p.nombre);
+          const pr=getEffPrice(p.nombre);
+          return `<tr style="background:${i%2===0?'#fff':'#f9f9f9'};border-bottom:1px solid #eee">
+            <td style="padding:6px 8px;font-weight:700;color:#1C2833">${prod?prod.e+' ':''} ${p.nombre}</td>
+            <td style="padding:6px 8px;color:#555;font-size:10px">${p.razon_clinica||'—'}</td>
+            <td style="padding:6px 8px;color:#888;font-size:10px">${p.dosis||'—'}</td>
+            <td style="padding:6px 8px;text-align:right;font-weight:700;color:${color}">${pr>0?'$'+pr.toLocaleString():'—'}</td>
+          </tr>`;}).join('')}
       </table>
-      ${d.sistemas_cubiertos?.length?`<div style="padding:7px 14px;background:#fafafa;font-size:9px;color:#999">Sistemas cubiertos: ${d.sistemas_cubiertos.join(', ')}</div>`:''}
+      ${d.sistemas_cubiertos?.length?`<div style="padding:6px 13px;font-size:9px;color:#999;background:#fafafa">Sistemas: ${d.sistemas_cubiertos.join(', ')}</div>`:''}
     </div>`;
   };
 
-  // sorted systems
-  const sortedSis=sis.slice().sort((a,b)=>{const o={alto:0,alta:0,medio:1,media:1,bajo:2,baja:2};return(o[a.nivel||a.urgencia]||1)-(o[b.nivel||b.urgencia]||1);});
-  const sisRows=sortedSis.map((s,i)=>{
+  const sisRows=sis.map((s,i)=>{
     const urg=s.urgencia||s.nivel||'medio';
-    const col=urg==='alto'||urg==='alta'?'#C0392B':urg==='medio'||urg==='media'?'#E67E22':'#16a34a';
-    return `<tr style="background:${i%2===0?'#fff':'#f9f9f9'};border-left:3px solid ${col}">
-      <td style="padding:5px 8px;font-weight:800;color:${col};text-align:center">${s.num||i+1}</td>
-      <td style="padding:5px 8px;font-weight:700;font-size:11px;color:#1C2833">${s.sistema||''}</td>
-      <td style="padding:5px 8px;font-size:10px;color:#666">${s.detectado||s.hallazgo||''}</td>
-      <td style="padding:5px 8px;font-size:10px;color:#1C2833">${s.significado||s.hallazgo||'—'}</td>
-    </tr>`;
-  }).join('');
+    const col=urg==='alto'||urg==='alta'?'#C0392B':'#E67E22';
+    return `<tr style="background:${i%2===0?'#fff':'#f9f9f9'};border-left:3px solid ${col};border-bottom:1px solid #eee">
+      <td style="padding:5px 7px;font-weight:800;color:${col};text-align:center">${s.num||i+1}</td>
+      <td style="padding:5px 7px;font-weight:700;font-size:11px;color:#1C2833">${s.sistema||''}</td>
+      <td style="padding:5px 7px;font-size:10px;color:#666">${s.detectado||s.hallazgo||''}</td>
+      <td style="padding:5px 7px;font-size:10px;color:#1C2833">${s.significado||'—'}</td>
+    </tr>`;}).join('');
 
-  const recRows=[
-    comida.length?`<div style="font-size:11px;font-weight:700;color:#1C2833;margin-bottom:5px">Alimentación</div>${comida.map(c=>`<div style="font-size:11px;padding:2px 0 2px 14px;color:#666;position:relative"><span style="position:absolute;left:0;color:#0B7E8A">•</span>${c}</div>`).join('')}`:'',
-    vida.length?`<div style="font-size:11px;font-weight:700;color:#1C2833;margin:8px 0 5px">Estilo de vida</div>${vida.map(v=>`<div style="font-size:11px;padding:2px 0 2px 14px;color:#666;position:relative"><span style="position:absolute;left:0;color:#0B7E8A">•</span>${v}</div>`).join('')}`:''
-  ].filter(Boolean).join('');
+  const recAlim=comida.map(x=>`<div style="font-size:11px;padding:2px 0 2px 14px;color:#555;position:relative"><span style="position:absolute;left:0;color:#0B7E8A">•</span>${x}</div>`).join('');
+  const recVida=vida.map(x=>`<div style="font-size:11px;padding:2px 0 2px 14px;color:#555;position:relative"><span style="position:absolute;left:0;color:#0B7E8A">•</span>${x}</div>`).join('');
 
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
   <title>Reporte VitalHealth — ${r.paciente||''}</title>
-  <style>
-    body{font-family:Arial,sans-serif;max-width:720px;margin:0 auto;padding:28px;color:#1C2833;font-size:12px;line-height:1.5}
-    @media print{body{padding:10px;max-width:100%}@page{margin:1.2cm}}
-    table{border-collapse:collapse;width:100%}
-    th{font-weight:700}
-  </style></head><body>
-
-  <!-- MEMBRETE -->
-  <table style="width:100%;margin-bottom:18px">
-    <tr>
-      <td style="background:linear-gradient(90deg,#0B7E8A,#0D9BAB);padding:14px 18px;border-radius:10px 0 0 10px;vertical-align:middle">
-        ${logo}
-        <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:1px">${negocio}</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.75);margin-top:2px">Reporte de Salud Personalizado</div>
-      </td>
-      <td style="background:#0D9BAB;padding:14px 18px;border-radius:0 10px 10px 0;text-align:right;vertical-align:middle;min-width:150px">
-        <div style="font-size:10px;color:rgba(255,255,255,.8)">Fecha del análisis</div>
-        <div style="font-size:14px;font-weight:700;color:#fff">${r.fecha}</div>
-        <div style="font-size:9px;color:rgba(255,255,255,.6);margin-top:3px">Confidencial</div>
-      </td>
-    </tr>
-  </table>
-  <div style="height:3px;background:linear-gradient(90deg,#C0392B,#E67E22);border-radius:2px;margin-bottom:18px"></div>
-
-  <!-- 1. PACIENTE -->
-  <div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #E0F4F6">
-    <div style="background:#E0F4F6;border-bottom:2px solid #0B7E8A;padding:7px 14px">
-      <span style="font-size:11px;font-weight:700;color:#0B7E8A;text-transform:uppercase;letter-spacing:.5px">1. Información del Paciente</span>
-    </div>
+  <style>body{font-family:Arial,sans-serif;max-width:720px;margin:0 auto;padding:28px;color:#1C2833;font-size:12px;line-height:1.55}
+  table{border-collapse:collapse;width:100%}th{font-weight:700}
+  @media print{body{padding:10px;max-width:100%}@page{margin:1.2cm}}</style></head><body>
+  <table style="margin-bottom:0;border-radius:10px;overflow:hidden"><tr>
+    <td style="background:linear-gradient(90deg,#0B7E8A,#0D9BAB);padding:13px 18px;vertical-align:middle;border-radius:10px 0 0 10px">
+      ${logo}<div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:1px">${negocio}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.75);margin-top:1px">Reporte de Salud Personalizado</div>
+    </td>
+    <td style="background:#0D9BAB;padding:13px 18px;text-align:right;vertical-align:middle;white-space:nowrap;border-radius:0 10px 10px 0">
+      <div style="font-size:9px;color:rgba(255,255,255,.8)">Fecha del análisis</div>
+      <div style="font-size:14px;font-weight:700;color:#fff">${r.fecha}</div>
+      <div style="font-size:9px;color:rgba(255,255,255,.55);margin-top:2px">Confidencial</div>
+    </td>
+  </tr></table>
+  <div style="height:3px;background:linear-gradient(90deg,#C0392B,#E67E22);border-radius:2px;margin:0 0 16px"></div>
+  <div style="border:1px solid #E0F4F6;border-radius:8px;overflow:hidden;margin-bottom:14px">
+    <div style="background:#E0F4F6;border-bottom:2px solid #0B7E8A;padding:6px 14px">
+      <span style="font-size:10px;font-weight:700;color:#0B7E8A;text-transform:uppercase;letter-spacing:.6px">1. Información del Paciente</span></div>
     <table>
-      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;width:35%;background:#f8fbfc">Nombre</td><td style="padding:6px 14px">${r.paciente||'—'}</td></tr>
-      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f8fbfc">Sexo</td><td style="padding:6px 14px">${r.sexo||'—'}</td></tr>
-      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f8fbfc">Edad</td><td style="padding:6px 14px">${r.edad?r.edad+' años':'—'}</td></tr>
-      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f8fbfc">Tipo de análisis</td><td style="padding:6px 14px">${r.tipo_analisis||'Análisis BioCuántico VitalHealth'}</td></tr>
+      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;width:36%;background:#f6fbfc">Nombre</td><td style="padding:6px 14px">${r.paciente||'—'}</td></tr>
+      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f6fbfc">Sexo</td><td style="padding:6px 14px">${r.sexo||'—'}</td></tr>
+      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f6fbfc">Edad</td><td style="padding:6px 14px">${r.edad?r.edad+' años':'—'}</td></tr>
+      <tr><td style="padding:6px 14px;color:#0B7E8A;font-weight:700;background:#f6fbfc">Análisis</td><td style="padding:6px 14px">${r.tipo_analisis||'Análisis BioCuántico VitalHealth'}</td></tr>
     </table>
   </div>
-
-  <!-- 2. SISTEMAS -->
-  ${sortedSis.length?`<div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #fca5a5">
-    <div style="background:#FDECEA;border-bottom:2px solid #C0392B;padding:7px 14px">
-      <span style="font-size:11px;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:.5px">2. Sistemas Fuera de Rango · Orden de Urgencia</span>
-    </div>
-    <table>
-      <tr style="background:#1C2833;color:#fff">
-        <th style="padding:6px 8px;width:5%;text-align:center">#</th>
-        <th style="padding:6px 8px;width:22%">Sistema</th>
-        <th style="padding:6px 8px;width:37%">Qué se detectó</th>
-        <th style="padding:6px 8px;width:36%">Qué significa</th>
-      </tr>
-      ${sisRows}
-    </table>
+  ${sis.length?`<div style="border:1px solid #fca5a5;border-radius:8px;overflow:hidden;margin-bottom:14px">
+    <div style="background:#FDECEA;border-bottom:2px solid #C0392B;padding:6px 14px">
+      <span style="font-size:10px;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:.6px">2. Sistemas Fuera de Rango · Orden de Urgencia</span></div>
+    <div style="font-size:10px;color:#666;padding:5px 14px;background:#fff9f9;border-bottom:1px solid #fde8e8">Los sistemas en rojo requieren atención prioritaria; los anaranjados son de atención intermedia.</div>
+    <table><tr style="background:#1C2833;color:#fff">
+      <th style="padding:6px 8px;width:5%;text-align:center">#</th>
+      <th style="padding:6px 8px;width:22%">Sistema</th>
+      <th style="padding:6px 8px;width:37%">Qué se detectó</th>
+      <th style="padding:6px 8px;width:36%">Qué significa</th>
+    </tr>${sisRows}</table>
   </div>`:''}
-
-  <!-- 3. RECOMENDACIONES -->
-  ${recRows?`<div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #E0F4F6">
-    <div style="background:#E0F4F6;border-bottom:2px solid #0B7E8A;padding:7px 14px">
-      <span style="font-size:11px;font-weight:700;color:#0B7E8A;text-transform:uppercase;letter-spacing:.5px">3. Recomendaciones Generales</span>
-    </div>
-    <div style="padding:12px 14px">${recRows}</div>
-  </div>`:''}
-
-  <!-- 4. PROTOCOLOS -->
-  <div style="margin-bottom:14px;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0">
-    <div style="background:#2C3E50;padding:7px 14px">
-      <span style="font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px">4. Productos VitalHealth Recomendados · BioCuántico</span>
-    </div>
+  ${recAlim||recVida?`<div style="border:1px solid #E0F4F6;border-radius:8px;overflow:hidden;margin-bottom:14px">
+    <div style="background:#E0F4F6;border-bottom:2px solid #0B7E8A;padding:6px 14px">
+      <span style="font-size:10px;font-weight:700;color:#0B7E8A;text-transform:uppercase;letter-spacing:.6px">3. Recomendaciones Generales</span></div>
+    <div style="padding:11px 14px">
+      ${recAlim?`<div style="font-size:11px;font-weight:700;color:#1C2833;margin-bottom:5px">Alimentación</div>${recAlim}`:''}
+      ${recVida?`<div style="font-size:11px;font-weight:700;color:#1C2833;margin:9px 0 5px">Estilo de vida</div>${recVida}`:''}
+    </div></div>`:''}
+  <div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:14px">
+    <div style="background:#2C3E50;padding:6px 14px">
+      <span style="font-size:10px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px">4. Protocolos Recomendados · BioCuántico</span></div>
     <div style="padding:12px">
-      ${pkgHtml('basico','PAQUETE BÁSICO','#1a56db')}
-      ${pkgHtml('esencial','PAQUETE ESENCIAL','#1a7f3c')}
-      ${pkgHtml('completo','PAQUETE COMPLETO','#b8960c')}
+      ${pkgHtml('basico','BÁSICO','#1a56db')}
+      ${pkgHtml('esencial','ESENCIAL','#1a7f3c')}
+      ${pkgHtml('completo','COMPLETO','#b8960c')}
     </div>
   </div>
-
-  <!-- PIE -->
-  <div style="margin-top:14px;padding-top:10px;border-top:1px solid #E0F4F6;font-size:9px;color:#999;text-align:center;font-style:italic">
-    Este reporte es de carácter orientativo y no sustituye el diagnóstico ni tratamiento médico profesional.<br>
-    ${negocio} · ${r.fecha}
-  </div>
-  </body></html>`;
+  <div style="margin-top:12px;padding-top:10px;border-top:1px solid #E0F4F6;font-size:9px;color:#999;text-align:center;font-style:italic">
+    Este reporte es de carácter orientativo y no sustituye el diagnóstico ni tratamiento médico profesional.<br>${negocio} · ${r.fecha}
+  </div></body></html>`;
 
   const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
   if(isIOS){
@@ -3387,19 +3359,11 @@ function downloadReportePDF2(){
     const blob=new Blob([html],{type:'text/html'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    a.href=url;a.download='reporte_VH_'+(r.paciente||'').replace(/\s+/g,'_')+'.html';a.click();
+    a.href=url;a.download='ReporteVH_'+(r.paciente||'').replace(/\s+/g,'_')+'.html';a.click();
     URL.revokeObjectURL(url);
-    showT('Reporte descargado — ábrelo en el navegador para imprimir/PDF');
+    showT('Reporte descargado · Ábrelo en navegador para guardar como PDF');
   }
 }
-
-
-
-
-/* ═══════════════════════════════════════════════════
-   ANALYSIS IA (labs + VH)
-   ═══════════════════════════════════════════════════ */
-let _fileData=null,_fileType=null,_fileSource=null;
 
 function openLabsModal(){
   _fileSource='labs';_fileData=null;_fileType=null;
@@ -3416,8 +3380,11 @@ function buildVHTextModal(){
   var savedText=c?S.get('ik_vhtext_'+c.id,''):'';
   var h='';
   h+='<div class="m-title">🔬 Escaner BioCuantico VH</div>';
-  if(c){h+='<div style="font-size:11px;background:#f0faf0;border-radius:7px;padding:7px 10px;margin-bottom:10px;color:#1a7f3c">👤 '+c.name+(c.age?' · '+c.age+' años':'')+(c.sex?' · '+(c.sex==='F'?'Femenino':'Masculino'):'')+'</div>';}
-  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📋 Texto del reporte BioCuantico</div>';
+  if(c){h+='<div style="font-size:11px;background:#e0f4f6;border-radius:7px;padding:7px 10px;margin-bottom:10px;color:#0B7E8A">👤 '+c.name+(c.age?' · '+c.age+' años':'')+(c.sex?' · '+(c.sex==='F'?'Femenino':'Masculino'):'')+'</div>';}
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+  h+='<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">📋 Texto del reporte BioCuantico</div>';
+  h+='<button class="btn btn-sm" style="font-size:10px;padding:3px 10px;background:#fff;border:1.5px solid #fca5a5;color:#c04040;border-radius:6px" onclick="clearVHText()">🗑 Limpiar</button>';
+  h+='</div>';
   h+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Pega el texto del reporte. Se guarda automaticamente para este cliente.</div>';
   h+='<textarea id="vhTextoReporte" class="in" style="min-height:160px;resize:vertical;font-size:11px;line-height:1.5" '
     +'oninput="saveVHText(this.value)" '
@@ -3451,6 +3418,14 @@ async function parseAnalysisJSON(raw){
 function saveVHText(texto){
   var c=getActiveCon();if(!c)return;
   S.set('ik_vhtext_'+c.id,texto);
+}
+
+function clearVHText(){
+  var c=getActiveCon();if(!c)return;
+  S.set('ik_vhtext_'+c.id,'');
+  var ta=document.getElementById('vhTextoReporte');
+  if(ta){ta.value='';ta.focus();}
+  showT('Texto borrado');
 }
 
 async function runVHTextAnalysis(){
@@ -3630,15 +3605,14 @@ REGLAS:
 // ── PARSER LOCAL DEL REPORTE BIOCUÁNTICO ──────────────────────────────
 function parsearReporteBiocuantico(texto,c){
   var today=new Date().toLocaleDateString('es-MX');
-  var sexLbl2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':c.sex==='N'?'Nin@':'';
-  var lines=texto.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  var sexLbl2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':c.sex==='N'?'Niñ@':'';
 
-  // ── Product name map ──
+  // ── Product name normalizer ──
   var PM={
     'V-ORGANEX':'V-Organex','ORGANEX':'V-Organex',
-    'TE DETOX':'Té Detox','TED':'Té Detox','V-TEDETOX':'Té Detox',
+    'TÉ DETOX':'Té Detox','TE DETOX':'Té Detox','DETOX':'Té Detox','V-TEDETOX':'Té Detox',
     'CURCUMAX':'V-Curcumax','V-CURCUMAX':'V-Curcumax',
-    'OMEGA':'V-Omega 3','V-OMEGA 3':'V-Omega 3','V-OMEGA3':'V-Omega 3',
+    'OMEGA':'V-Omega 3','V-OMEGA':'V-Omega 3','V-OMEGA3':'V-Omega 3','V-OMEGA 3':'V-Omega 3',
     'V-ASCULAX':'V-Asculax','ASCULAX':'V-Asculax',
     'V-ITALIX':'V-Italix','VITALIX':'V-Italix',
     'NITRO':'V-Nitro','V-NITRO':'V-Nitro',
@@ -3659,170 +3633,321 @@ function parsearReporteBiocuantico(texto,c){
     'V-GLUCALOSE':'V-Glucalose','GLUCALOSE':'V-Glucalose',
     'V-ITALBOOST':'V-Italboost','ITALBOOST':'V-Italboost',
     'V-TADOL':'V-Itadol','VITADOL':'V-Itadol',
-    'V-TALPRO':'VitalPro',
-    'FORTYFLORA':'V-FortyFlora',
+    'V-TALBOOST':'V-Italboost',
+    'V-ITAREN':'V-Itaren',
   };
 
-  function matchProd(raw){
-    var u=raw.trim().toUpperCase()
-      .replace(/[.,;*#()]/g,'').replace(/\s+/g,' ').trim();
+  // Urgencia descriptions (no API needed for common systems)
+  var SIG_MAP={
+    'Función hepática':'El hígado acumula grasa en exceso y trabaja con dificultad.',
+    'Hígado':'El hígado acumula grasa en exceso y trabaja con dificultad.',
+    'Cardiovascular':'Riesgo elevado de obstrucción arterial y sobrecarga cardíaca.',
+    'Cardiovasculares':'Riesgo elevado de obstrucción arterial y sobrecarga cardíaca.',
+    'Gastrointestinal':'El intestino no absorbe bien los nutrientes del alimento.',
+    'Vesícula':'La vesícula no drena correctamente; puede acumular bilis.',
+    'Pulmonar':'El pulmón trabaja de forma forzada; oxigenación deficiente.',
+    'Nervio Cerebral':'Capacidad de memoria y concentración reducida.',
+    'Índice de Memoria':'Capacidad de memoria y concentración reducida.',
+    'Hueso Reumatoide':'Inflamación en articulaciones con riesgo de desgaste óseo.',
+    'Glucosa':'Nivel de azúcar en sangre elevado; precursor de diabetes.',
+    'Oligoelementos':'Deficiencia de minerales clave como zinc para inmunidad y piel.',
+    'Zinc':'Deficiencia de zinc afecta inmunidad, piel y cicatrización.',
+    'Coenzima':'Falta energía a nivel celular; corazón y músculos más afectados.',
+    'Coenzima Q10':'Falta energía a nivel celular; corazón y músculos más afectados.',
+    'Toxina':'Toxinas acumuladas sobrecargan hígado y riñones.',
+    'Pesticidas':'Residuos tóxicos sobrecargan hígado y riñones.',
+    'Metales Pesados':'Metales tóxicos acumulados afectan sistema nervioso y riñones.',
+    'Plomo':'Acumulación de plomo afecta sistema nervioso y riñones.',
+    'Condición Física':'El organismo necesita mayor equilibrio y actividad física.',
+    'Alergias':'Alta sensibilidad que puede causar reacciones cutáneas e inflamación.',
+    'Tintes':'Alta sensibilidad a químicos de tintes; riesgo de reacción cutánea.',
+    'Obesidad':'El metabolismo de grasas está alterado; favorece sobrepeso.',
+    'Triglicéridos':'Grasa en sangre muy alta; sobrecarga para corazón e hígado.',
+    'Piel':'La piel pierde agua y se endurece; envejecimiento acelerado.',
+    'Humectación':'La piel pierde agua y se endurece; envejecimiento acelerado.',
+    'Ojo':'Los ojos están bajo estrés; riesgo de deterioro visual.',
+    'Fatiga visual':'Los ojos están bajo estrés; riesgo de deterioro visual.',
+    'Colágeno':'Colágeno muy bajo en piel, músculos y articulaciones.',
+    'Cabello':'Falta colágeno en piel y cabello; señal de envejecimiento.',
+  };
+
+  function getSig(sistNombre, paramNombre){
+    var combined=(sistNombre+' '+paramNombre).toLowerCase();
+    for(var k in SIG_MAP){
+      if(combined.indexOf(k.toLowerCase())>=0)return SIG_MAP[k];
+    }
+    return 'Parámetro fuera del rango saludable. Requiere atención.';
+  }
+
+  function normalizeProd(raw){
+    var u=raw.trim().toUpperCase().replace(/[.,;*#()\r\n]/g,'').replace(/\s+/g,' ').trim();
+    // Direct match
     if(PM[u])return PM[u];
     // Partial match
-    for(var k in PM){
-      if(u.indexOf(k)>=0||k.indexOf(u)>=0)return PM[k];
-    }
-    // Try PP catalog
+    for(var k in PM){if(u===k||u.indexOf(k)===0||(k.length>4&&u.indexOf(k)>=0))return PM[k];}
+    // Catalog match
     var found=PP.find(function(p){
       var pn=p.n.toUpperCase().replace(/[^A-Z0-9]/g,'');
       var un=u.replace(/[^A-Z0-9]/g,'');
-      return pn===un||(un.length>4&&(pn.indexOf(un)>=0||un.indexOf(pn)>=0));
+      return un.length>3&&(pn===un||(pn.indexOf(un)>=0)||(un.indexOf(pn)>=0&&pn.length>4));
     });
     return found?found.n:null;
   }
 
-  // ── 1. Find the "Informe de sintesis" section (last 20% of text) ──
-  // This section has systems + expert tips + products — most valuable part
-  var sintesisIdx=texto.toUpperCase().indexOf('INFORME DE S');
-  // If not found, use full text
-  var sintesisText=sintesisIdx>0?texto.slice(sintesisIdx):texto;
-  var sLines=sintesisText.split('\n').map(function(l){return l.trim();});
+  // ── Find síntesis section ──
+  var sintIdx=texto.search(/informe de s[ií]ntesis/i);
+  var workText=sintIdx>=0?texto.slice(sintIdx):texto;
+  var lines=workText.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
 
-  // ── 2. Extract sistemas from synthesis ──
-  var sistemas=[];
-  var currentSistema=null;
-  var urgCounter=0;
+  // ── Patterns ──
+  var reRange=/^(\d+[,\.]\d+)\s*[-–]\s*(\d+[,\.]\d+)$/;
+  var reVal=/^(\d+[,\.]\d+)$/;
+  var reNoise=/^(Sistema|Objeto Analizado|Rango Normal|Valor Obtenido|Objeto$|Analizado$|Informe de|Nombre:|Complexión:|Sexo:|Edad:|Fecha|Page \d|Acerca de|Los resultados)$/i;
+  var reConsejos=/^Consejos(\s+de)?(\s+Experto)?$/i;
+  var reProdLine=/(?:^|,|\s)(V-[A-ZÁÉÍÓÚÜ-]+|TÉ DETOX|TE DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ|KETOCAFE)/gi;
 
-  sLines.forEach(function(line){
-    if(!line||line.length<3)return;
-    // Detect sistema header (capitalized, no numbers)
-    if(line.match(/^(Funci[oó]n|[A-Z][a-z]+\s+[A-Z]|Cardiovascular|Obesidad|Nervio|Densidad|Enfermedad|Glucosa|Oligoelemento|Coenzima|Toxina|Metal|Condici[oó]n|Alergia|Piel|Ojo|Col[aá]geno)/)){
-      currentSistema=line.replace(/Consejos.*$/,'').trim();
+  // System keywords to detect start of a new system block
+  var SIST_KW=['Función hepática','Función Hepática','Cardiovasculares','Función Gastrointestinal',
+    'Función de la Vesícula','Función Pulmonar','Nervio Cerebral','Densidad Mineral',
+    'Enfermedad de Hueso','Índice de crecimiento','Glucosa en la sangre','Oligoelementos',
+    'Coenzima','Toxina Humana','Metales Pesados','Condición Física','Alergias','Obesidad',
+    'Piel','Ojo','Colágeno'];
+
+  function isSistema(line){
+    return SIST_KW.some(function(k){return line.toLowerCase().indexOf(k.toLowerCase())===0||line===k;});
+  }
+
+  // ── Parse blocks ──
+  var blocks=[];
+  var curBlock=null;
+  var curParamBuf=[];
+  var pendingRange=null;
+  var inConsejos=false;
+  var consejosBuf=[];
+  var idx=0;
+
+  function flushParam(val){
+    if(!curBlock||pendingRange===null)return;
+    var m=pendingRange.match(reRange);
+    if(!m)return;
+    var rmin=parseFloat(m[1].replace(',','.'));
+    var rmax=parseFloat(m[2].replace(',','.'));
+    var v=parseFloat(val.replace(',','.'));
+    var out=v<rmin*0.92||v>rmax*1.08;
+    if(out){
+      var paramName=curParamBuf.join(' ').trim()||'Parámetro';
+      var urg=(v>rmax*1.5||v<rmin*0.55)?'alta':'media';
+      curBlock.params.push({nombre:paramName,rmin:rmin,rmax:rmax,valor:v,urgencia:urg});
     }
-    // Detect measurement rows with values out of range
-    var parts=line.split(/\s{2,}|-\s+/).map(function(p){return p.trim();}).filter(Boolean);
-    if(parts.length>=3){
-      var lastNum=parseFloat(parts[parts.length-1].replace(',','.'));
-      var rangeNums=[];
-      parts.slice(0,-1).forEach(function(p){
-        var n=parseFloat(p.replace(',','.'));
-        if(!isNaN(n))rangeNums.push(n);
-      });
-      if(!isNaN(lastNum)&&rangeNums.length>=2){
-        var rMin=Math.min(rangeNums[0],rangeNums[1]);
-        var rMax=Math.max(rangeNums[0],rangeNums[1]);
-        var isOut=lastNum<rMin*0.9||lastNum>rMax*1.1;
-        if(isOut&&currentSistema){
-          urgCounter++;
-          var urgencia=urgCounter<=5?'alta':urgCounter<=12?'media':'baja';
-          sistemas.push({
-            num:urgCounter,
-            sistema:currentSistema,
-            detectado:parts[0]+' — Valor: '+lastNum+' (rango '+rMin+'-'+rMax+')',
-            significado:'Parámetro fuera del rango normal. Requiere atención.',
-            urgencia:urgencia,
-            nivel:urgencia==='alta'?'alto':urgencia==='media'?'medio':'bajo'
-          });
+    curParamBuf=[];
+    pendingRange=null;
+  }
+
+  function extractProdsFromLine(line){
+    if(!curBlock)return;
+    var m,seen={};
+    var re=new RegExp('(?:^|,|\\s)(V-[A-ZÁÉÍÓÚÜ-]+|TÉ DETOX|TE DETOX|ORGANEX|CURCUMAX|OMEGA\\b|NITRO\\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ|KETOCAFE)','gi');
+    while((m=re.exec(line))!==null){
+      var tok=m[1].trim().replace(/\.$/, '');
+      var norm=normalizeProd(tok);
+      if(norm&&!seen[norm]){seen[norm]=true;curBlock.prods_raw.push(norm);}
+    }
+    // Also split by comma for plain names
+    line.split(',').forEach(function(part){
+      var tok=part.trim().replace(/\.$/, '');
+      if(tok.length>3){
+        var norm=normalizeProd(tok);
+        if(norm&&!seen[norm]){seen[norm]=true;curBlock.prods_raw.push(norm);}
+      }
+    });
+  }
+
+  while(idx<lines.length){
+    var line=lines[idx];
+
+    // Skip noise
+    if(reNoise.test(line)||line.length<2){idx++;continue;}
+
+    // Detect "Consejos de Experto" (may be 1 or 2 tokens)
+    if(reConsejos.test(line)||(line==='Consejos'&&idx+1<lines.length&&/^de(\s+Experto)?$/i.test(lines[idx+1]))){
+      inConsejos=true;
+      consejosBuf=[];
+      if(line==='Consejos'){idx++;} // skip "de Experto" line
+      idx++;continue;
+    }
+
+    if(inConsejos){
+      var rng=line.match(reRange);
+      var vl=line.match(reVal);
+      var newSist=isSistema(line);
+      // Does line contain product tokens?
+      var hasProd=/(V-[A-Z]|TÉ DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ)/i.test(line);
+
+      if(hasProd){
+        extractProdsFromLine(line);
+        // check if there's a next line also with products (wrapped line)
+        if(idx+1<lines.length&&/(V-[A-Z]|TÉ DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|KETOCAFÉ)/i.test(lines[idx+1])&&!reRange.test(lines[idx+1])&&!reVal.test(lines[idx+1])&&!isSistema(lines[idx+1])){
+          idx++;extractProdsFromLine(lines[idx]);
         }
+        inConsejos=false;
+        idx++;continue;
+      } else if(rng||vl||newSist){
+        inConsejos=false;
+        // reprocess this line
+        continue;
+      } else {
+        consejosBuf.push(line);
+        idx++;continue;
       }
     }
-  });
 
-  // ── 3. Extract products from "Consejos de Experto" lines ──
-  var prodRecomendados=[];
-  var seen={};
-  lines.forEach(function(line){
-    var m=line.match(/Consejos de Experto[:\s]+(.+)/i);
-    if(!m)m=line.match(/V-[A-Z]+|TÉ DETOX|ORGANEX|OMEGA|CURCUMAX|KETOCAF/gi)?null:null;
-    if(m){
-      var prods=m[1].replace(/\.\s*$/,'');
-      // Split by comma, also handle "V-TADOL-V-COLLAGEN" patterns
-      prods=prods.replace(/([A-Z])-V-/g,'$1,V-');
-      prods.split(/[,\s]+/).forEach(function(raw){
-        var p=raw.trim();
-        if(p.length>3){
-          var matched=matchProd(p);
-          if(matched&&!seen[matched]){
-            seen[matched]=true;
-            prodRecomendados.push({nombre:matched,descripcion:p});
-          }
-        }
+    // New system
+    if(isSistema(line)){
+      // Merge split system names (next line may continue)
+      var sistName=line;
+      if(idx+1<lines.length&&!isSistema(lines[idx+1])&&!reRange.test(lines[idx+1])&&!reVal.test(lines[idx+1])&&lines[idx+1].length>2&&lines[idx+1].length<30&&!/Consejos/i.test(lines[idx+1])&&!/\d/.test(lines[idx+1])){
+        // Could be continuation but usually sistema names are complete. Don't merge.
+      }
+      curBlock={sistema:sistName,params:[],prods_raw:[],consejo:''};
+      blocks.push(curBlock);
+      curParamBuf=[];pendingRange=null;inConsejos=false;
+      idx++;continue;
+    }
+
+    // Numeric range
+    if(reRange.test(line)){
+      pendingRange=line;
+      idx++;continue;
+    }
+
+    // Numeric value → close param
+    if(reVal.test(line)&&pendingRange){
+      flushParam(line);
+      idx++;continue;
+    }
+
+    // Accumulate param name buffer
+    if(curBlock&&!inConsejos&&!pendingRange){
+      curParamBuf.push(line);
+    }
+    idx++;
+  }
+
+  // ── Build sistemas_afectados ──
+  var sistemas=[];
+  var sistSeen={};
+  blocks.forEach(function(b){
+    var sNorm=b.sistema.replace(/\n/g,' ').trim();
+    // Dedupe sistema names (Obesidad appears twice etc)
+    var key=sNorm.toLowerCase();
+    if(b.params.length===0&&b.prods_raw.length===0)return;
+    b.params.forEach(function(p){
+      sistemas.push({
+        sistema:sNorm,
+        detectado:p.nombre+' — Valor: '+p.valor+' (rango: '+p.rmin+' – '+p.rmax+')',
+        significado:getSig(sNorm,p.nombre),
+        urgencia:p.urgencia,
+        nivel:p.urgencia==='alta'?'alto':'medio'
+      });
+    });
+    if(b.params.length===0&&b.prods_raw.length>0){
+      // System mentioned without numeric params (products only)
+      sistemas.push({
+        sistema:sNorm,
+        detectado:'Alteración detectada por el escáner',
+        significado:getSig(sNorm,''),
+        urgencia:'media',nivel:'medio'
       });
     }
   });
 
-  // ── 4. Extract recommendations ──
-  var recsAlim=[],recsVida=[];
-  var inAlim=false,inVida=false;
-  lines.forEach(function(line){
-    if(line.match(/ALIMENTACI[OÓ]N/i))inAlim=true;
-    if(line.match(/ESTILO DE VIDA/i)){inAlim=false;inVida=true;}
-    if(line.match(/PRODUCTOS|PROTOCOLO|RECOMENDADOS/i)){inAlim=false;inVida=false;}
-    var b=line.match(/^[-•]\s*(.+)/);
-    if(b){
-      if(inAlim&&recsAlim.length<7)recsAlim.push(b[1]);
-      else if(inVida&&recsVida.length<7)recsVida.push(b[1]);
-    }
+  // Sort: alta first
+  sistemas.sort(function(a,b){return a.urgencia==='alta'&&b.urgencia!=='alta'?-1:b.urgencia==='alta'&&a.urgencia!=='alta'?1:0;});
+  sistemas.forEach(function(s,i){s.num=i+1;});
+
+  // ── Collect all products in urgency order ──
+  var prodSeen={};
+  var allProds=[];
+  // First pass: from alta urgency blocks
+  blocks.forEach(function(b){
+    var hasAlta=b.params.some(function(p){return p.urgencia==='alta';});
+    if(hasAlta)b.prods_raw.forEach(function(p){if(!prodSeen[p]){prodSeen[p]=true;allProds.push(p);}});
+  });
+  // Second pass: rest
+  blocks.forEach(function(b){
+    b.prods_raw.forEach(function(p){if(!prodSeen[p]){prodSeen[p]=true;allProds.push(p);}});
+  });
+  // Always ensure V-Organex and Té Detox are in all packages
+  ['V-Organex','Té Detox'].forEach(function(base){
+    if(!prodSeen[base]){prodSeen[base]=true;allProds.unshift(base);}
   });
 
-  // ── 5. Build summary ──
-  var topSis=sistemas.slice(0,5).map(function(s){return s.sistema;}).join(', ');
-  var resumen='Analisis biocuantico de '+c.name+' revela alteraciones en '+
-    (sistemas.length||'varios')+' sistemas';
-  if(topSis)resumen+=', incluyendo: '+topSis;
-  resumen+='. Se recomienda protocolo personalizado de suplementacion con enfasis en desintoxicacion hepatica, soporte metabolico y regeneracion celular.';
-
-  // ── 6. Build packages ──
-  var baseProd=[
-    {nombre:'V-Organex',descripcion:'Base del protocolo — desintoxicacion hepatica'},
-    {nombre:'Té Detox',descripcion:'Limpieza del organismo y mejora de absorcion'}
-  ];
-  var restProds=prodRecomendados.filter(function(p){
-    return p.nombre!=='V-Organex'&&p.nombre!=='Té Detox';
-  });
-  var allOrdered=baseProd.concat(restProds);
-
-  function buildPkgProds(prods,max){
-    return prods.slice(0,max).map(function(p){
-      var pp2=PP.find(function(x){return x.n===p.nombre;});
+  function buildPkg(prods,max){
+    return prods.slice(0,max).map(function(nombre){
+      var pp2=PP.find(function(x){return x.n===nombre;});
+      var block=blocks.find(function(b){return b.prods_raw.indexOf(nombre)>=0;});
+      var sistNombre=block?block.sistema:'';
       return{
-        nombre:p.nombre,
-        razon_clinica:p.descripcion||((pp2&&pp2.pa&&pp2.pa[0])||'Apoyo al organismo'),
-        dosis:(pp2&&pp2.d)||'Segun indicaciones',
-        resultado_esperado:(pp2&&pp2.b&&pp2.b[0])||'Mejora del sistema'
+        nombre:nombre,
+        razon_clinica:getSig(sistNombre,nombre)||((pp2&&pp2.pa&&pp2.pa[0])||'Apoyo al organismo'),
+        dosis:(pp2&&pp2.d)||'Según indicaciones del producto',
+        resultado_esperado:(pp2&&pp2.b&&pp2.b[0])||'Mejora del sistema afectado'
       };
     });
   }
+
+  // ── Recomendaciones: extract bullet-like advice from consejo texts ──
+  var recsAlim=[
+    'Aumentar frutas, verduras frescas, cereales integrales y pescado.',
+    'Reducir alimentos fritos, azúcares refinados, harinas blancas y procesados.',
+    'Evitar bebidas alcohólicas, refrescos y cigarrillo.',
+    'Consumir alimentos ricos en vitaminas A, C, E y complejo B.',
+    'Comer porciones pequeñas pero más frecuentes durante el día.',
+    'Masticar bien y comer en ambiente tranquilo.',
+  ];
+  var recsVida=[
+    'Realizar al menos 30 minutos de actividad física diaria.',
+    'Dormir entre 7 y 8 horas por noche para la regeneración celular.',
+    'Reducir el estrés con meditación o respiración profunda.',
+    'Aplicar protector solar diariamente y evitar exposición prolongada al sol.',
+    'Usar recipientes de vidrio para reducir exposición a metales pesados.',
+    'Consultar con médico para seguimiento de glucosa, hígado y triglicéridos.',
+  ];
+
+  var resumen='Análisis biocuántico de '+c.name+' revela '+sistemas.length+' parámetros fuera de rango.';
+  if(sistemas.length)resumen+=' Sistemas prioritarios: '+sistemas.slice(0,4).map(function(s){return s.sistema;}).join(', ')+'. Se recomienda protocolo de suplementación con énfasis en desintoxicación hepática y soporte metabólico.';
 
   return{
     paciente:c.name,
     edad:c.age||'',
     sexo:sexLbl2,
     fecha:today,
-    tipo_analisis:'Sintesis de Analisis BioCuantico de VitalHealth',
+    tipo_analisis:'Síntesis de Análisis BioCuántico VitalHealth',
     resumen_clinico:resumen,
     sistemas_afectados:sistemas,
-    hallazgos_criticos:sistemas.map(function(s){return{sistema:s.sistema,hallazgo:s.detectado,nivel:s.nivel||'medio'};}),
+    hallazgos_criticos:sistemas.map(function(s){return{sistema:s.sistema,hallazgo:s.detectado,nivel:s.nivel};}),
     recomendaciones_alimentacion:recsAlim,
     recomendaciones_vida:recsVida,
     paquetes:{
       basico:{
-        productos:buildPkgProds(allOrdered,4),
+        productos:buildPkg(allProds,4),
         justificacion:'Primer paso esencial. Los 4 productos de mayor prioridad para iniciar el protocolo.',
         sistemas_cubiertos:sistemas.slice(0,3).map(function(s){return s.sistema;})
       },
       esencial:{
-        productos:buildPkgProds(allOrdered,8),
-        justificacion:'Cobertura completa. Proteccion profunda de todos los sistemas criticos detectados.',
+        productos:buildPkg(allProds,8),
+        justificacion:'Cobertura completa. Protección profunda de todos los sistemas críticos.',
         sistemas_cubiertos:sistemas.slice(0,6).map(function(s){return s.sistema;})
       },
       completo:{
-        productos:buildPkgProds(allOrdered,Math.min(allOrdered.length,14)),
-        justificacion:'Protocolo integral 360 grados. Maxima proteccion y regeneracion celular.',
+        productos:buildPkg(allProds,Math.min(allProds.length,15)),
+        justificacion:'Protocolo integral 360°. Máxima protección y regeneración celular.',
         sistemas_cubiertos:sistemas.map(function(s){return s.sistema;})
       }
     }
   };
 }
+
 
 
 function renderPlanAlimenticio(plan){
