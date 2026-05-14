@@ -3363,7 +3363,34 @@ function saveVHText(texto){
   S.set('ik_vhtext_'+c.id,texto);
 }
 
-async function runVHTextAnalysis(){
+function runVHTextAnalysis(){
+  const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
+  if(!texto){showT('Pega el texto del reporte primero');return;}
+  const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
+
+  var spinEl=document.getElementById('anaSpin');
+  var resEl=document.getElementById('anaRes');
+  if(spinEl)spinEl.style.display='block';
+  if(resEl)resEl.innerHTML='';
+
+  // ── LOCAL PARSER — no API cost ──
+  setTimeout(function(){
+    try{
+      var result=parsearReporteBiocuantico(texto,c);
+      if(spinEl)spinEl.style.display='none';
+      _lastResult=result;_fileSource='vh';
+      if(resEl)resEl.innerHTML=renderResultVH(result);
+      addToHistory('vh','🔬 Análisis BioCuántico — '+(result.sistemas_afectados||[]).length+' hallazgos',result);
+      showT('✓ Reporte generado');
+    }catch(err){
+      if(spinEl)spinEl.style.display='none';
+      if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error:</b> '+err.message+'</div>';
+    }
+  },300);
+}
+
+// ── API VERSION (uses credits) — called manually ──
+async function runVHTextAnalysisAPI(){
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
   const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
@@ -3486,319 +3513,196 @@ REGLAS:
 
 // ── PARSER LOCAL DEL REPORTE BIOCUÁNTICO ──────────────────────────────
 function parsearReporteBiocuantico(texto,c){
-  // ── Normalize product names to catalog names ──
-  // productMap: report name → exact PP catalog name
-  var productMap={
-    // Organex
+  var today=new Date().toLocaleDateString('es-MX');
+  var sexLbl2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':c.sex==='N'?'Nin@':'';
+  var lines=texto.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+
+  // ── Product name map ──
+  var PM={
     'V-ORGANEX':'V-Organex','ORGANEX':'V-Organex',
-    // Té Detox
-    'V-TEDETOX':'Té Detox','TÉ DETOX':'Té Detox','TE DETOX':'Té Detox','TEDETOX':'Té Detox','TÉ DETOX':'Té Detox',
-    // Curcumax
+    'TE DETOX':'Té Detox','TED':'Té Detox','V-TEDETOX':'Té Detox',
     'CURCUMAX':'V-Curcumax','V-CURCUMAX':'V-Curcumax',
-    // Omega
-    'OMEGA':'V-Omega 3','V-OMEGA 3':'V-Omega 3','V-OMEGA3':'V-Omega 3','OMEGA 3':'V-Omega 3',
-    // Asculax, Italix
-    'V-ASCULAX':'V-Asculax','V-ITALIX':'V-Italix',
-    // Nitro
+    'OMEGA':'V-Omega 3','V-OMEGA 3':'V-Omega 3','V-OMEGA3':'V-Omega 3',
+    'V-ASCULAX':'V-Asculax','ASCULAX':'V-Asculax',
+    'V-ITALIX':'V-Italix','VITALIX':'V-Italix',
     'NITRO':'V-Nitro','V-NITRO':'V-Nitro',
-    // Itaren
     'VITAREN':'V-Itaren','V-ITAREN':'V-Itaren',
-    // FortyFlora
-    'V-FORTIFLORA':'V-FortyFlora','FORTYFLORA':'V-FortyFlora','FORTIFLORA':'V-FortyFlora','V-FORTYFLORA':'V-FortyFlora',
-    // Control
+    'V-FORTIFLORA':'V-FortyFlora','FORTYFLORA':'V-FortyFlora','V-FORTYFLORA':'V-FortyFlora',
     'V-CONTROL':'V-Control',
-    // VitalPro (Italpro en reportes)
-    'V-ITALPRO':'VitalPro','VITALPRO':'VitalPro','V-TALPRO':'VitalPro','VITALPRO':'VitalPro',
-    // Thermokafe
+    'V-ITALPRO':'VitalPro','VITALPRO':'VitalPro','V-TALPRO':'VitalPro',
     'V-THERMOKAFE':'Thermokafe','THERMOKAFE':'Thermokafe',
-    // Ketokafe
-    'KETOCAFÉ':'Ketokafe BHB','KETOCAFE':'Ketokafe BHB','KETOKAFE':'Ketokafe BHB',
-    // Itax
+    'KETOCAFE':'Ketokafe BHB','KETOCAFÉ':'Ketokafe BHB',
     'V-ITAX':'V-Itax','VITAX':'V-Itax',
-    // Neurokafe
     'V-NEUROKAFE':'Neurokafe','NEUROKAFE':'Neurokafe',
-    // Italay
     'V-ITALAY':'V-Italay',
-    // Collagen
     'V-COLLAGEN':'V-Collagen',
     'VITALAGE COLLAGEN':'Vitalage Collagen','VITALAGE':'Vitalage Collagen',
-    // Vitarly
     'V-TARLY':'Vitarly-L','VITARLY':'Vitarly-L',
-    // NRGY
-    'VNRGY':'V-NRGY','V-NRGY':'V-NRGY',
-    // Glutatión — catalog name is V-Glutation (no accent)
-    'V-GLUTATION':'V-Glutation','GLUTATION':'V-Glutation','GLUTATIÓN':'V-Glutation','V-GLUTATIÓN':'V-Glutation',
-    // Glucalose
-    'V-GLUCALOSE':'V-Glucalose',
-    // Italboost
-    'V-ITALBOOST':'V-Italboost','V-TALBOOST':'V-Italboost',
-    // Itadol
-    'V-ITADOL':'V-Itadol','VITADOL':'V-Itadol','V-TADOL':'V-Itadol',
-    // Lovkafe
-    'LOVKAFE':'Lovkafe','V-LOVKAFE':'Lovkafe',
-    // Glucalose
-    'GLUCALOSE':'V-Glucalose',
-    // Asculax
-    'ASCULAX':'V-Asculax',
+    'V-NRGY':'V-NRGY','VNRGY':'V-NRGY',
+    'V-GLUTATION':'V-Glutation','GLUTATION':'V-Glutation',
+    'V-GLUCALOSE':'V-Glucalose','GLUCALOSE':'V-Glucalose',
+    'V-ITALBOOST':'V-Italboost','ITALBOOST':'V-Italboost',
+    'V-TADOL':'V-Itadol','VITADOL':'V-Itadol',
+    'V-TALPRO':'VitalPro',
+    'FORTYFLORA':'V-FortyFlora',
   };
 
-  function matchProd(nombre){
-    var upper=nombre.trim().toUpperCase().replace(/[,.;\s]+$/, '').replace(/^V[,\s]+/, 'V-');
-    if(productMap[upper])return productMap[upper];
+  function matchProd(raw){
+    var u=raw.trim().toUpperCase()
+      .replace(/[.,;*#()]/g,'').replace(/\s+/g,' ').trim();
+    if(PM[u])return PM[u];
+    // Partial match
+    for(var k in PM){
+      if(u.indexOf(k)>=0||k.indexOf(u)>=0)return PM[k];
+    }
+    // Try PP catalog
     var found=PP.find(function(p){
       var pn=p.n.toUpperCase().replace(/[^A-Z0-9]/g,'');
-      var un=upper.replace(/[^A-Z0-9]/g,'');
-      return pn===un||(un.length>4&&(pn.includes(un)||un.includes(pn)));
+      var un=u.replace(/[^A-Z0-9]/g,'');
+      return pn===un||(un.length>4&&(pn.indexOf(un)>=0||un.indexOf(pn)>=0));
     });
     return found?found.n:null;
   }
 
-  // ── Sistema definitions with canonical names ──
-  var SISTEMAS=[
-    {keys:['hepática','hepatica','hígado','higado'],nombre:'Función Hepática',emoji:'🫀'},
-    {keys:['obesidad','metabolismo lipídico','lipidico','tejido adiposo','triglicéridos'],nombre:'Obesidad y Metabolismo',emoji:'⚖️'},
-    {keys:['cardiovascular','cerebrovasculares','colesterol cristal','elasticidad vascular','perfusión','miocardial'],nombre:'Cardiovascular y Cerebrovascular',emoji:'❤️'},
-    {keys:['gastrointestinal','peristalsis','absorción gástrica','intestino delgado'],nombre:'Función Gastrointestinal',emoji:'🫃'},
-    {keys:['vesícula','vesicula','biliares','biliar'],nombre:'Vesícula Biliar',emoji:'🟡'},
-    {keys:['pulmonar','pulmón','oxígeno arterial','paco2'],nombre:'Función Pulmonar',emoji:'🫁'},
-    {keys:['nervio cerebral','memoria','cerebral','neurol'],nombre:'Nervio Cerebral',emoji:'🧠'},
-    {keys:['ósea','osea','hiperplasia ósea','densidad mineral'],nombre:'Densidad Ósea',emoji:'🦴'},
-    {keys:['reumatoide','reumatoid','hueso reuma'],nombre:'Hueso Reumatoide',emoji:'🦴'},
-    {keys:['crecimiento óseo','recuperación de huesos'],nombre:'Índice de Crecimiento Óseo',emoji:'🦴'},
-    {keys:['glucosa','insulina','glucemia'],nombre:'Glucosa en Sangre',emoji:'💉'},
-    {keys:['oligoelementos','zinc'],nombre:'Oligoelementos',emoji:'⚗️'},
-    {keys:['coenzima','coenzyme q10'],nombre:'Coenzima',emoji:'⚡'},
-    {keys:['toxina','pesticidas','tóxicos'],nombre:'Toxinas',emoji:'☠️'},
-    {keys:['metales pesados','plomo','metal'],nombre:'Metales Pesados',emoji:'⚙️'},
-    {keys:['condición física','ph ','básica'],nombre:'Condición Física Básica',emoji:'🧪'},
-    {keys:['alergia','alergias','tintes'],nombre:'Alergias',emoji:'🤧'},
-    {keys:['piel','humectación','endurecimiento cutáneo'],nombre:'Piel',emoji:'🌸'},
-    {keys:['ojo','visual','colágeno de arrugas','fatiga visual'],nombre:'Ojo',emoji:'👁️'},
-    {keys:['colágeno','cabello y piel','tejido muscular'],nombre:'Colágeno',emoji:'✨'},
-  ];
+  // ── 1. Find the "Informe de sintesis" section (last 20% of text) ──
+  // This section has systems + expert tips + products — most valuable part
+  var sintesisIdx=texto.toUpperCase().indexOf('INFORME DE S');
+  // If not found, use full text
+  var sintesisText=sintesisIdx>0?texto.slice(sintesisIdx):texto;
+  var sLines=sintesisText.split('\n').map(function(l){return l.trim();});
 
-  function detectSistema(linea){
-    var l=linea.toLowerCase();
-    for(var i=0;i<SISTEMAS.length;i++){
-      for(var j=0;j<SISTEMAS[i].keys.length;j++){
-        if(l.includes(SISTEMAS[i].keys[j]))return SISTEMAS[i];
-      }
+  // ── 2. Extract sistemas from synthesis ──
+  var sistemas=[];
+  var currentSistema=null;
+  var urgCounter=0;
+
+  sLines.forEach(function(line){
+    if(!line||line.length<3)return;
+    // Detect sistema header (capitalized, no numbers)
+    if(line.match(/^(Funci[oó]n|[A-Z][a-z]+\s+[A-Z]|Cardiovascular|Obesidad|Nervio|Densidad|Enfermedad|Glucosa|Oligoelemento|Coenzima|Toxina|Metal|Condici[oó]n|Alergia|Piel|Ojo|Col[aá]geno)/)){
+      currentSistema=line.replace(/Consejos.*$/,'').trim();
     }
-    return null;
-  }
-
-  // ── Parse the report line by line ──
-  var lineas=texto.split('\n');
-  var currentSis=null;
-  var inConsejos=false;
-  var sistemaData={};  // {nombre: {prods:[], consejo:'', valores:[], emoji:''}}
-
-  lineas.forEach(function(linea){
-    var l=linea.trim();
-    if(!l)return;
-
-    // Detect new sistema
-    var sis=detectSistema(l);
-    if(sis&&l.length<80&&!l.includes('V-')&&!l.includes('Consuma')){
-      currentSis=sis;
-      inConsejos=false;
-      if(!sistemaData[sis.nombre]){
-        sistemaData[sis.nombre]={prods:[],consejo:'',valores:[],emoji:sis.emoji,nombre:sis.nombre};
-      }
-      return;
-    }
-
-    if(!currentSis)return;
-    var d=sistemaData[currentSis.nombre];
-
-    // Detect "Consejos de Experto" section
-    if(l.toLowerCase().includes('consejos de experto')||l.toLowerCase().includes('consejos de')){
-      inConsejos=true;
-      return;
-    }
-
-    if(inConsejos){
-      // Extract products from this line
-      // Match patterns: V-PROD, PROD, multiple products separated by commas
-      var prodPattern=/([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ0-9\s\-]{2,}(?:\s[A-Z0-9]+)*)/g;
-      var matches=l.match(prodPattern)||[];
-      matches.forEach(function(m){
-        var parts=m.split(/[,;]+/);
-        parts.forEach(function(p){
-          p=p.trim();
-          if(p.length<2)return;
-          var matched=matchProd(p);
-          if(matched&&!d.prods.includes(matched))d.prods.push(matched);
-        });
+    // Detect measurement rows with values out of range
+    var parts=line.split(/\s{2,}|-\s+/).map(function(p){return p.trim();}).filter(Boolean);
+    if(parts.length>=3){
+      var lastNum=parseFloat(parts[parts.length-1].replace(',','.'));
+      var rangeNums=[];
+      parts.slice(0,-1).forEach(function(p){
+        var n=parseFloat(p.replace(',','.'));
+        if(!isNaN(n))rangeNums.push(n);
       });
-      // Save consejo text (non-product lines)
-      if(!l.match(/^[A-Z\-,\s]+$/)&&!l.includes('Page ')&&l.length>20){
-        if(!d.consejo)d.consejo=l;
-      }
-    } else {
-      // Extract numeric values
-      var nums=l.match(/\d+[,\.]\d+/g);
-      if(nums&&nums.length>=1&&d.valores.length<3){
-        d.valores=d.valores.concat(nums.slice(0,3));
+      if(!isNaN(lastNum)&&rangeNums.length>=2){
+        var rMin=Math.min(rangeNums[0],rangeNums[1]);
+        var rMax=Math.max(rangeNums[0],rangeNums[1]);
+        var isOut=lastNum<rMin*0.9||lastNum>rMax*1.1;
+        if(isOut&&currentSistema){
+          urgCounter++;
+          var urgencia=urgCounter<=5?'alta':urgCounter<=12?'media':'baja';
+          sistemas.push({
+            num:urgCounter,
+            sistema:currentSistema,
+            detectado:parts[0]+' — Valor: '+lastNum+' (rango '+rMin+'-'+rMax+')',
+            significado:'Parámetro fuera del rango normal. Requiere atención.',
+            urgencia:urgencia,
+            nivel:urgencia==='alta'?'alto':urgencia==='media'?'medio':'bajo'
+          });
+        }
       }
     }
   });
 
-  // ── Build hallazgos and sistemas_carrito ──
-  var hallazgos=[];
-  var sistemasCarrito=[];
-  var todosProdsOrdenados=[];
-
-  Object.values(sistemaData).forEach(function(d){
-    if(!d.prods.length)return;
-
-    // Determine severity from values if available
-    var nivel='medio';
-    if(d.valores.length>=2){
-      // Simple heuristic: if value is far from range, mark as alto
-      nivel='medio';
+  // ── 3. Extract products from "Consejos de Experto" lines ──
+  var prodRecomendados=[];
+  var seen={};
+  lines.forEach(function(line){
+    var m=line.match(/Consejos de Experto[:\s]+(.+)/i);
+    if(!m)m=line.match(/V-[A-Z]+|TÉ DETOX|ORGANEX|OMEGA|CURCUMAX|KETOCAF/gi)?null:null;
+    if(m){
+      var prods=m[1].replace(/\.\s*$/,'');
+      // Split by comma, also handle "V-TADOL-V-COLLAGEN" patterns
+      prods=prods.replace(/([A-Z])-V-/g,'$1,V-');
+      prods.split(/[,\s]+/).forEach(function(raw){
+        var p=raw.trim();
+        if(p.length>3){
+          var matched=matchProd(p);
+          if(matched&&!seen[matched]){
+            seen[matched]=true;
+            prodRecomendados.push({nombre:matched,descripcion:p});
+          }
+        }
+      });
     }
-
-    hallazgos.push({
-      sistema:d.emoji+' '+d.nombre,
-      hallazgo:d.valores.length?'Valores: '+d.valores.slice(0,3).join(' / '):'Parámetros alterados',
-      nivel:nivel,
-      consejo:d.consejo
-    });
-
-    sistemasCarrito.push({
-      sistema:d.emoji+' '+d.nombre,
-      descripcion_corta:d.consejo?d.consejo.slice(0,120)+'...':'Parámetros fuera del rango normal',
-      nivel:nivel,
-      productos_recomendados:d.prods
-    });
-
-    d.prods.forEach(function(p){
-      if(!todosProdsOrdenados.includes(p))todosProdsOrdenados.push(p);
-    });
   });
 
-  // ── Score products by number of systems they appear in ──
-  var prodScore={};
-  sistemasCarrito.forEach(function(sis){
-    sis.productos_recomendados.forEach(function(p){
-      prodScore[p]=(prodScore[p]||0)+1;
-    });
-  });
-  // Sort by frequency
-  todosProdsOrdenados.sort(function(a,b){return (prodScore[b]||0)-(prodScore[a]||0);});
-
-  // ── Filter by age ──
-  var edad=parseInt(c.age)||0;
-  var esNino=edad>0&&edad<18;
-  var PRODS_NINOS=['Genius Shake','D Fence','Smartbiotics'];
-  var prodsValidos=todosProdsOrdenados.filter(function(n){
-    return esNino?PRODS_NINOS.includes(n):!PRODS_NINOS.includes(n);
+  // ── 4. Extract recommendations ──
+  var recsAlim=[],recsVida=[];
+  var inAlim=false,inVida=false;
+  lines.forEach(function(line){
+    if(line.match(/ALIMENTACI[OÓ]N/i))inAlim=true;
+    if(line.match(/ESTILO DE VIDA/i)){inAlim=false;inVida=true;}
+    if(line.match(/PRODUCTOS|PROTOCOLO|RECOMENDADOS/i)){inAlim=false;inVida=false;}
+    var b=line.match(/^[-•]\s*(.+)/);
+    if(b){
+      if(inAlim&&recsAlim.length<7)recsAlim.push(b[1]);
+      else if(inVida&&recsVida.length<7)recsVida.push(b[1]);
+    }
   });
 
-  // ── Precio fix — use catalog price ──
-  function getPrecioReal(nombre){
-    var override=prices&&prices[nombre];
-    if(override&&override.regular)return override.regular;
-    if(override&&override.promo)return override.promo;
-    var p=PP.find(function(x){return x.n===nombre;});
-    return p?(p.precio||p.price||650):650;
-  }
+  // ── 5. Build summary ──
+  var topSis=sistemas.slice(0,5).map(function(s){return s.sistema;}).join(', ');
+  var resumen='Analisis biocuantico de '+c.name+' revela alteraciones en '+
+    (sistemas.length||'varios')+' sistemas';
+  if(topSis)resumen+=', incluyendo: '+topSis;
+  resumen+='. Se recomienda protocolo personalizado de suplementacion con enfasis en desintoxicacion hepatica, soporte metabolico y regeneracion celular.';
 
-  function makeProds(lista){
-    var seen={};
-    return lista.filter(function(n){
-      if(seen[n])return false;
-      seen[n]=true;return true;
-    }).map(function(nombre){
-      var p=PP.find(function(x){return x.n===nombre;});
-      // Find which sistemas this product addresses
-      var sisAfectados=sistemasCarrito
-        .filter(function(s){return s.productos_recomendados.includes(nombre);})
-        .map(function(s){return s.sistema;});
+  // ── 6. Build packages ──
+  var baseProd=[
+    {nombre:'V-Organex',descripcion:'Base del protocolo — desintoxicacion hepatica'},
+    {nombre:'Té Detox',descripcion:'Limpieza del organismo y mejora de absorcion'}
+  ];
+  var restProds=prodRecomendados.filter(function(p){
+    return p.nombre!=='V-Organex'&&p.nombre!=='Té Detox';
+  });
+  var allOrdered=baseProd.concat(restProds);
+
+  function buildPkgProds(prods,max){
+    return prods.slice(0,max).map(function(p){
+      var pp2=PP.find(function(x){return x.n===p.nombre;});
       return{
-        nombre:nombre,
-        razon_clinica:'Recomendado para: '+sisAfectados.slice(0,2).join(', ')+(sisAfectados.length>2?' y más':''),
-        dosis:p&&p.d?p.d:'Según indicaciones del producto',
-        resultado_esperado:p&&p.b?p.b[0]||'Mejoría progresiva':'Mejoría progresiva',
-        precio:getPrecioReal(nombre),
-        sistemas_atacados:sisAfectados
+        nombre:p.nombre,
+        razon_clinica:p.descripcion||((pp2&&pp2.pa&&pp2.pa[0])||'Apoyo al organismo'),
+        dosis:(pp2&&pp2.d)||'Segun indicaciones',
+        resultado_esperado:(pp2&&pp2.b&&pp2.b[0])||'Mejora del sistema'
       };
     });
   }
 
-  // Build packages — no duplicates, price limit for completo
-  var MAX_PRICE=5555;
-  var basicoList=prodsValidos.slice(0,3);
-  var esencialList=prodsValidos.slice(0,Math.min(5,prodsValidos.length));
-  var completoList=[];
-  var totalCompleto=0;
-  for(var i=0;i<prodsValidos.length&&completoList.length<8;i++){
-    var pr=getPrecioReal(prodsValidos[i]);
-    if(totalCompleto+pr<=MAX_PRICE){completoList.push(prodsValidos[i]);totalCompleto+=pr;}
-  }
-  if(!completoList.length)completoList=prodsValidos.slice(0,6);
-
-  // Justifications with system counts
-  var nSis=hallazgos.length;
-  var basicoSis=new Set();basicoList.forEach(function(p){(prodScore[p]||0);sistemasCarrito.forEach(function(s){if(s.productos_recomendados.includes(p))basicoSis.add(s.sistema);});});
-  var esencialSis=new Set();esencialList.forEach(function(p){sistemasCarrito.forEach(function(s){if(s.productos_recomendados.includes(p))esencialSis.add(s.sistema);});});
-  var completoSis=new Set();completoList.forEach(function(p){sistemasCarrito.forEach(function(s){if(s.productos_recomendados.includes(p))completoSis.add(s.sistema);});});
-
-  // Food plan
-  var chkAliment=document.getElementById('chkAliment');
-  var alimentHabitos=document.getElementById('alimentHabitos');
-  var incluirAliment=chkAliment&&chkAliment.checked;
-  var habitosText=incluirAliment&&alimentHabitos?alimentHabitos.value.trim():'';
-  var planAlim=null;
-  if(incluirAliment){
-    // Build specific plan based on systems found
-    var comer=['Verduras frescas variadas (brócoli, espinaca, zanahoria)','Proteína magra (pollo, pescado, huevo)','Frutas ricas en vitamina C (limón, naranja, kiwi)','Aceite de oliva extra virgen','Leguminosas (lenteja, garbanzo)','Frutos secos (nuez, almendra)'];
-    var evitar=['Alimentos fritos y empanizados','Azúcares refinados y refrescos','Alcohol y tabaco','Alimentos procesados y enlatados','Exceso de sal','Grasas trans (margarina, comida rápida)'];
-    if(hallazgos.find(function(h){return h.sistema.includes('Glucosa');})){
-      comer.push('Pan integral en lugar de blanco');
-      evitar.unshift('Pan blanco, tortillas de harina, arroz blanco');
-    }
-    if(hallazgos.find(function(h){return h.sistema.includes('Hepática');})){
-      evitar.push('Alimentos muy picantes y condimentados');
-    }
-    planAlim={
-      comer:comer,evitar:evitar,
-      tips:[
-        habitosText?'Tomando en cuenta tus hábitos ('+habitosText+'), prioriza los cambios graduales':'Come despacio y mastica bien cada bocado',
-        'Toma al menos 2 litros de agua al día, preferiblemente en ayunas',
-        'Haz 5 comidas pequeñas en lugar de 3 grandes',
-        'Prefiere alimentos orgánicos y frescos cuando sea posible',
-        'Los suplementos recomendados potencian los resultados de la alimentación'
-      ]
-    };
-  }
-
-  var resumen='Se identificaron '+nSis+' sistemas con parámetros fuera del rango normal en el Escáner BioCuántico de '+c.name+'.'
-    +(nSis?' Los principales sistemas afectados son: '+hallazgos.slice(0,4).map(function(h){return h.sistema;}).join(', ')+'.'  :'')
-    +' Se encontraron '+prodsValidos.length+' productos VitalHealth recomendados. Los paquetes han sido organizados por prioridad y frecuencia de recomendación en el reporte.';
-
   return{
-    paciente:c.name,edad:c.age||'',
-    sexo:c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':'',
-    fecha:new Date().toLocaleDateString('es-MX'),
-    tipo_analisis:'Escáner BioCuántico VitalHealth',
-    hallazgos_criticos:hallazgos,
+    paciente:c.name,
+    edad:c.age||'',
+    sexo:sexLbl2,
+    fecha:today,
+    tipo_analisis:'Sintesis de Analisis BioCuantico de VitalHealth',
     resumen_clinico:resumen,
-    sistemas_carrito:sistemasCarrito,
-    plan_alimenticio:planAlim,
+    sistemas_afectados:sistemas,
+    hallazgos_criticos:sistemas.map(function(s){return{sistema:s.sistema,hallazgo:s.detectado,nivel:s.nivel||'medio'};}),
+    recomendaciones_alimentacion:recsAlim,
+    recomendaciones_vida:recsVida,
     paquetes:{
       basico:{
-        productos:makeProds(basicoList),
-        justificacion:'Los '+basicoList.length+' productos con mayor presencia en el reporte. Atacan '+basicoSis.size+' de los '+nSis+' sistemas afectados. Ideal para iniciar el protocolo sin saturar el organismo.'
+        productos:buildPkgProds(allOrdered,4),
+        justificacion:'Primer paso esencial. Los 4 productos de mayor prioridad para iniciar el protocolo.',
+        sistemas_cubiertos:sistemas.slice(0,3).map(function(s){return s.sistema;})
       },
       esencial:{
-        productos:makeProds(esencialList),
-        justificacion:'Protocolo de '+esencialList.length+' productos que cubre '+esencialSis.size+' sistemas afectados. Balance óptimo entre resultados y costo.'
+        productos:buildPkgProds(allOrdered,8),
+        justificacion:'Cobertura completa. Proteccion profunda de todos los sistemas criticos detectados.',
+        sistemas_cubiertos:sistemas.slice(0,6).map(function(s){return s.sistema;})
       },
       completo:{
-        productos:makeProds(completoList),
-        justificacion:'Protocolo integral de '+completoList.length+' productos cubriendo '+completoSis.size+' sistemas (total máx $5,555 MXN). Máxima cobertura según el escáner.'
+        productos:buildPkgProds(allOrdered,Math.min(allOrdered.length,14)),
+        justificacion:'Protocolo integral 360 grados. Maxima proteccion y regeneracion celular.',
+        sistemas_cubiertos:sistemas.map(function(s){return s.sistema;})
       }
     }
   };
