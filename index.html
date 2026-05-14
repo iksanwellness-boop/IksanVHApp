@@ -3610,6 +3610,46 @@ REGLAS:
 // PARAM_TABLE — 184 parámetros del escáner
 // Clave: nombre en minúsculas  |  .d=display .s=section .a=si_alto .b=si_bajo .t=sistemas
 // ═══════════════════════════════════════════════════════════════
+// ═══ RANGE_TABLE: range key → [display, section, si_alto, si_bajo, sistemas] ═══
+var RANGE_TABLE={
+  "0.097_0.419":["Contenido de Grasa en el Hígado","Función Hepática","El hígado acumula grasa en exceso (hígado graso); riesgo de daño hepático crónico.","Grasa hepática baja; puede indicar déficit de lípidos esenciales.",["hígado", "grasa", "desintoxicación"]],
+  "1.992_3.713":["Metabolismo Lipídico","Obesidad","Metabolismo de grasas acelerado en exceso.","El cuerpo no procesa bien las grasas; favorece sobrepeso y acumulación.",["obesidad", "metabolismo", "grasa", "triglicéridos"]],
+  "56.749_67.522":["Cristal de Colesterol","Cardiovascular","Colesterol elevado; mayor riesgo de obstrucción arterial e infarto.","Colesterol bajo; puede afectar producción hormonal.",["colesterol", "cardiovascular", "arterias"]],
+  "1.672_1.978":["Elasticidad Vascular","Cardiovascular","Vasos sanguíneos tensos; riesgo de hipertensión.","Vasos sanguíneos rígidos; mayor riesgo de arteriosclerosis.",["cardiovascular", "vasos", "circulación", "presión"]],
+  "4.832_5.147":["Perfusión Sanguínea Cardíaca","Cardiovascular","El corazón recibe más sangre de la necesaria; posible sobrecarga.","El corazón recibe menos sangre; riesgo de isquemia cardíaca.",["corazón", "cardiovascular", "oxígeno", "circulación"]],
+  "3.321_4.244":["Consumo de Oxígeno Miocardial","Cardiovascular","El corazón consume más oxígeno del necesario; señal de sobrecarga cardíaca.","El corazón consume poco oxígeno; función cardíaca reducida.",["corazón", "oxígeno", "cardiovascular"]],
+  "58.425_61.213":["Peristalsis Gástrica","Gastrointestinal","Movimientos gástricos muy rápidos; mala absorción y diarrea.","Movimientos gástricos lentos; digestión lenta y distensión.",["digestión", "estómago", "absorción"]],
+  "34.367_35.642":["Absorción Gástrica","Gastrointestinal","Absorción gástrica excesiva; posible irritación de mucosa.","El estómago no absorbe bien los nutrientes; déficit nutricional.",["absorción", "estómago", "digestión"]],
+  "3.572_6.483":["Absorción del Intestino Delgado","Gastrointestinal","Absorción intestinal excesiva.","El intestino no absorbe bien; déficit de vitaminas y minerales.",["intestino", "absorción", "digestión"]],
+  "0.317_0.695":["Ácidos Biliares Totales (TBA)","Vesícula Biliar","La vesícula no drena correctamente; riesgo de cálculos y acumulación de bilis.","Producción insuficiente de bilis; digestión de grasas deficiente.",["vesícula", "bilis", "digestión", "hígado"]],
+  "17.903_21.012":["Oxígeno Arterial (PaCO2)","Función Pulmonar","Exceso de CO2 en sangre; el pulmón no ventila bien, respiración forzada.","Oxígeno arterial bajo; dificultad respiratoria o anemia.",["pulmón", "oxígeno", "respiración"]],
+  "0.442_0.817":["Índice de Memoria (ZS)","Nervio Cerebral","Actividad cerebral elevada; puede indicar ansiedad o estrés crónico.","Memoria y concentración reducidas; riesgo de deterioro cognitivo.",["cerebro", "memoria", "concentración", "sistema nervioso"]],
+  "0.046_0.167":["Grado de Hiperplasia Ósea","Hueso Reumatoide","Crecimiento óseo anormal; señal de inflamación crónica articular.","Remodelación ósea insuficiente; pérdida de densidad.",["huesos", "articulaciones", "inflamación", "calcio"]],
+  "2.954_5.543":["Hiperplasia Ósea Reumatoide","Hueso Reumatoide","Inflamación articular severa; riesgo de desgaste y deformación ósea.","Regeneración ósea baja; riesgo de fragilidad.",["huesos", "articulaciones", "reumatismo", "inflamación"]],
+  "0.713_0.992":["Coeficiente de Osteoporosis","Hueso Reumatoide","Alta pérdida de densidad ósea; riesgo elevado de fracturas.","Densidad ósea adecuada.",["huesos", "calcio", "densidad ósea"]],
+  "2.163_7.321":["Glucosa en Sangre","Glucosa","Nivel de azúcar elevado; precursor de diabetes tipo 2.","Azúcar baja (hipoglucemia); mareos y fatiga.",["glucosa", "azúcar", "diabetes", "metabolismo", "insulina"]],
+  "1.143_1.989":["Zinc","Oligoelementos","Exceso de zinc; interfiere con absorción de cobre.","Déficit de zinc; afecta sistema inmune, cicatrización, piel y cabello.",["zinc", "inmunidad", "piel", "cicatrización", "cabello"]],
+  "0.831_1.588":["Coenzima Q10","Coenzimas","CoQ10 elevada; generalmente sin riesgo.","Déficit de CoQ10; falta de energía celular. Corazón y músculos más afectados.",["energía", "coenzima", "corazón", "músculo", "fatiga"]],
+  "0.013_0.313":["Residuos de Pesticidas","Toxinas","Pesticidas acumulados; sobrecargan hígado, riñones y sistema nervioso.","Dentro del rango seguro.",["toxinas", "hígado", "riñón", "desintoxicación"]],
+  "0.052_0.643":["Plomo (Pb)","Metales Pesados","Plomo elevado en sangre; daña el sistema nervioso, riñones y produce anemia.","Dentro del rango seguro.",["metales pesados", "riñón", "sistema nervioso", "toxinas", "desintoxicación"]],
+  "3.156_3.694":["pH Sanguíneo","Condición Física","pH alcalino; puede causar calambres y mareos.","pH ácido (acidosis); el cuerpo trabaja con menos oxígeno y más inflamación.",["ph", "acidez", "metabolismo", "riñón"]],
+  "0.717_1.486":["Alergia a Tintes de Cabello","Alergias","Alta sensibilidad a tintes; riesgo de reacciones cutáneas severas (dermatitis).","Sin sensibilidad significativa a tintes.",["alergias", "piel", "cabello"]],
+  "1.341_1.991":["Triglicéridos","Obesidad","Triglicéridos muy altos; sobrecarga el corazón e hígado, favorece obesidad.","Triglicéridos bajos; puede indicar malnutrición.",["triglicéridos", "corazón", "hígado", "obesidad"]],
+  "2.791_4.202":["Tejido Adiposo Marrón","Obesidad","Exceso de grasa activa; altera el metabolismo energético.","Poca grasa parda activa; metabolismo lento, acumulación de grasa.",["metabolismo", "grasa", "obesidad", "energía"]],
+  "2.214_4.158":["Pérdida de Humectación Cutánea","Piel","La piel pierde agua rápidamente; piel seca y envejecimiento acelerado.","Hidratación cutánea adecuada.",["piel", "colágeno", "hidratación", "envejecimiento"]],
+  "0.842_1.858":["Índice de Endurecimiento Cutáneo","Piel","La piel se endurece y pierde elasticidad; envejecimiento acelerado.","Elasticidad cutánea adecuada.",["piel", "colágeno", "elastina"]],
+  "2.031_3.107":["Colágeno — Cabello y Piel","Colágeno","Nivel elevado; generalmente favorable.","Déficit de colágeno en piel y cabello; piel sin brillo y cabello frágil.",["colágeno", "piel", "cabello", "envejecimiento"]],
+  "2.017_5.157":["Fatiga Visual","Ojo","Los ojos están bajo mucho estrés; riesgo de deterioro de la visión sin atención.","Fatiga ocular dentro del rango normal.",["ojo", "visión", "fatiga", "pantallas"]],
+  "4.533_6.179":["Colágeno — Piel (dermis)","Colágeno","Nivel elevado; generalmente favorable.","Déficit de colágeno dérmico; piel sin firmeza y sin brillo.",["colágeno", "piel", "arrugas", "flacidez"]],
+  "6.552_8.268":["Colágeno — Tejido Muscular","Colágeno","Nivel elevado; favorable.","Déficit de colágeno muscular; pérdida de masa y tono muscular.",["colágeno", "músculo", "fuerza", "proteínas"]],
+  "6.338_8.368":["Colágeno — Metabolismo de Grasas","Colágeno","Metabolismo graso acelerado.","Déficit en soporte metabólico del colágeno; favorece acumulación de grasa.",["colágeno", "metabolismo", "grasa", "obesidad"]]
+};
+
+function lookupByRange(rmin,rmax){
+  var k=Math.round(rmin*1000)/1000+'_'+Math.round(rmax*1000)/1000;
+  return RANGE_TABLE[k]||null;
+}
+
 var PARAM_TABLE={
   "cristal de colesterol":{d:"Cristal de Colesterol",s:"Cardiovascular",a:"Colesterol elevado en sangre; mayor riesgo de obstrucción arterial e infarto.",b:"Colesterol bajo; puede afectar producción hormonal y función celular.",t:["colesterol", "cardiovascular", "arterias", "corazón"]},
   "elasticidad vascular":{d:"Elasticidad Vascular",s:"Cardiovascular",a:"Vasos sanguíneos tensos o dilatados; riesgo de hipertensión.",b:"Vasos sanguíneos rígidos; mayor riesgo de presión alta y arteriosclerosis.",t:["cardiovascular", "vasos", "circulación", "presión"]},
@@ -3863,7 +3903,7 @@ function parsearReporteBiocuantico(texto,c){
     'V-ITALIX':'V-Italix','VITALIX':'V-Italix',
     'NITRO':'V-Nitro','V-NITRO':'V-Nitro',
     'VITAREN':'V-Itaren','V-ITAREN':'V-Itaren',
-    'V-FORTIFLORA':'V-FortyFlora','FORTYFLORA':'V-FortyFlora','V-FORTYFLORA':'V-FortyFlora',
+    'V-FORTIFLORA':'V-FortyFlora','FORTYFLORA':'V-FortyFlora',
     'V-CONTROL':'V-Control',
     'V-ITALPRO':'VitalPro','VITALPRO':'VitalPro','V-TALPRO':'VitalPro',
     'V-THERMOKAFE':'Thermokafe','THERMOKAFE':'Thermokafe',
@@ -3880,9 +3920,7 @@ function parsearReporteBiocuantico(texto,c){
     'V-ITALBOOST':'V-Italboost','ITALBOOST':'V-Italboost',
     'V-TADOL':'V-Itadol','VITADOL':'V-Itadol',
     'V-TALBOOST':'V-Italboost',
-    'V-ITAREN':'V-Itaren',
   };
-
   function normProd(raw){
     var u=raw.trim().toUpperCase().replace(/[.,;*()\r\n]/g,'').replace(/\s+/g,' ').trim();
     if(PM[u])return PM[u];
@@ -3895,304 +3933,96 @@ function parsearReporteBiocuantico(texto,c){
     return found?found.n:null;
   }
 
-  // ── Section keywords ──
-  var SIST_KW=[
-    'Función hepática','Función Hepática',
-    'Cardiovasculares y Cerebrovasculares','Cardiovasculares',
-    'Función Gastrointestinal','Función del Intestino Grueso',
-    'Función de la Vesícula Biliar',
-    'Función Pancreática','Función Renal','Función Pulmonar',
-    'Nervio Cerebral','Padecimientos Óseos','Densidad Mineral Ósea',
-    'Enfermedad de Hueso Reumatoide','Índice de crecimiento óseo',
-    'Glucosa en la sangre','Oligoelementos','Vitamina','Aminoácidos',
-    'Coenzima','Ácido graso esencial','Sistema Endocrino',
-    'Sistema Inmunológico','Tiroides','Toxina Humana','Metales Pesados',
-    'Condición Física Básica','Alergias','Obesidad','Piel','Ojo','Colágeno',
-    'Lípidos Sanguíneos','Lipidos Sanguineos','Ginecología','Senos',
-    'Cyclo Menstrual','Hormona Femenina','Meridianos','Pulso Cerebro',
-  ];
-
-  function isSistema(line){
-    return SIST_KW.some(function(k){
-      return line===k||line.toLowerCase()===k.toLowerCase()||
-             line.toLowerCase().indexOf(k.toLowerCase())===0;
-    });
-  }
-
-  var reRange=/^(\d+)[,.](\d+)\s*[-–]\s*(\d+)[,.](\d+)$/;
-  var reVal=/^(\d+)[,.](\d+)$/;
-  var reNoise=/^(Sistema|Objeto Analizado|Rango Normal|Valor Obtenido|Objeto$|Analizado$|Informe de|Nombre:|Complexi[oó]n:|Sexo:|Edad:|Fecha|Page\s+\d|Página\s+\d|Acerca de|Los resultados|Resultado del|Análisis Biocuántico|Análisis BioCuántico|Informe de prueba|Informe de síntesis|Descripción de los)$/i;
-  var reConsejos=/^Consejos(\s+de)?(\s+Experto)?\.?$/i;
-  var reProdToken=/^(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX|CURCUMAX|OMEGA\b|NITRO\b|VITAREN|VITALPRO|FORTYFLORA|GLUTATION|VITALIX|VITALAGE|VITAX|KETOCAFÉ|KETOCAFE|THERMOKAFE)/i;
-
-  // ── Extract synthesis section ──
+  // ── Extract patient info ──
   var sintIdx=texto.search(/informe de s[ií]ntesis/i);
   var workText=sintIdx>=0?texto.slice(sintIdx):texto;
-
-  // ── Extract patient info ──
   var nombreM=workText.match(/Nombre:\s*([A-Za-záéíóúÁÉÍÓÚñÑ][A-Za-záéíóúÁÉÍÓÚñÑ\s]+)/i);
   var complexM=workText.match(/Complexi[oó]n[^:\n]*:\s*([^\n]+)/i);
   var edadM=workText.match(/Edad[^:\n]*:\s*(\d+)/i);
   var sexoM=workText.match(/Sexo[^:\n]*:\s*([^\n]+)/i);
   var fechaM=workText.match(/Fecha[^:\n]*:\s*([^\n]+)/i);
 
-  // ── Build lines ──
-  var rawLines=workText.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  // ── Core: scan ALL lines for range→value pairs using RANGE_TABLE ──
+  var lines=workText.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  var reRange=/^(\d+)[,.](\d+)\s*[-–]\s*(\d+)[,.](\d+)$/;
+  var reVal=/^(\d+)[,.](\d+)$/;
+  var reProd=/(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|VITAREN\b|VITALPRO\b|FORTYFLORA\b|GLUTATION\b|VITALIX\b|VITALAGE\b|VITAX\b|KETOCAFÉ\b|KETOCAFE\b|THERMOKAFE\b)/gi;
 
-  // Join broken system names (2 consecutive short lines forming a known system)
-  var lines=[];
-  var i=0;
-  while(i<rawLines.length){
-    var line=rawLines[i];
-    if(i+1<rawLines.length){
-      var combined=line+' '+rawLines[i+1];
-      if(isSistema(combined)&&!isSistema(line)){
-        lines.push(combined);
-        i+=2;continue;
-      }
-    }
-    lines.push(line);
-    i++;
-  }
-
-  // ── Parse blocks ──
-  var blocks=[];   // [{sistema, params:[{nombre,rmin,rmax,valor,dir,urg}], prods:[]}]
-  var curBlock=null;
-  var paramBuf=[];
-  var pendingRmin=null,pendingRmax=null;
-  var inConsejos=false;
-  var consejoLines=[];
-
-  function flushParam(valStr){
-    if(!curBlock||pendingRmin===null)return;
-    var m=valStr.match(/^(\d+)[,.](\d+)$/);
-    if(!m)return;
-    var val=parseFloat(m[1]+'.'+m[2]);
-    var isOut=val<pendingRmin*0.95||val>pendingRmax*1.05;
-    if(isOut){
-      var pname=paramBuf.join(' ').trim();
-      // Clean param name: remove product tokens, advice, page markers
-      pname=pname.replace(/V-[A-ZÁÉÍÓÚ\-]+/gi,'')
-                 .replace(/Page\s+\d+[^\n]*/gi,'')
-                 .replace(/Informe de[^\n]*/gi,'')
-                 .replace(/Nombre:[^\n]*/gi,'')
-                 .replace(/Consuma[^\n]*/gi,'')
-                 .replace(/Evite[^\n]*/gi,'')
-                 .replace(/Tenga[^\n]*/gi,'')
-                 .replace(/Por favor[^\n]*/gi,'')
-                 .replace(/\s{2,}/g,' ').trim();
-      if(pname.length>3){
-        var dir=val>pendingRmax?'alto':'bajo';
-        var pct=dir==='alto'?(val-pendingRmax)/pendingRmax:(pendingRmin-val)/pendingRmin;
-        var urg=pct>0.35?'alta':'media';
-        // ── Lookup from PARAM_TABLE ──
-        var info=lookupParam(pname);
-        var displayName=info?info.d:pname;
-        var sig=info?(dir==='alto'?info.a:info.b):'Parámetro fuera del rango saludable.';
-        var sistemas=info?info.t:[];
-        curBlock.params.push({
-          nombre:pname,
-          display:displayName,
-          rmin:pendingRmin,rmax:pendingRmax,valor:val,
-          dir:dir,urgencia:urg,
-          sig:sig,
-          sistemas:sistemas
-        });
-      }
-    }
-    paramBuf=[];
-    pendingRmin=pendingRmax=null;
-  }
-
-  function extractProds(line){
-    if(!curBlock)return;
-    // Split by comma or space, try each token
-    var tokens=line.split(/[,\s]+/);
-    var i2=0;
-    while(i2<tokens.length){
-      var tok=tokens[i2].replace(/[.;*#]/g,'').trim();
-      // Handle "V-OMEGA 3" as two tokens
-      if(tok.toUpperCase()==='V-OMEGA'&&i2+1<tokens.length&&tokens[i2+1]==='3'){
-        tok='V-OMEGA 3';i2++;
-      }
-      if(tok.toUpperCase()==='TÉ'&&i2+1<tokens.length&&tokens[i2+1].toUpperCase()==='DETOX'){
-        tok='TÉ DETOX';i2++;
-      }
-      if(tok.length>2){
-        var norm=normProd(tok);
-        if(norm&&curBlock.prods.indexOf(norm)<0)curBlock.prods.push(norm);
-      }
-      i2++;
-    }
-  }
-
-  i=0;
-  while(i<lines.length){
-    var line=lines[i];
-
-    // Skip noise
-    if(reNoise.test(line)||line.length<2){i++;continue;}
-
-    // Detect "Consejos de Experto"
-    if(reConsejos.test(line)||(line==='Consejos'&&i+1<lines.length&&/^de(\s+Experto)?$/i.test(lines[i+1]))){
-      inConsejos=true;
-      consejoLines=[];
-      paramBuf=[];
-      if(line==='Consejos')i++;
-      i++;continue;
-    }
-
-    if(inConsejos){
-      var isRng=reRange.test(line);
-      var isVl=reVal.test(line)&&pendingRmin!==null;
-      var isSist=isSistema(line);
-      // Product line detection: starts with V- or known product name
-      var hasProd=/(V-[A-ZÁÉÍÓÚÜ]|TÉ DETOX|TE DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|VITAREN\b|VITALPRO\b|FORTYFLORA\b|GLUTATION\b|VITALIX\b|VITALAGE\b|VITAX\b|KETOCAFÉ\b|KETOCAFE\b|THERMOKAFE\b)/i.test(line);
-      if(hasProd){
-        extractProds(line);
-        // Peek next line — might continue products
-        if(i+1<lines.length&&/(V-[A-ZÁÉÍÓÚÜ]|TÉ DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|KETOCAFÉ\b)/i.test(lines[i+1])&&!reRange.test(lines[i+1])&&!isSistema(lines[i+1])){
-          i++;extractProds(lines[i]);
-        }
-        inConsejos=false;paramBuf=[];
-        i++;continue;
-      }
-      if(isRng||isVl||isSist){inConsejos=false;continue;}
-      consejoLines.push(line);
-      i++;continue;
-    }
-
-    // New system
-    if(isSistema(line)){
-      curBlock={sistema:line,params:[],prods:[]};
-      blocks.push(curBlock);
-      paramBuf=[];pendingRmin=pendingRmax=null;inConsejos=false;
-      i++;continue;
-    }
-
-    // Range
-    if(reRange.test(line)){
-      var rm=line.match(reRange);
-      pendingRmin=parseFloat(rm[1]+'.'+rm[2]);
-      pendingRmax=parseFloat(rm[3]+'.'+rm[4]);
-      i++;continue;
-    }
-
-    // Value
-    if(reVal.test(line)&&pendingRmin!==null){
-      flushParam(line);
-      i++;continue;
-    }
-
-    // Accumulate param name
-    if(curBlock&&!inConsejos&&pendingRmin===null){
-      // Hard reset on any noise pattern
-      var isJunk=(
-        /^Page\s+\d+/i.test(line)||
-        /^Informe de/i.test(line)||
-        /^Nombre:/i.test(line)||
-        /^Acerca de/i.test(line)||
-        /^Los resultados/i.test(line)||
-        /^Resultado del/i.test(line)||
-        /(Consuma|Evite|Tome |Beba |Aumente|Reduzca|Tenga |Preste |Combine|Por favor|Practique|Disminuya|Permanezca)/i.test(line)||
-        line.length>80||
-        isSistema(line)
-      );
-      if(isJunk){
-        // Extract products from advice lines before resetting
-        if(/(V-[A-ZÁÉÍÓÚ]|TÉ DETOX|ORGANEX|CURCUMAX|OMEGA|NITRO|KETOCAFÉ|VITALIX|GLUTATION)/i.test(line)){
-          extractProds(line);
-        }
-        paramBuf=[];
-      } else {
-        paramBuf.push(line);
-      }
-    }
-    i++;
-  }
-
-  // ── Build sistemas_afectados ──
-  // Collect all active systems for product filtering
-  var activeSystemsList=[];
-  var sistemas=[];
-  var seenParams={};
-
-  blocks.forEach(function(b){
-    b.params.forEach(function(p){
-      var key=p.display.toLowerCase();
-      if(seenParams[key])return;
-      seenParams[key]=true;
-      p.sistemas.forEach(function(s){if(activeSystemsList.indexOf(s)<0)activeSystemsList.push(s);});
-      sistemas.push({
-        sistema:p.display,
-        detectado:p.nombre+(p.nombre!==p.display?'':'')+' — Valor: '+p.valor+' (rango normal: '+p.rmin+' – '+p.rmax+')',
-        significado:p.sig,
-        urgencia:p.urgencia,
-        nivel:p.urgencia==='alta'?'alto':'medio',
-        dir:p.dir
-      });
-    });
-  });
-
-  // Sort: alta first
-  sistemas.sort(function(a,b){
-    return a.urgencia==='alta'&&b.urgencia!=='alta'?-1:
-           b.urgencia==='alta'&&a.urgencia!=='alta'?1:0;
-  });
-  sistemas.forEach(function(s,idx){s.num=idx+1;});
-
-  // ── Collect products ──
+  var outParams=[];   // {display,section,sig,val,rmin,rmax,dir,urgencia,sistemas}
   var prodsSeen={};
-  var allProds=[];
+  var allProds=['Té Detox','V-Organex'];
+  prodsSeen['Té Detox']=true; prodsSeen['V-Organex']=true;
 
   function addProd(name){
-    if(!prodsSeen[name]){prodsSeen[name]=true;allProds.push(name);}
+    var norm=typeof name==='string'&&name.length>2?normProd(name):null;
+    if(norm&&!prodsSeen[norm]){prodsSeen[norm]=true;allProds.push(norm);}
   }
 
-  // ── Base products — ALWAYS first, hardcoded ──
-  allProds=['Té Detox','V-Organex'];
-  prodsSeen={'Té Detox':true,'V-Organex':true};
-
-  // 2. Add V-Itaren if kidney/renal system detected
-  var hasRenalOrMetales=activeSystemsList.some(function(s){
-    return ['riñón','renal','metales pesados','plomo','mercurio','cadmio','proteinuria','ácido úrico'].indexOf(s.toLowerCase())>=0;
-  });
-  if(hasRenalOrMetales){addProd('V-Itaren');}
-
-  // 3. Alta urgency products first
-  blocks.forEach(function(b){
-    if(b.params.some(function(p){return p.urgencia==='alta';})){
-      b.prods.forEach(function(p){addProd(p);});
+  var i=0;
+  while(i<lines.length){
+    var line=lines[i];
+    var rm=line.match(reRange);
+    if(rm){
+      var rmin=parseFloat(rm[1]+'.'+rm[2]);
+      var rmax=parseFloat(rm[3]+'.'+rm[4]);
+      // Look for value in next 1-3 lines
+      for(var j=i+1;j<Math.min(i+4,lines.length);j++){
+        var vm=lines[j].match(reVal);
+        if(vm){
+          var val=parseFloat(vm[1]+'.'+vm[2]);
+          var isOut=val<rmin*0.95||val>rmax*1.05;
+          if(isOut){
+            var info=lookupByRange(rmin,rmax);
+            if(info){
+              var dir=val>rmax?'alto':'bajo';
+              var pct=dir==='alto'?(val-rmax)/rmax:(rmin-val)/rmin;
+              var urg=pct>0.35?'alta':'media';
+              outParams.push({
+                display:info[0],section:info[1],
+                sig:dir==='alto'?info[2]:info[3],
+                val:val,rmin:rmin,rmax:rmax,
+                dir:dir,urgencia:urg,
+                sistemas:info[4]||[]
+              });
+            }
+          }
+          i=j; break;
+        }
+      }
     }
-  });
-  // 4. Rest
-  blocks.forEach(function(b){b.prods.forEach(function(p){addProd(p);});});
+    // Extract products from any line mentioning them
+    var pm;
+    var reProdLine=/(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|VITAREN\b|VITALPRO\b|FORTYFLORA\b|GLUTATION\b|VITALIX\b|VITALAGE\b|VITAX\b|KETOCAFÉ\b|KETOCAFE\b|THERMOKAFE\b)/gi;
+    reProdLine.lastIndex=0;
+    while((pm=reProdLine.exec(line))!==null){addProd(pm[1]);}
+    i++;
+  }
 
+  // V-Itaren if kidney/metals detected
+  var hasRenal=outParams.some(function(p){
+    return p.sistemas.some(function(s){return['riñón','renal','metales pesados','plomo','mercurio'].indexOf(s)>=0;});
+  });
+  if(hasRenal&&!prodsSeen['V-Itaren']){prodsSeen['V-Itaren']=true;allProds.splice(2,0,'V-Itaren');}
+
+  // Sort: alta first
+  outParams.sort(function(a,b){
+    return a.urgencia==='alta'&&b.urgencia!=='alta'?-1:b.urgencia==='alta'&&a.urgencia!=='alta'?1:0;
+  });
+  outParams.forEach(function(p,idx){p.num=idx+1;});
+
+  // Build sistemas list
+  var activeSystemsList=[];
+  outParams.forEach(function(p){
+    p.sistemas.forEach(function(s){if(activeSystemsList.indexOf(s)<0)activeSystemsList.push(s);});
+  });
+
+  // Build packages
   function buildPkg(prods,max){
     return prods.slice(0,max).map(function(nombre){
       var pp2=PP.find(function(x){return x.n===nombre;});
-      // Get product description filtered to active systems
       var prodInfo=PRODUCT_TABLE[nombre];
-      var desc='';
-      if(prodInfo){
-        var matches=prodInfo.t.filter(function(s){
-          return activeSystemsList.some(function(a){
-            return a.toLowerCase().indexOf(s.toLowerCase())>=0||
-                   s.toLowerCase().indexOf(a.toLowerCase())>=0;
-          });
-        });
-        desc=prodInfo.desc;
-      }else{
-        desc=(pp2&&pp2.pa&&pp2.pa[0])||'Apoyo al organismo.';
-      }
-      // Fallback descriptions for base products not in catalog
-    var FALLBACK_DESC={
-      'Té Detox':'Limpieza profunda del hígado, vesícula e intestino; elimina toxinas acumuladas.',
-      'V-Organex':'Desintoxica y regenera el hígado; elimina grasa hepática y apoya la función hepatobiliar.',
-      'V-Itaren':'Protege y apoya la función renal; ayuda a eliminar metales pesados y desechos.',
-    };
-    if(!desc)desc=FALLBACK_DESC[nombre]||'Apoyo al organismo.';
-    return{
+      var desc=prodInfo?prodInfo.desc:(pp2&&pp2.pa&&pp2.pa[0])||'Apoyo al organismo.';
+      return{
         nombre:nombre,
         razon_clinica:desc,
         dosis:(pp2&&pp2.d)||'Según indicaciones del producto',
@@ -4201,7 +4031,6 @@ function parsearReporteBiocuantico(texto,c){
     });
   }
 
-  // ── Recomendaciones ──
   var recsAlim=[
     'Aumentar frutas, verduras frescas, cereales integrales y pescado.',
     'Reducir alimentos fritos, azúcares refinados, harinas blancas y procesados.',
@@ -4219,17 +4048,25 @@ function parsearReporteBiocuantico(texto,c){
     'Consultar con médico para seguimiento de glucosa, hígado y triglicéridos.',
   ];
 
+  var sistemas=outParams.map(function(p){
+    return{
+      sistema:p.display,
+      detectado:'Valor: '+p.val+' (rango normal: '+p.rmin+' – '+p.rmax+')',
+      significado:p.sig,
+      urgencia:p.urgencia,nivel:p.urgencia==='alta'?'alto':'medio',
+      num:p.num,dir:p.dir
+    };
+  });
+
   return{
     paciente:nombreM?nombreM[1].replace(/\s*\d+\s*$/,'').trim():c.name,
-    complexion:complexM?complexM[1].trim():(c.height&&c.weight?c.height+'cm | '+c.weight+'kg':''),
+    complexion:complexM?complexM[1].trim():'',
     edad:edadM?edadM[1]:c.age||'',
     sexo:sexoM?sexoM[1].trim():sexLbl,
     fecha:fechaM?fechaM[1].split(' ')[0]:today,
     tipo_analisis:'Síntesis de Análisis BioCuántico VitalHealth',
     sistemas_afectados:sistemas,
-    hallazgos_criticos:sistemas.map(function(s){
-      return{sistema:s.sistema,hallazgo:s.significado,nivel:s.nivel};
-    }),
+    hallazgos_criticos:sistemas.map(function(s){return{sistema:s.sistema,hallazgo:s.significado,nivel:s.nivel};}),
     recomendaciones_alimentacion:recsAlim,
     recomendaciones_vida:recsVida,
     paquetes:{
@@ -4680,7 +4517,8 @@ function closeCartWithCheck(){
       showT('✓ Cambios guardados en "'+loadedName+'"');
     }else{
       // Ask for name
-      var name=prompt('Nombre para guardar el carrito:','Carrito '+(new Date().toLocaleDateString('es-MX')));
+      var autoName=window._autoCartName||('Carrito '+(new Date().toLocaleDateString('es-MX')));
+      var name=prompt('Nombre para guardar el carrito:',autoName);
       if(name&&name.trim()){
         var sc={name:name.trim(),items:JSON.parse(JSON.stringify(c.items)),date:new Date().toISOString()};
         if(!c.savedCarts)c.savedCarts=[];
@@ -4794,7 +4632,7 @@ function openCartModal(){
               <div class="cir-nm">${it.n}</div>
               ${px?.ct?`<div style="font-size:9px;color:#7c3aed;font-weight:600">${px.ct}</div>`:''}
               ${px?.b?`<div style="font-size:9px;color:var(--muted);line-height:1.3">${px.b[0]||''}</div>`:''}
-              ${(()=>{var inv=inventario&&inventario.find(function(i){return i.nombre===it.n;});if(inv&&inv.stock<=0&&!inv.sobrePedido)return '<div style="font-size:9px;font-weight:700;color:#c04040;background:#fff5f5;padding:2px 6px;border-radius:5px;display:inline-block">⚠️ Sin stock</div>';if(inv&&inv.stock<=0&&inv.sobrePedido)return '<div style="font-size:9px;font-weight:700;color:#1a56db;background:#f0f4ff;padding:2px 6px;border-radius:5px;display:inline-block">📦 Sobre pedido</div>';if(inv&&inv.stock>0&&inv.stock<=3)return '<div style="font-size:9px;color:#d97706">⚠️ Stock: '+inv.stock+'</div>';return '';})()}
+              ${(()=>{var inv=inventario&&inventario.find(function(i){return i.nombre===it.n;});if(!inv)return '';var badge='';if(inv.stock<=0&&!inv.sobrePedido)badge='<span style="font-size:9px;font-weight:700;color:#c04040;background:#fff5f5;padding:2px 6px;border-radius:5px">⚠️ Sin stock</span>';else if(inv.stock<=0&&inv.sobrePedido)badge='<span style="font-size:9px;font-weight:700;color:#1a56db;background:#f0f4ff;padding:2px 6px;border-radius:5px">📦 Sobre pedido</span>';else if(inv.stock<=3)badge='<span style="font-size:9px;color:#d97706">⚠️ Stock: '+inv.stock+'</span>';return badge?'<div class="op-only" style="margin-top:2px">'+badge+'</div>':''})()}
               <div class="cir-pr">$${it.p.toLocaleString()} c/u</div>
             </div>
             <div class="cir-qty">
@@ -4890,6 +4728,7 @@ function clearCart(){
 }
 
 function cartWhatsApp(){
+  // This function sends cart to client — NO stock/inventory info included
   // Redirige a la versión enriquecida si existe, si no usa la básica
   if(typeof cartWhatsAppEnriquecido==='function'){cartWhatsAppEnriquecido();return;}
   const c=getActiveCon();if(!c||!c.items.length)return;
@@ -5039,10 +4878,15 @@ function confirmSale(){
     try{saveAll();}catch(e){console.warn('saveAll error',e);}
     try{sbSaveVenta(sale).catch(function(){});}catch(e){}
     try{sbSaveConsultante(c).catch(function(){});}catch(e){}
-    // Close all modals
+    // Close pay modal (level 2) and cart modal (level 1)
     try{closeMo(3);}catch(e){}
     try{closeMo(2);}catch(e){}
     try{closeMo(1);}catch(e){}
+    // Fallback: close any open modal overlay
+    try{
+      document.querySelectorAll('.mo-overlay').forEach(function(el){el.style.display='none';});
+      document.querySelectorAll('.mo').forEach(function(el){el.style.display='none';});
+    }catch(e){}
     try{renderActiveConPanel();}catch(e){}
     showT('✓ Venta registrada $'+final.toLocaleString()+' · '+methodLabel);
     setTimeout(function(){mostrarReciboVenta(sale,c);},350);
@@ -9687,7 +9531,7 @@ window.addEventListener('load',function(){
   })();
 
   // Version check - clear corrupted data from old versions
-  var APP_VER='v9.1';
+  var APP_VER='1778796914';
   var storedVer=localStorage.getItem('ik_appver');
 
   // CRITICAL: ensure only u_admin exists as master, clean any corruption
