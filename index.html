@@ -3430,7 +3430,7 @@ function clearVHText(){
   showT('Texto borrado');
 }
 
-async function runVHTextAnalysis(){
+function runVHTextAnalysis(){
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
   const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
@@ -3448,32 +3448,7 @@ async function runVHTextAnalysis(){
     return;
   }
 
-  // Step 2 — API call ONLY for significado of each system (~$0.01)
-  var sis=result.sistemas_afectados||[];
-  if(sis.length>0){
-    try{
-      if(spinEl){var sd=spinEl.querySelector('div:last-child');if(sd)sd.textContent='Generando explicaciones...';}
-      var listaStr=sis.map(function(s,i){return (i+1)+'. '+s.sistema+': '+s.detectado;}).join('\n');
-      var res=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({
-          model:'claude-haiku-4-5-20251001',
-          max_tokens:800,
-          system:'Eres experto en salud funcional. Para cada sistema con valor fuera de rango, da UNA frase corta (max 15 palabras) en español simple explicando qué significa para la persona, sin tecnicismos. Responde SOLO JSON: {"significados":["frase1","frase2",...]}',
-          messages:[{role:'user',content:'Sistemas fuera de rango:\n'+listaStr}]
-        })
-      });
-      var data=await res.json();
-      var raw=(data.content||[]).map(function(x){return x.text||'';}).join('');
-      var m=raw.match(/\{[\s\S]*\}/);
-      if(m){
-        var parsed=JSON.parse(m[0]);
-        var sigs=parsed.significados||[];
-        sis.forEach(function(s,i){if(sigs[i])s.significado=sigs[i];});
-      }
-    }catch(e){/* API failed, keep default significados */}
-  }
+  // Step 2 — significados ya vienen del RANGE_TABLE, no se necesita API
 
   if(spinEl)spinEl.style.display='none';
   _lastResult=result;_fileSource='vh';
@@ -4773,7 +4748,7 @@ function getCartTotals(){
 
 function openPayModal(){
   const c=getActiveCon();if(!c||!c.items.length)return;
-  const {bruto,desc,final,promo}=getCartTotals();
+  var _t=getCartTotals()||{bruto:0,desc:0,final:0,promo:''};var bruto=_t.bruto,desc=_t.desc,final=_t.final,promo=_t.promo;
   // Load accounts saved in BO Consultor config
   const boCuentas=getCuentasGasto().map(function(c){
     return {id:c.id,nombre:c.lbl||c.nombre||c.id};
@@ -5505,6 +5480,7 @@ function updateStatsBO(){
 // Rubros y cuentas por consultor (en localStorage)
 function getBoRubrosKey(){return 'ik_borubros_'+(currentUser?.id||'default');}
 function getBoCuentasGastoKey(){return 'ik_bocuentasgasto_'+(currentUser?.id||'default');}
+function getCuentasGasto(){return getBoCuentasGasto();}  // alias usado en confirmSale/openPayModal
 
 const RUBROS_DEFAULT=[
   {id:'producto',lbl:'📦 Producto/Inventario'},
