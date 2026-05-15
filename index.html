@@ -1632,7 +1632,7 @@ function doLogin(){
       tu.consultor_id=tu.parent_id||tu.consultor_id||tu.id;
       var tiIdx=users.findIndex(function(x){return x.id===tu.id;});
       if(tiIdx>=0)users[tiIdx]=tu;else users.push(tu);
-      S.set('ik_users',users);
+      S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;}));
       finishLogin(tu);
       return;
     }
@@ -1648,7 +1648,7 @@ function doLogin(){
       u.consultor_id=u.parent_id||u.consultor_id||u.id;
       var existIdx=users.findIndex(function(x){return x.id===u.id;});
       if(existIdx>=0)users[existIdx]=u;else users.push(u);
-      S.set('ik_users',users);
+      S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;}));
       finishLogin(u);
     }).catch(function(){
       if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
@@ -1659,7 +1659,8 @@ function doLogin(){
 
   const uLocal=users.find(x=>x.id===uid);
   if(!uLocal){errEl.textContent='Usuario no encontrado';return;}
-  if(uLocal.pass!==pass){errEl.textContent='Contraseña incorrecta';return;}
+  // [SEC-P2] Eliminada comparación local de contraseña — siempre verifica en el Worker
+  // Esto asegura que un cambio de contraseña invalida el acceso en TODOS los dispositivos
   if(!checkAccess(uLocal)&&uLocal.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
 
   const loginBtn=document.getElementById('loginBtn');
@@ -1728,7 +1729,7 @@ function doLogin(){
       u.consultorId=u.consultor_id;
       const idx2=users.findIndex(function(x){return x.id===u.id;});
       if(idx2>=0)users[idx2]=u;else users.push(u);
-      S.set('ik_users',users);
+      S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;})); // [SEC-P1]
     } else {
       u.consultorId=uLocal.parent_id||uLocal.id;
     }
@@ -1848,7 +1849,7 @@ function doLogin(){
           // Normalize all users from Supabase
           users=serverUsers.map(normalizeUser);
           if(adminLocal&&!users.find(function(x){return x.id==='u_admin';}))users.unshift(adminLocal);
-          S.set('ik_users',users);
+          S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;})); // [SEC-P1]
           if(typeof renderUsers==='function')safeCall(renderUsers);
           if(typeof renderAdminOpList==='function')safeCall(renderAdminOpList);
         }
