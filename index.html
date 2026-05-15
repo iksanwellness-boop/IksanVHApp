@@ -5256,8 +5256,8 @@ function savePriceEdit(){
 
 function toggleProdHidden(hide){
   var name=window._peName;if(!name)return;
-  var pass=prompt('Confirma con tu contraseña:');
-  if(!currentUser||pass!==currentUser.pass){showT('Contraseña incorrecta');return;}
+  // [SEC] Verificación de identidad por rol en lugar de contraseña local
+  if(!currentUser||currentUser.role!=='admin'){showT('Solo el admin puede hacer esto');return;}
   if(!prices[name])prices[name]={};
   prices[name].hidden=!!hide;
   saveAll();closeMo(3);initCat();
@@ -6958,13 +6958,12 @@ function saveUserEdit(uid){
   if(email)u.email=email;
   // role: solo permitir paid o consult, nunca admin
   if(role&&role!=='admin')u.role=role;
-  if(pass1&&pass1.length>=4){u.pass=pass1;}
-  else if(pass1&&pass1.length>0){showT('Contraseña mínimo 4 caracteres');return;}
+  if(pass1&&pass1.length>0&&pass1.length<4){showT('Contraseña mínimo 4 caracteres');return;}
   u.modulosAsignados=modulos.filter(m=>m.activatedFor&&m.activatedFor.includes(u.id)).map(m=>m.id);
+  // [SEC] Nunca guardar pass en objeto local — solo enviar al Worker para hashear
   saveAll();
-  // Sync to server
   API.updateUsuario(u.id,{
-    name:u.name, email:u.email, pass:u.pass,
+    name:u.name, email:u.email, pass:pass1||null,
     role:u.role, phone:u.phone||null,
     modulosAsignados:u.modulosAsignados
   }).catch(function(){});
@@ -7458,7 +7457,9 @@ function resetUserPass(id){
   const u=users.find(x=>x.id===id);if(!u)return;
   const np=document.getElementById('npPass1')?.value.trim();
   if(!np||np.length<4){showT('Min 4 caracteres');return;}
-  u.pass=np;saveAll();closeMo(2);showT('Contrasena actualizada para '+u.name);
+  // [SEC] No guardar pass localmente — enviar al Worker para hashear
+  API.updateUsuario(u.id,{pass:np}).catch(function(){});
+  saveAll();closeMo(2);showT('Contrasena actualizada para '+u.name);
 }
 
 /* ═══════════════════════════════════════════════════
