@@ -1060,12 +1060,12 @@ const S={
 // ── API LAYER — Cloudflare Worker → Supabase ─────────────────
 const APP_VERSION='20260512_2017';
 const API_URL='https://iksanmastervh.iksanwellness.workers.dev';
-const ADMIN_KEY='iksan2024_master';
+// [SEC-P3] ADMIN_KEY eliminado del HTML — llega del servidor al hacer login admin y vive solo en memoria
 const API={
   async call(path,method='GET',body=null,isAdmin=false){
     try{
       const opts={method,headers:{'Content-Type':'application/json'}};
-      if(isAdmin)opts.headers['X-Admin-Key']=ADMIN_KEY;
+      if(isAdmin)opts.headers['X-Admin-Key']=window._sessionAdminKey||''; // [SEC-P3] nunca hardcodeado
       // Always send current user context
       if(currentUser){
         opts.headers['X-User-Id']=currentUser.id;
@@ -1171,7 +1171,7 @@ function saveAll(){
   S.set('ik_prices',prices);
   S.set('ik_locs',locations);
   S.set('ik_modulos',modulos);
-  S.set('ik_users',users);
+  S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;})); // [SEC-P1] nunca guardar pass en localStorage
   S.set('ik_subPayments',subPayments);
   // Consultante data — also cache locally for speed
   S.set('ik_consultantes',clientes);
@@ -1721,6 +1721,8 @@ function doLogin(){
     var u=uLocal;
     if(res&&res.ok&&res.user){
       u=normalizeUser(Object.assign({},uLocal,res.user));
+      // [SEC-P2] adminToken llega del Worker solo para admin — guardarlo en memoria, nunca en localStorage
+      if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
       u.modulosAsignados=res.user.modulosAsignados||uLocal.modulosAsignados||[];
       u.consultor_id=res.user.parent_id||res.user.id;
       u.consultorId=u.consultor_id;
@@ -3388,6 +3390,15 @@ function buildVHTextModal(){
   h+='<button class="btn btn-sm" style="font-size:10px;padding:3px 10px;background:#fff;border:1.5px solid #fca5a5;color:#c04040;border-radius:6px" onclick="clearVHText()">🗑 Limpiar</button>';
   h+='</div>';
   h+='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Pega el texto del reporte. Se guarda automaticamente para este cliente.</div>';
+  // Mode selector
+  var savedMode=S.get('ik_vh_mode','tabla')||'tabla';
+  var mTabla=savedMode==='tabla'?'checked':'';
+  var mApi=savedMode==='api'?'checked':'';
+  h+='<div style="display:flex;gap:8px;margin-bottom:8px;background:#f6fbfc;border-radius:8px;padding:8px 10px;border:1px solid #E0F4F6">';
+  h+='<div style="font-size:10px;font-weight:700;color:var(--mid);flex:1;align-self:center">⚙️ Modo:</div>';
+  h+='<label style="font-size:11px;cursor:pointer"><input type="radio" name="vhMode" value="tabla" '+mTabla+' onclick="vhSetMode(this.value)"> 📊 Tabla Maestra (gratis)</label> ';
+  h+='<label style="font-size:11px;cursor:pointer"><input type="radio" name="vhMode" value="api" '+mApi+' onclick="vhSetMode(this.value)"> ✨ API Claude</label>';
+  h+='</div>';
   h+='<textarea id="vhTextoReporte" class="in" style="min-height:160px;resize:vertical;font-size:11px;line-height:1.5" '
     +'oninput="saveVHText(this.value)" '
     +'placeholder="Pega aqui el texto del reporte VitalHealth...">'+savedText+'</textarea>';
@@ -3430,16 +3441,20 @@ function clearVHText(){
   showT('Texto borrado');
 }
 
+async function vhSetMode(v){S.set('ik_vh_mode',v);}
+function vhSetMode(v){S.set('ik_vh_mode',v);}
 function runVHTextAnalysis(){
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
   const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
+  var mode=S.get('ik_vh_mode','tabla')||'tabla';
+  if(mode==='api'){runVHTextAnalysisAPI();return;}
+
   var spinEl=document.getElementById('anaSpin');
   var resEl=document.getElementById('anaRes');
-  if(spinEl){spinEl.style.display='block';spinEl.querySelector('div:last-child').textContent='Extrayendo datos...';}
+  if(spinEl){spinEl.style.display='block';var sd=spinEl.querySelector('div:last-child');if(sd)sd.textContent='Extrayendo datos...';}
   if(resEl)resEl.innerHTML='';
 
-  // Step 1 — local parser (free)
   var result;
   try{result=parsearReporteBiocuantico(texto,c);}
   catch(err){
@@ -3448,12 +3463,30 @@ function runVHTextAnalysis(){
     return;
   }
 
-  // Step 2 — significados ya vienen del RANGE_TABLE, no se necesita API
-
   if(spinEl)spinEl.style.display='none';
   _lastResult=result;_fileSource='vh';
-  if(resEl)resEl.innerHTML=renderResultVH(result);
+
   var sisLen=(result.sistemas_afectados||[]).length;
+  console.log('[VH] sistemas_afectados: '+sisLen);
+
+  if(sisLen===0){
+    // Check if the text even has ranges in it
+    var testRanges=(texto.match(/(\d+[,.]\d+\s*[-–]\s*\d+[,.]\d+)/g)||[]).length;
+    var testVals=(texto.match(/^\d+\.\d+$/gm)||[]).length;
+    if(resEl)resEl.innerHTML='<div style="background:#fff8e8;border-radius:9px;padding:14px;border:1px solid #fbbf24;font-size:12px">'
+      +'<b style="color:#b45309">⚠️ No se detectaron parámetros fuera de rango</b><br><br>'
+      +'<b>Diagnóstico del texto pegado:</b><br>'
+      +'• Caracteres totales: <b>'+texto.length+'</b><br>'
+      +'• Rangos numéricos encontrados (ej: 0,097 - 0,419): <b>'+testRanges+'</b><br>'
+      +'• Valores numéricos encontrados (ej: 0.723): <b>'+testVals+'</b><br><br>'
+      +(testRanges<5?'<b style="color:#c04040">❌ El texto no contiene rangos numéricos del escáner.</b><br>Asegúrate de pegar las páginas 119-124 del PDF (Informe de síntesis).<br><br>':'')
+      +(testRanges>=5?'<b style="color:#1a7f3c">✓ El texto tiene rangos pero ninguno salió fuera de rango.</b><br>Esto puede ser correcto si el paciente está dentro de todos los rangos.<br><br>':'')
+      +'<b>Información extraída:</b> Paciente: '+result.paciente+' | Edad: '+result.edad+' | Sexo: '+result.sexo
+      +'</div>';
+  } else {
+    if(resEl)resEl.innerHTML=renderResultVH(result);
+  }
+
   addToHistory('vh','🔬 Análisis BioCuántico — '+sisLen+' hallazgos',result);
   showT('✓ Reporte generado — '+sisLen+' sistemas detectados');
 }
@@ -4749,7 +4782,7 @@ function getCartTotals(){
 
 function openPayModal(){
   const c=getActiveCon();if(!c||!c.items.length)return;
-  var _t=getCartTotals()||{bruto:0,desc:0,final:0,promo:''};var bruto=_t.bruto,desc=_t.desc,final=_t.final,promo=_t.promo;
+  const {bruto,desc,final,promo}=getCartTotals();
   // Load accounts saved in BO Consultor config
   const boCuentas=getCuentasGasto().map(function(c){
     return {id:c.id,nombre:c.lbl||c.nombre||c.id};
@@ -5481,7 +5514,7 @@ function updateStatsBO(){
 // Rubros y cuentas por consultor (en localStorage)
 function getBoRubrosKey(){return 'ik_borubros_'+(currentUser?.id||'default');}
 function getBoCuentasGastoKey(){return 'ik_bocuentasgasto_'+(currentUser?.id||'default');}
-function getCuentasGasto(){return getBoCuentasGasto();}  // alias usado en confirmSale/openPayModal
+function getCuentasGasto(){return getBoCuentasGasto();}
 
 const RUBROS_DEFAULT=[
   {id:'producto',lbl:'📦 Producto/Inventario'},
@@ -7895,18 +7928,27 @@ function saveConfig(){
   saveAll();showT('✓ Configuración guardada');
 }
 
-function changeMyPass(){
+async function changeMyPass(){
+  // [SEC-P4] Cambio de contraseña siempre via Worker — el Worker hashea y guarda en Supabase
   const p1=document.getElementById('cfgNewPass').value;
   const p2=document.getElementById('cfgNewPass2').value;
   if(!p1){showT('Escribe la nueva contraseña');return;}
   if(p1!==p2){showT('Las contraseñas no coinciden');return;}
   if(p1.length<4){showT('Mínimo 4 caracteres');return;}
   if(!currentUser){showT('Sin sesión');return;}
-  const u=users.find(x=>x.id===currentUser.id);
-  if(u){u.pass=p1;currentUser.pass=p1;saveAll();}
-  document.getElementById('cfgNewPass').value='';
-  document.getElementById('cfgNewPass2').value='';
-  showT('✓ Contraseña actualizada');
+  showT('Actualizando...');
+  try{
+    const res=await fetch('https://iksanmastervh.iksanwellness.workers.dev/usuarios/change_pass',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-User-Id':currentUser.id},
+      body:JSON.stringify({user_id:currentUser.id,current_pass:'',new_pass:p1})
+    });
+    const data=await res.json();
+    if(!data.ok){showT(data.error||'Error al cambiar contraseña');return;}
+    document.getElementById('cfgNewPass').value='';
+    document.getElementById('cfgNewPass2').value='';
+    showT('✓ Contraseña actualizada — cierra sesión y vuelve a entrar');
+  }catch(e){showT('Error de conexión: '+e.message);}
 }
 
 function exportData(){
