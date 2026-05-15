@@ -3453,8 +3453,9 @@ function runVHTextAnalysis(){
   if(spinEl)spinEl.style.display='none';
   _lastResult=result;_fileSource='vh';
   if(resEl)resEl.innerHTML=renderResultVH(result);
-  addToHistory('vh','🔬 Análisis BioCuántico — '+sis.length+' hallazgos',result);
-  showT('✓ Reporte generado');
+  var sisLen=(result.sistemas_afectados||[]).length;
+  addToHistory('vh','🔬 Análisis BioCuántico — '+sisLen+' hallazgos',result);
+  showT('✓ Reporte generado — '+sisLen+' sistemas detectados');
 }
 
 // ── API VERSION (uses credits) — called manually ──
