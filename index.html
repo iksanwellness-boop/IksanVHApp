@@ -3300,25 +3300,68 @@ function renderResultVH(r){
     h+='</table></div>';
   }
 
-  // ── 3. RECOMENDACIONES GENERALES ──
-  if(comida.length||vida.length){
-    h+='<div style="border:1px solid '+TEAL_BG+';border-radius:9px;overflow:hidden;margin-bottom:11px">';
-    h+='<div style="background:'+TEAL_BG+';border-bottom:2px solid '+TEAL+';padding:6px 13px">';
-    h+='<span style="font-size:10px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.6px">3. Recomendaciones Generales</span></div>';
-    h+='<div style="padding:10px 13px">';
-    if(comida.length){
+  // ── 3. PLAN DE ALIMENTACIÓN + RECOMENDACIONES ──
+  var planAlim=r.plan_alimenticio||null;
+  var tieneSeccion3=planAlim||(comida.length>0)||(vida.length>0);
+  if(tieneSeccion3){
+    var GREEN='#1a7f3c',GREEN_BG='#e6f4ea',AMBER='#b8690c',AMBER_BG='#fffaf5',RED2='#c04040';
+    h+='<div style="border:1px solid '+GREEN_BG+';border-radius:9px;overflow:hidden;margin-bottom:11px">';
+    h+='<div style="background:'+GREEN_BG+';border-bottom:2px solid '+GREEN+';padding:6px 13px">';
+    h+='<span style="font-size:10px;font-weight:700;color:'+GREEN+';text-transform:uppercase;letter-spacing:.6px">3. 🥗 Plan de Alimentación Personalizado</span></div>';
+    if(planAlim){
+      // Plan completo con 3 columnas: comer / evitar / tips
+      h+='<div style="padding:11px 13px">';
+      if(planAlim.grupos_base&&planAlim.grupos_base.length){
+        h+='<div style="font-size:9px;color:'+AMBER+';font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Basado en: '+planAlim.grupos_base.map(function(g){return g.charAt(0).toUpperCase()+g.slice(1);}).join(' · ')+'</div>';
+      }
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
+      // Columna COMER
+      if(planAlim.comer&&planAlim.comer.length){
+        h+='<div style="background:#f0faf0;border-radius:8px;padding:9px 10px">';
+        h+='<div style="font-size:10px;font-weight:800;color:'+GREEN+';margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">✅ Incluir más</div>';
+        planAlim.comer.forEach(function(x){
+          h+='<div style="font-size:10.5px;color:#1C2833;padding:3px 0 3px 12px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+GREEN+';font-size:12px">•</span>'+x+'</div>';
+        });
+        h+='</div>';
+      }
+      // Columna EVITAR
+      if(planAlim.evitar&&planAlim.evitar.length){
+        h+='<div style="background:#fff5f5;border-radius:8px;padding:9px 10px">';
+        h+='<div style="font-size:10px;font-weight:800;color:'+RED2+';margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">❌ Reducir o evitar</div>';
+        planAlim.evitar.forEach(function(x){
+          h+='<div style="font-size:10.5px;color:#1C2833;padding:3px 0 3px 12px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+RED2+';font-size:12px">•</span>'+x+'</div>';
+        });
+        h+='</div>';
+      }
+      h+='</div>';
+      // Tips en ancho completo
+      if(planAlim.tips&&planAlim.tips.length){
+        h+='<div style="background:'+AMBER_BG+';border-radius:8px;padding:9px 10px;border-left:3px solid #e8a830">';
+        h+='<div style="font-size:10px;font-weight:800;color:'+AMBER+';margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">💡 Consejos prácticos</div>';
+        planAlim.tips.forEach(function(x){
+          h+='<div style="font-size:10.5px;color:#3a2808;padding:3px 0 3px 12px;position:relative;line-height:1.5"><span style="position:absolute;left:0;color:'+AMBER+';font-size:12px">•</span>'+x+'</div>';
+        });
+        h+='</div>';
+      }
+      h+='</div>';
+    }else if(comida.length){
+      // Fallback: lista genérica si no hay plan estructurado
+      h+='<div style="padding:10px 13px">';
       h+='<div style="font-size:11px;font-weight:700;color:'+DARK+';margin-bottom:5px">Alimentación</div>';
       comida.forEach(function(c){
         h+='<div style="font-size:11px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';
       });
+      h+='</div>';
     }
     if(vida.length){
-      h+='<div style="font-size:11px;font-weight:700;color:'+DARK+';margin:9px 0 5px">Estilo de vida</div>';
+      h+='<div style="border-top:1px solid '+GREEN_BG+';padding:9px 13px;background:#fafffe">';
+      h+='<div style="font-size:10px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">🏃 Estilo de vida</div>';
       vida.forEach(function(c){
         h+='<div style="font-size:11px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';
       });
+      h+='</div>';
     }
-    h+='</div></div>';
+    h+='</div>';
   }
 
   // ── 4. PROTOCOLOS — 3 paquetes con columna "Para qué sirve" ──
@@ -3669,13 +3712,44 @@ function downloadReportePDF2(){
       <th style="padding:6px 8px;width:50%">Qué significa</th>
     </tr>${sisRows}</table>
   </div>`:''}
-  ${recAlim||recVida?`<div style="border:1px solid #E0F4F6;border-radius:8px;overflow:hidden;margin-bottom:14px">
-    <div style="background:#E0F4F6;border-bottom:2px solid #0B7E8A;padding:6px 14px">
-      <span style="font-size:10px;font-weight:700;color:#0B7E8A;text-transform:uppercase;letter-spacing:.6px">3. Recomendaciones Generales</span></div>
-    <div style="padding:11px 14px">
-      ${recAlim?`<div style="font-size:11px;font-weight:700;color:#1C2833;margin-bottom:5px">Alimentación</div>${recAlim}`:''}
-      ${recVida?`<div style="font-size:11px;font-weight:700;color:#1C2833;margin:9px 0 5px">Estilo de vida</div>${recVida}`:''}
-    </div></div>`:''}
+  ${(()=>{
+    var pa=r.plan_alimenticio||null;
+    var hasVida=recVida.length>0;
+    if(!pa&&!recAlim&&!hasVida)return '';
+    var out='<div style="border:1px solid #e6f4ea;border-radius:8px;overflow:hidden;margin-bottom:14px">';
+    out+='<div style="background:#e6f4ea;border-bottom:2px solid #1a7f3c;padding:6px 14px">';
+    out+='<span style="font-size:10px;font-weight:700;color:#1a7f3c;text-transform:uppercase;letter-spacing:.6px">3. 🥗 Plan de Alimentación Personalizado</span></div>';
+    if(pa){
+      out+='<div style="padding:12px 14px">';
+      if(pa.grupos_base&&pa.grupos_base.length){out+='<div style="font-size:9px;color:#b8690c;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Basado en: '+pa.grupos_base.map(function(g){return g.charAt(0).toUpperCase()+g.slice(1);}).join(' · ')+'</div>';}
+      out+='<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr valign="top">';
+      if(pa.comer&&pa.comer.length){
+        out+='<td style="width:50%;padding-right:8px"><div style="background:#f0faf0;border-radius:6px;padding:8px 10px">';
+        out+='<div style="font-size:10px;font-weight:800;color:#1a7f3c;margin-bottom:5px;text-transform:uppercase">✅ Incluir más</div>';
+        pa.comer.forEach(function(x){out+='<div style="font-size:10px;padding:2px 0 2px 11px;position:relative;color:#1C2833;line-height:1.4"><span style="position:absolute;left:0;color:#1a7f3c">•</span>'+x+'</div>';});
+        out+='</div></td>';
+      }
+      if(pa.evitar&&pa.evitar.length){
+        out+='<td style="width:50%;padding-left:8px"><div style="background:#fff5f5;border-radius:6px;padding:8px 10px">';
+        out+='<div style="font-size:10px;font-weight:800;color:#c04040;margin-bottom:5px;text-transform:uppercase">❌ Reducir o evitar</div>';
+        pa.evitar.forEach(function(x){out+='<div style="font-size:10px;padding:2px 0 2px 11px;position:relative;color:#1C2833;line-height:1.4"><span style="position:absolute;left:0;color:#c04040">•</span>'+x+'</div>';});
+        out+='</div></td>';
+      }
+      out+='</tr></table>';
+      if(pa.tips&&pa.tips.length){
+        out+='<div style="background:#fffaf5;border-radius:6px;padding:8px 10px;border-left:3px solid #e8a830">';
+        out+='<div style="font-size:10px;font-weight:800;color:#b8690c;margin-bottom:5px;text-transform:uppercase">💡 Consejos prácticos</div>';
+        pa.tips.forEach(function(x){out+='<div style="font-size:10px;padding:2px 0 2px 11px;position:relative;color:#3a2808;line-height:1.5"><span style="position:absolute;left:0;color:#e8a830">•</span>'+x+'</div>';});
+        out+='</div>';
+      }
+      out+='</div>';
+    }else if(recAlim){
+      out+='<div style="padding:11px 14px"><div style="font-size:11px;font-weight:700;color:#1C2833;margin-bottom:5px">Alimentación</div>'+recAlim+'</div>';
+    }
+    if(hasVida){out+='<div style="border-top:1px solid #e6f4ea;padding:9px 14px;background:#fafffe"><div style="font-size:10px;font-weight:700;color:#0B7E8A;text-transform:uppercase;margin-bottom:5px">🏃 Estilo de vida</div>'+recVida+'</div>';}
+    out+='</div>';
+    return out;
+  })()}
   <div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:14px">
     <div style="background:#2C3E50;padding:6px 14px">
       <span style="font-size:10px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.6px">4. Protocolos Recomendados · BioCuántico</span></div>
@@ -3739,12 +3813,12 @@ function buildVHTextModal(){
     +'placeholder="Pega aqui el texto del reporte VitalHealth...">'+savedText+'</textarea>';
   h+='<div style="background:#f8f5ff;border-radius:10px;padding:11px;margin:10px 0">';
   h+='<label style="display:flex;align-items:center;gap:9px;cursor:pointer">';
-  h+='<input type="checkbox" id="chkAliment" onchange="toggleAlimentSection()" style="width:17px;height:17px;accent-color:var(--mid)">';
+  h+='<input type="checkbox" id="chkAlimentVH" onchange="toggleAlimentSectionVH()" style="width:17px;height:17px;accent-color:var(--mid)">';
   h+='<div><div style="font-size:13px;font-weight:700;color:var(--deep)">🥗 Plan de alimentacion mensual</div>';
-  h+='<div style="font-size:10px;color:var(--muted)">Claude sugerira que comer y evitar segun el reporte y preferencias</div></div></label>';
-  h+='<div id="alimentSection" style="display:none;margin-top:10px">';
+  h+='<div style="font-size:10px;color:var(--muted)">Disponible en ambos modos · Tabla (gratis) o IA personalizada</div></div></label>';
+  h+='<div id="alimentSectionVH" style="display:none;margin-top:10px">';
   h+='<div style="font-size:11px;color:var(--muted);margin-bottom:5px">Preferencias, alergias o restricciones del cliente:</div>';
-  h+='<textarea id="alimentHabitos" class="in" style="min-height:65px;resize:vertical;font-size:12px" placeholder="Ej: Le gusta la comida mexicana. No le gusta el pescado. Intolerante a lactosa. Come mucho pan y refrescos..."></textarea>';
+  h+='<textarea id="alimentHabitosVH" class="in" style="min-height:65px;resize:vertical;font-size:12px" placeholder="Ej: Le gusta la comida mexicana. No le gusta el pescado. Intolerante a lactosa. Come mucho pan y refrescos..."></textarea>';
   h+='</div></div>';
   h+='<button class="btn btn-p btn-full" style="font-size:13px;padding:12px" onclick="runVHTextAnalysis()">🔬 Analizar reporte</button>';
   h+='<div id="anaSpin" style="display:none;text-align:center;padding:30px"><div class="spin"></div>';
@@ -3777,7 +3851,113 @@ function clearVHText(){
 }
 
 async function vhSetMode(v){S.set('ik_vh_mode',v);}
-function vhSetMode(v){S.set('ik_vh_mode',v);}
+// ═══ PLAN DE ALIMENTACIÓN — Tablas por sistema ═══
+// Genera plan_alimenticio {comer, evitar, tips} a partir de sistemas detectados + notas del cliente
+var ALIM_TABLE={
+  // Cardiovascular
+  'cardiovascular':{
+    comer:['Aguacate, nueces y semillas de chía (grasas saludables)','Avena, linaza y vegetales de hoja verde (fibra)','Ajo y cebolla crudos (apoyo circulatorio natural)','Salmón o sardinas 2 veces por semana (Omega-3)','Frutos rojos: arándanos, fresas, frambuesas (antioxidantes)'],
+    evitar:['Embutidos, carnes procesadas y frituras','Sal en exceso — máximo 1 cucharadita al día','Grasas trans (margarinas, galletas industriales, snacks)','Café en exceso (más de 2 tazas al día)','Bebidas azucaradas y refrescos'],
+    tips:['Caminar 30 minutos diarios reduce el riesgo cardiovascular hasta un 35%','Comer en porciones pequeñas y frecuentes reduce la carga al corazón','Revisar etiquetas: evitar productos con "aceite vegetal hidrogenado"']
+  },
+  // Hígado / vesícula
+  'higado':{
+    comer:['Alcachofa, betabel y diente de león (desintoxicantes hepáticos)','Agua de limón en ayunas todos los días','Verduras crucíferas: brócoli, coliflor, col (activan enzimas del hígado)','Manzana verde y papaya (estimulan la vesícula)','Aceite de oliva extra virgen en frío (no cocinar)'],
+    evitar:['Alcohol en cualquier cantidad','Frituras y comida rápida','Azúcar refinada y harinas blancas','Salsas comerciales, aderezos en botella','Exceso de carne roja (máximo 2 veces por semana)'],
+    tips:['El té de cardo mariano después de comer apoya la regeneración hepática','Evitar comer después de las 8 pm — el hígado trabaja mejor sin digestión nocturna','Hidratarse con al menos 2 litros de agua al día facilita la eliminación de toxinas']
+  },
+  // Metales pesados / toxinas
+  'toxinas':{
+    comer:['Cilantro fresco (quelante natural de metales pesados)','Alga espirulina o chlorella (absorbe metales en el intestino)','Ajo crudo machacado (sulfuros que ayudan a expulsar toxinas)','Frutas ricas en vitamina C: guayaba, kiwi, naranja (protección celular)','Semillas de girasol y calabaza (zinc y selenio protectores)'],
+    evitar:['Atún enlatado y peces grandes (mercurio acumulado)','Alimentos en latas (posible BPA y metales)','Vegetales sin lavar o no orgánicos (pesticidas)','Agua de la llave sin filtrar','Cocinar en utensilios de aluminio o teflón rayado'],
+    tips:['Lavar todos los vegetales con bicarbonato o vinagre antes de consumir','Preferir recipientes de vidrio sobre plástico para almacenar alimentos','El protocolo de desintoxicación funciona mejor con el apoyo de V-Organex y V-Glutation']
+  },
+  // Metabólico / triglicéridos / peso
+  'metabolico':{
+    comer:['Proteína en cada comida: pollo, huevo, leguminosas, queso cottage','Canela en infusión o polvo (regula glucosa e insulina)','Grasas buenas: aguacate, aceite de coco, almendras','Verduras de color intenso en cada plato','Agua antes de comer (15 min) reduce apetito y mejora digestión'],
+    evitar:['Pan blanco, tortillas de harina, arroz blanco','Jugos de fruta (aunque sean naturales — sube rápido la glucosa)','Productos "light" o "0% grasa" (suelen tener azúcar escondida)','Comer frente a pantallas (aumenta el consumo calórico sin darse cuenta)','Saltarse comidas (produce picos de insulina)'],
+    tips:['Comer cada 3-4 horas en porciones moderadas activa el metabolismo','El ejercicio de fuerza (pesas, pilates) aumenta la grasa parda activa','Dormir 7-8 horas es fundamental para regular cortisol y metabolismo de grasas']
+  },
+  // Óseo / articular
+  'oseo':{
+    comer:['Leche de vaca o de coco (calcio), queso fresco','Sardinas con hueso (calcio y Omega-3 antiinflamatorio)','Cúrcuma con pimienta negra en comidas (antiinflamatorio potente)','Germinados: alfalfa, brócoli (vitamina K para huesos)','Nueces y semillas (magnesio para absorción del calcio)'],
+    evitar:['Refrescos de cola (fósforo que descalcifica)','Sal en exceso (aumenta excreción de calcio)','Alcohol (interfiere con absorción de calcio y vitamina D)','Azúcar refinada (pro-inflamatoria)','Comida ultra-procesada (inhibe absorción de minerales)'],
+    tips:['Tomar sol 15 minutos al día (sin bloqueador) activa la vitamina D natural','El colágeno se absorbe mejor con vitamina C: tomar V-Collagen con jugo de naranja','Caminar descalzo sobre superficies naturales mejora la densidad ósea']
+  },
+  // Digestivo
+  'digestivo':{
+    comer:['Kéfir o yogurt natural sin azúcar (probióticos naturales)','Plátano maduro y avena (prebióticos que alimentan la flora)','Papaya con semillas (enzimas digestivas y antiparasitario)','Caldo de hueso (restaura la mucosa intestinal)','Masticar muy bien — mínimo 20 veces por bocado'],
+    evitar:['Gluten en exceso si hay colitis o intestino irritable','Lácteos pasteurizados en exceso si hay gases o distensión','Comer de prisa o bajo estrés','Antibióticos sin probióticos de apoyo','Agua durante la comida (diluye enzimas digestivas)'],
+    tips:['Esperar 20 minutos después de comer antes de acostarse o sentarse','El jengibre en agua caliente antes de comer estimula la digestión','Los fermentados caseros (kéfir, kombucha) son los mejores aliados del intestino']
+  },
+  // Neurológico / cerebro
+  'neurologico':{
+    comer:['Huevo entero (colina para la memoria y mielina neuronal)','Nueces y almendras (Omega-3 y vitamina E cerebrales)','Cacao puro al 70%+ (flavonoides que mejoran la circulación cerebral)','Arándanos y mora azul (antioxidantes neuroprotectores)','Aguacate (grasas buenas para la mielina)'],
+    evitar:['Azúcar refinada (inflamación cerebral y niebla mental)','Alcohol (destruye conexiones neuronales)','Comida rápida alta en grasas trans (deterioro cognitivo)','Pantallas antes de dormir (interrumpe la consolidación de memoria)','Falta de sueño (el cerebro elimina toxinas durante el sueño)'],
+    tips:['Leer, resolver puzzles o aprender algo nuevo todos los días crea nuevas conexiones','El ejercicio aeróbico 3 veces por semana aumenta el BDNF (proteína de crecimiento neuronal)','La meditación 10 minutos diarios mejora el índice de memoria y concentración']
+  },
+  // Piel / colágeno
+  'piel':{
+    comer:['Gelatina natural sin sabor (colágeno puro de bajo costo)','Caldo de hueso 1 taza al día (mejor fuente de colágeno tipo I y III)','Vitamina C: kiwi, guayaba, pimiento rojo (activa síntesis de colágeno)','Zanahoria y calabaza (betacarotenos para la piel)','Pepino y agua de coco (hidratación celular profunda)'],
+    evitar:['Azúcar (glicación — destruye el colágeno existente)','Tabaco (reduce producción de colágeno hasta un 40%)','Exposición solar sin protección (degrada la elastina)','Alcohol (deshidrata las células de la piel)','Dietas muy bajas en proteína (falta de aminoácidos para el colágeno)'],
+    tips:['Dormir de lado del mismo siempre causa arrugas — intentar dormir boca arriba','Lavar la cara con agua fría activa la circulación y retrasa el envejecimiento','El retinol nocturno es el activo más probado para estimular el colágeno dérmico']
+  }
+};
+
+function generarPlanAlimentacionTabla(sistemasDetectados, habitosTexto){
+  var nombres=sistemasDetectados.map(function(s){return(s.sistema||'').toLowerCase();});
+  function tiene(kw){return nombres.some(function(n){return n.indexOf(kw)>=0;});}
+
+  // Detectar grupos activos
+  var grupos=[];
+  if(tiene('miocardial')||tiene('perfusión')||tiene('vascular')||tiene('colesterol')||tiene('triglicéridos')) grupos.push('cardiovascular');
+  if(tiene('hígado')||tiene('lipídico')||tiene('biliares')||tiene('vesícula')) grupos.push('higado');
+  if(tiene('plomo')||tiene('pesticidas')||tiene('metales')||tiene('tóxico')) grupos.push('toxinas');
+  if(tiene('metabolismo')||tiene('adiposo')||tiene('glucosa')||tiene('insulina')) grupos.push('metabolico');
+  if(tiene('hiperplasia')||tiene('reumatoide')||tiene('osteoporosis')) grupos.push('oseo');
+  if(tiene('absorción gástrica')||tiene('intestino')||tiene('gástrica')) grupos.push('digestivo');
+  if(tiene('memoria')||tiene('neurológico')||tiene('cerebro')) grupos.push('neurologico');
+  if(tiene('colágeno')||tiene('cutáneo')||tiene('humectación')||tiene('dermis')) grupos.push('piel');
+
+  if(!grupos.length) grupos=['metabolico']; // fallback
+
+  // Priorizar: cardiovascular y hígado primero, piel último
+  var orden=['toxinas','cardiovascular','higado','neurologico','metabolico','digestivo','oseo','piel'];
+  grupos.sort(function(a,b){return orden.indexOf(a)-orden.indexOf(b);});
+  // Máximo 3 grupos para no saturar
+  grupos=grupos.slice(0,3);
+
+  // Fusionar recomendaciones: 3 de comer y 3 de evitar por grupo activo, deduplicar
+  var seen_c={},seen_e={},seen_t={};
+  var comer=[],evitar=[],tips=[];
+  grupos.forEach(function(g){
+    var t=ALIM_TABLE[g];if(!t)return;
+    t.comer.slice(0,3).forEach(function(x){if(!seen_c[x]){seen_c[x]=true;comer.push(x);}});
+    t.evitar.slice(0,3).forEach(function(x){if(!seen_e[x]){seen_e[x]=true;evitar.push(x);}});
+    t.tips.slice(0,2).forEach(function(x){if(!seen_t[x]){seen_t[x]=true;tips.push(x);}});
+  });
+
+  // Si hay notas/habitos del cliente, agregar tip personalizado
+  if(habitosTexto&&habitosTexto.length>3){
+    var ht=habitosTexto.toLowerCase();
+    if(ht.indexOf('refresco')>=0||ht.indexOf('soda')>=0||ht.indexOf('cola')>=0)
+      tips.unshift('Sustituir los refrescos por agua con limón, té de jamaica o agua mineral — el cambio más impactante para el metabolismo.');
+    if(ht.indexOf('pan')>=0||ht.indexOf('harina')>=0||ht.indexOf('tortilla')>=0)
+      tips.unshift('Reducir el pan y harinas blancas a máximo 1 porción por día; sustituir por tortilla de maíz nixtamalizado o pan integral de centeno.');
+    if(ht.indexOf('carne')>=0||ht.indexOf('carnívoro')>=0)
+      tips.unshift('Mantener las carnes, pero preferir carnes blancas (pollo, pescado) y reducir la roja a 2 veces por semana máximo.');
+    if(ht.indexOf('vegetarian')>=0||ht.indexOf('vegano')>=0)
+      comer.unshift('Combinar leguminosas + cereal en cada comida para proteína completa (ej: frijoles + arroz, lentejas + tortilla).');
+  }
+
+  return{
+    comer:comer.slice(0,7),
+    evitar:evitar.slice(0,7),
+    tips:tips.slice(0,4),
+    grupos_base:grupos
+  };
+}
+
 function runVHTextAnalysis(){
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
@@ -3796,6 +3976,14 @@ function runVHTextAnalysis(){
     if(spinEl)spinEl.style.display='none';
     if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error al leer reporte:</b> '+err.message+'</div>';
     return;
+  }
+
+  // ── Plan de alimentación desde Tablas (gratis) — siempre genera si está marcado ──
+  var incluirAliment=document.getElementById('chkAlimentVH')?.checked;
+  var habitosText=incluirAliment?(document.getElementById('alimentHabitosVH')?.value||'').trim():'';
+  if(incluirAliment){
+    var sisParaPlan=(result.sistemas_afectados||[]).length>0?result.sistemas_afectados:[{sistema:'Metabolismo Lipídico'},{sistema:'Contenido de Grasa en el Hígado'}];
+    result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
   }
 
   if(spinEl)spinEl.style.display='none';
@@ -3828,7 +4016,7 @@ function runVHTextAnalysis(){
   showT('✓ Reporte generado — '+sisLen+' sistemas detectados');
 }
 
-// ── API VERSION (uses credits) — called manually ──
+// ── API VERSION: Tabla Maestra para sistemas/paquetes + mini-llamada API solo para plan alimenticio ──
 async function runVHTextAnalysisAPI(){
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
@@ -3836,118 +4024,64 @@ async function runVHTextAnalysisAPI(){
 
   var spinEl=document.getElementById('anaSpin');
   var resEl=document.getElementById('anaRes');
-  if(spinEl)spinEl.style.display='block';
+  if(spinEl){spinEl.style.display='block';var sd=spinEl.querySelector('div:last-child');if(sd)sd.textContent='Procesando con Tabla Maestra...';}
   if(resEl)resEl.innerHTML='';
 
-  // Build catalog list for AI
-  var pl=PP.filter(function(p){return !p.isService;}).map(function(p){
-    return p.n+(p.ct?' ('+p.ct+')':'')+(p.p?' $'+p.p:'');
-  }).join(', ');
-
-  var today=new Date().toLocaleDateString('es-MX');
-  var sexLbl2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':c.sex==='N'?'Niñ@':'';
-
-  var incluirAliment=document.getElementById('chkAliment')?.checked;
-  var habitosText=incluirAliment?(document.getElementById('alimentHabitos')?.value.trim()||''):'';
-
-  var systemPrompt=`Eres experto en salud integrativa, nutrición funcional y análisis biocuántico VitalHealth.
-Analizas reportes de escaneo biocuántico y recomiendas protocolos con productos VitalHealth.
-Siempre recomienda V-Organex y Té Detox como base de cualquier protocolo.
-Responde SOLO con JSON válido sin markdown ni texto adicional.`;
-
-  var userPrompt=`Analiza este reporte biocuántico VitalHealth del paciente:
-
-PACIENTE: ${c.name}${c.age?' | '+c.age+' años':''}${sexLbl2?' | '+sexLbl2:''}${c.conditions&&c.conditions.length?' | Padecimientos: '+c.conditions.join(', '):''}
-FECHA: ${today}
-
-REPORTE COMPLETO:
-${texto.slice(0,6000)}
-
-CATÁLOGO DISPONIBLE:
-${pl}
-
-${habitosText?'PREFERENCIAS ALIMENTARIAS: '+habitosText:''}
-
-Genera el análisis en este JSON exacto:
-{
-  "paciente": "${c.name}",
-  "edad": "${c.age||''}",
-  "sexo": "${sexLbl2}",
-  "fecha": "${today}",
-  "tipo_analisis": "Síntesis de Análisis BioCuántico de VitalHealth",
-  "resumen_clinico": "párrafo de resumen ejecutivo del estado de salud",
-  "sistemas_afectados": [
-    {"num": 1, "sistema": "nombre", "detectado": "qué se detectó con valores", "significado": "qué significa en lenguaje claro", "urgencia": "alta|media|baja"}
-  ],
-  "recomendaciones_alimentacion": ["consejo 1", "consejo 2"],
-  "recomendaciones_vida": ["consejo 1", "consejo 2"],
-  "hallazgos_criticos": [{"sistema":"...","hallazgo":"...","nivel":"alto|medio|bajo"}],
-  "paquetes": {
-    "basico": {
-      "productos": [{"nombre":"nombre exacto del catálogo","razon_clinica":"por qué específico","dosis":"dosis","resultado_esperado":"qué mejora"}],
-      "justificacion": "descripción del paquete básico",
-      "sistemas_cubiertos": ["sistema1","sistema2"]
-    },
-    "esencial": {
-      "productos": [{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],
-      "justificacion": "descripción del paquete esencial",
-      "sistemas_cubiertos": ["..."]
-    },
-    "completo": {
-      "productos": [{"nombre":"...","razon_clinica":"...","dosis":"...","resultado_esperado":"..."}],
-      "justificacion": "descripción del paquete completo",
-      "sistemas_cubiertos": ["..."]
-    }
-  }${incluirAliment?`,
-  "plan_alimenticio": {
-    "comer": ["alimento 1","alimento 2"],
-    "evitar": ["alimento 1","alimento 2"],
-    "tips": ["tip 1","tip 2"]
-  }`:''}
-}
-
-REGLAS:
-- Básico: 3-4 productos, los más urgentes
-- Esencial: 5-7 productos, cobertura completa
-- Completo: 8-12 productos, protocolo integral
-- Siempre incluir V-Organex y Té Detox en básico
-- Usar nombres EXACTOS del catálogo`;
-
-  try{
-    var res=await API.call('/chat','POST',{
-      model:'claude-sonnet-4-20250514',
-      max_tokens:4000,
-      system:systemPrompt,
-      messages:[{role:'user',content:userPrompt}]
-    });
-
+  // ── Paso 1: Tabla Maestra (gratis, instantáneo) ──
+  var result;
+  try{result=parsearReporteBiocuantico(texto,c);}
+  catch(err){
     if(spinEl)spinEl.style.display='none';
-
-    if(!res||res.error){
-      if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error:</b> '+(res?.error||'Sin respuesta del servidor')+'</div>';
-      return;
-    }
-
-    var raw=(res.content||[]).map(function(x){return x.text||'';}).join('').trim();
-    var result;
-    try{
-      var m=raw.match(/\{[\s\S]*\}/);
-      result=JSON.parse(m?m[0]:raw);
-    }catch(e){
-      if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px"><b style="color:#c04040">Error al parsear respuesta</b><br><small>'+raw.slice(0,200)+'</small></div>';
-      return;
-    }
-
-    _lastResult=result;
-    _fileSource='vh';
-    if(resEl)resEl.innerHTML=renderResultVH(result);
-    addToHistory('vh','🔬 Análisis BioCuántico — '+(result.sistemas_afectados||result.hallazgos_criticos||[]).length+' hallazgos',result);
-    showT('✓ Reporte generado');
-
-  }catch(err){
-    if(spinEl)spinEl.style.display='none';
-    if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error:</b> '+err.message+'</div>';
+    if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error al leer reporte:</b> '+err.message+'</div>';
+    return;
   }
+
+  var incluirAliment=document.getElementById('chkAlimentVH')?.checked||document.getElementById('chkAliment')?.checked;
+  var habitosText=incluirAliment?((document.getElementById('alimentHabitosVH')?.value||document.getElementById('alimentHabitos')?.value||'').trim()):'';
+  // ── Paso 2: Mini-llamada via Worker solo para plan de alimentación ──
+  if(incluirAliment&&(result.sistemas_afectados||[]).length>0){
+    if(sd)sd.textContent='Generando plan alimenticio con IA...';
+    var sistemasStr=(result.sistemas_afectados||[]).slice(0,10).map(function(s){
+      return s.sistema+(s.significado?' — '+s.significado.slice(0,60):'');
+    }).join('\n');
+    var sexLbl2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':'';
+    var miniPrompt='Eres nutrióloga integrativa. Crea un plan alimenticio práctico y personalizado. Responde SOLO con JSON sin markdown.\n\nPACIENTE: '+c.name+(c.age?', '+c.age+' años':'')+', '+(sexLbl2||'')+'.\nSISTEMAS ALTERADOS EN EL ESCÁNER:\n'+sistemasStr+(habitosText?'\n\nHÁBITOS Y PREFERENCIAS DEL CLIENTE: '+habitosText:'')+'\n\nGenera un JSON con exactamente esta estructura:\n{"comer":["alimento o hábito 1","alimento o hábito 2",...7 máximo],"evitar":["cosa a evitar 1",...7 máximo],"tips":["consejo práctico 1",...4 máximo]}\n\nSé específica y personal — menciona los sistemas alterados. Evita frases genéricas. Usa lenguaje cálido y motivador.';
+    try{
+      var WORKER_URL='https://iksanmastervh.iksanwellness.workers.dev/chat';
+      var wRes=await fetch(WORKER_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:800,
+          messages:[{role:'user',content:miniPrompt}]
+        })
+      });
+      if(wRes.ok){
+        var wData=await wRes.json();
+        var raw=(wData.content||[]).map(function(x){return x.text||'';}).join('').trim();
+        try{
+          var m=raw.match(/\{[\s\S]*\}/);
+          var planParsed=JSON.parse(m?m[0]:raw);
+          if(planParsed.comer||planParsed.evitar){result.plan_alimenticio=planParsed;}
+          else{result.plan_alimenticio=generarPlanAlimentacionTabla(result.sistemas_afectados,habitosText);}
+        }catch(pe){
+          result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
+        }
+      }else{
+        result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
+      }
+    }catch(apiErr){
+      result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
+    }
+  }
+
+  if(spinEl)spinEl.style.display='none';
+  _lastResult=result;
+  _fileSource='vh';
+  if(resEl)resEl.innerHTML=renderResultVH(result);
+  addToHistory('vh','🔬 Análisis BioCuántico — '+(result.sistemas_afectados||[]).length+' hallazgos',result);
+  showT('✓ Reporte generado con plan personalizado');
 }
 
 
@@ -4536,6 +4670,11 @@ function buildAnalysisModal(title,sub,src){
 function toggleAlimentSection(){
   var chk=document.getElementById('chkAliment');
   var sec=document.getElementById('alimentSection');
+  if(sec)sec.style.display=chk&&chk.checked?'block':'none';
+}
+function toggleAlimentSectionVH(){
+  var chk=document.getElementById('chkAlimentVH');
+  var sec=document.getElementById('alimentSectionVH');
   if(sec)sec.style.display=chk&&chk.checked?'block':'none';
 }
 
