@@ -1612,6 +1612,7 @@ function doLogin(){
   const uid=passEl.dataset.uid;
   const pass=passEl.value;
   const errEl=document.getElementById('loginErr');
+  const loginBtn=document.getElementById('loginBtn'); // declarado aqui para que este disponible en todo doLogin
   errEl.textContent='';
   if(!uid){errEl.textContent='Selecciona un usuario primero';return;}
   // Handle pending login (user from URL not yet in localStorage)
@@ -1652,7 +1653,6 @@ function doLogin(){
   // Esto asegura que un cambio de contraseña invalida el acceso en TODOS los dispositivos
   if(!checkAccess(uLocal)&&uLocal.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
 
-  const loginBtn=document.getElementById('loginBtn');
   if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
 
   function finishLogin(u){
