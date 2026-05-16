@@ -1614,45 +1614,34 @@ function doLogin(){
   if(!uid){errEl.textContent='Selecciona un usuario primero';return;}
   // Handle pending login (user from URL not yet in localStorage)
   if(uid.startsWith('_pending_')){
+    // [FIX] SIEMPRE verificar contra el Worker — nunca comparar pass local.
+    // El Worker hashea con SHA-256, el token local tiene texto plano → comparación local SIEMPRE falla.
     const pendingEmail=normalizeEmail(uid.replace('_pending_',''));
-    if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
+    errEl.textContent='Verificando...';
 
-    // Try token data from sessionStorage first (works offline, has consultor_id for operadores)
+    // Leer token de sessionStorage para recuperar consultor_id y módulos (no para verificar pass)
     var tokenUser=null;
     try{var ts=sessionStorage.getItem('ik_token_user');if(ts)tokenUser=JSON.parse(ts);}catch(e){}
 
-    if(tokenUser){
-      // Verify password
-      if(tokenUser.pass!==pass){
-        if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
-        errEl.textContent='Contraseña incorrecta';return;
-      }
-      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
-      var tu=normalizeUser(tokenUser);
-      tu.consultor_id=tu.parent_id||tu.consultor_id||tu.id;
-      var tiIdx=users.findIndex(function(x){return x.id===tu.id;});
-      if(tiIdx>=0)users[tiIdx]=tu;else users.push(tu);
-      S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;}));
-      finishLogin(tu);
-      return;
-    }
-
-    // Fallback: verify against Supabase
     API.login(pendingEmail,pass).then(function(res){
-      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
+      errEl.textContent='';
       if(!res||!res.ok){
         errEl.textContent=res&&res.error?res.error:'Contraseña incorrecta';
         return;
       }
       var u=normalizeUser(res.user);
+      // Recuperar consultor_id del token si el Worker no lo devuelve (operadores)
+      if(tokenUser&&tokenUser.parent_id&&!u.parent_id)u.parent_id=tokenUser.parent_id;
+      if(tokenUser&&tokenUser.consultor_id&&!u.consultor_id)u.consultor_id=tokenUser.consultor_id;
       u.consultor_id=u.parent_id||u.consultor_id||u.id;
+      // adminToken solo para admin
+      if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
       var existIdx=users.findIndex(function(x){return x.id===u.id;});
       if(existIdx>=0)users[existIdx]=u;else users.push(u);
-      S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;}));
+      S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
       finishLogin(u);
     }).catch(function(){
-      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
-      errEl.textContent='Error de conexión. Verifica tu internet.';
+      errEl.textContent='Sin conexión al servidor. Verifica tu internet.';
     });
     return;
   }
@@ -1858,8 +1847,11 @@ function doLogin(){
 
     finishLogin(u);
   }).catch(function(e){
-    console.warn('Server login error, using local:',e);
-    finishLogin(uLocal);
+    // [FIX] Si el Worker falla, NO entrar — la pass ya no se guarda localmente
+    // El Worker es la única fuente de verdad para autenticación
+    console.warn('Server login error:',e);
+    errEl.textContent='Sin conexión al servidor. Verifica tu internet e intenta de nuevo.';
+    if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
   });
 }
 
@@ -6478,11 +6470,14 @@ function renderUserEditModal(uid){
           <option value="consult"${u.role==='consult'?' selected':''}>👁️ Consulta</option>
         </select>`}
     </div>
-    <div style="background:var(--warm);border-radius:8px;padding:9px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
-      <span style="font-family:monospace;font-size:17px;font-weight:700;color:var(--deep);letter-spacing:2px">${u.pass}</span>
-      <span style="font-size:10px;color:var(--muted)">contraseña actual</span>
+    <div style="background:var(--warm);border-radius:8px;padding:10px 13px;margin-bottom:8px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">🔐 Cambiar contraseña</div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <input class="in" id="uePass1" type="text" placeholder="Nueva contraseña" style="flex:1">
+        <button class="btn btn-admin btn-sm" onclick="adminCambiarPassConsultor('${uid}')">✓ Cambiar</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:5px">La nueva contraseña se hashea en el servidor. El consultor debe usar la nueva en su próximo login.</div>
     </div>
-    <input class="in" id="uePass1" type="text" placeholder="Nueva contraseña (vacío = no cambiar)" style="margin-bottom:14px">
     <div style="display:flex;gap:7px;flex-wrap:wrap">
       <button class="btn btn-p" style="flex:1" onclick="saveUserEdit('${uid}')">💾 Guardar info</button>
       ${u.role!=='admin'?`<button class="btn btn-d btn-sm" onclick="if(confirm('¿Eliminar a ${u.name}?'))deleteUserFromEdit('${uid}')">🗑️</button>`:''}
@@ -6971,6 +6966,26 @@ function saveUserEdit(uid){
   renderUsers();
   showT('Guardando...');
   setTimeout(function(){showT('✓ '+u.name+' actualizado');},800);
+}
+
+// [FIX] Admin cambia contraseña de cualquier consultor via Worker (hashea en servidor)
+async function adminCambiarPassConsultor(uid){
+  const u=users.find(x=>x.id===uid);if(!u)return;
+  const newPass=document.getElementById('uePass1')?.value.trim();
+  if(!newPass){showT('Escribe la nueva contraseña');return;}
+  if(newPass.length<4){showT('Mínimo 4 caracteres');return;}
+  showT('Actualizando contraseña...');
+  try{
+    const r=await API.updateUsuario(uid,{pass:newPass});
+    if(r&&r.ok!==false){
+      document.getElementById('uePass1').value='';
+      showT('✓ Contraseña de '+u.name+' actualizada — el link de acceso ya tiene la nueva clave');
+      // Regenerar link con nueva contraseña
+      setTimeout(function(){shortenConsultLink(uid);},400);
+    } else {
+      showT('Error al actualizar: '+(r&&r.error?r.error:'sin respuesta del servidor'));
+    }
+  }catch(e){showT('Error de conexión: '+e.message);}
 }
 
 function renovarUserAcceso(uid){
