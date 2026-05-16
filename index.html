@@ -1671,7 +1671,26 @@ function doLogin(){
           renderConList();refreshAllConSelects();
         }
         if(results[1]&&Array.isArray(results[1])){
-          sales=results[1].filter(function(s){return S.get('ik_deleted_sales',[]).indexOf(s.id)<0;});
+          var delSales=S.get('ik_deleted_sales',[]);
+          sales=results[1].filter(function(s){return delSales.indexOf(s.id)<0;}).map(function(s){
+            var cli=clientes.find(function(c){return c.id===s.consultante_id||c.id===s.cliId;});
+            return {
+              id:s.id,cliId:s.consultante_id||s.cliId||'',
+              client:s.client||s.cliente_nombre||(cli?cli.name:'')||'',
+              origin:s.origin||(cli?cli.origin:'')||'',
+              items:s.productos||s.items||[],
+              total:s.total||0,bruto:s.bruto||s.total||0,desc:s.desc||0,promo:s.promo||'',
+              payMethod:s.cuenta_nombre||s.payMethod||'',
+              payMethodId:s.cuenta_id||s.payMethodId||'',
+              nota:s.notas||s.nota||'',
+              date:s.fecha?s.fecha+'T00:00:00':s.date||s.created_at||new Date().toISOString(),
+              status:s.status||'pagado',
+              productsCount:s.products_count||(s.productos||s.items||[]).length||1,
+              esEscaneo:s.es_escaneo||s.esEscaneo||false,
+              esDerivado:s.es_derivado||s.esDerivado||false,
+              consultor_id:s.consultor_id
+            };
+          });
           S.set('ik_sales',sales);
         }
         if(results[2]&&Array.isArray(results[2])){
@@ -1835,7 +1854,30 @@ function doLogin(){
       // Always overwrite localStorage with Supabase — prevents stale cache
       if(results[1]&&Array.isArray(results[1])){
         var deletedSales=S.get('ik_deleted_sales',[]);
-        sales=results[1].filter(function(s){return deletedSales.indexOf(s.id)<0;});
+        sales=results[1].filter(function(s){return deletedSales.indexOf(s.id)<0;}).map(function(s){
+          // Mapear campos de Supabase al formato local
+          var cli=clientes.find(function(c){return c.id===s.consultante_id||c.id===s.cliId;});
+          return {
+            id:s.id,
+            cliId:s.consultante_id||s.cliId||'',
+            client:s.client||s.cliente_nombre||(cli?cli.name:'')||'',
+            origin:s.origin||(cli?cli.origin:'')||'',
+            items:s.productos||s.items||[],
+            total:s.total||0,
+            bruto:s.bruto||s.total||0,
+            desc:s.desc||0,
+            promo:s.promo||'',
+            payMethod:s.cuenta_nombre||s.payMethod||'',
+            payMethodId:s.cuenta_id||s.payMethodId||'',
+            nota:s.notas||s.nota||'',
+            date:s.fecha?s.fecha+'T00:00:00':s.date||s.created_at||new Date().toISOString(),
+            status:s.status||'pagado',
+            productsCount:s.products_count||(s.productos||s.items||[]).length||1,
+            esEscaneo:s.es_escaneo||s.esEscaneo||false,
+            esDerivado:s.es_derivado||s.esDerivado||false,
+            consultor_id:s.consultor_id
+          };
+        });
         S.set('ik_sales',sales);
       }
       if(results[2]&&Array.isArray(results[2])){
@@ -3530,13 +3572,15 @@ function runVHTextAnalysis(){
   if(sisLen===0){
     // Check if the text even has ranges in it
     var testRanges=(texto.match(/(\d+[,.]\d+\s*[-–]\s*\d+[,.]\d+)/g)||[]).length;
-    var testVals=(texto.match(/^\d+\.\d+$/gm)||[]).length;
+    var testVals=(texto.match(/^\d+[,.]\d+$/gm)||[]).length;
+    var testInline=(texto.match(/\d+[,.]\d+\s*[-–]\s*\d+[,.]\d+\s+\d+[,.]\d+/g)||[]).length;
     if(resEl)resEl.innerHTML='<div style="background:#fff8e8;border-radius:9px;padding:14px;border:1px solid #fbbf24;font-size:12px">'
       +'<b style="color:#b45309">⚠️ No se detectaron parámetros fuera de rango</b><br><br>'
       +'<b>Diagnóstico del texto pegado:</b><br>'
       +'• Caracteres totales: <b>'+texto.length+'</b><br>'
       +'• Rangos numéricos encontrados (ej: 0,097 - 0,419): <b>'+testRanges+'</b><br>'
-      +'• Valores numéricos encontrados (ej: 0.723): <b>'+testVals+'</b><br><br>'
+      +'• Valores en línea propia (ej: 0.723): <b>'+testVals+'</b><br>'
+      +'• Formato inline detectado (rango+valor en misma línea): <b>'+testInline+'</b><br><br>'
       +(testRanges<5?'<b style="color:#c04040">❌ El texto no contiene rangos numéricos del escáner.</b><br>Asegúrate de pegar las páginas 119-124 del PDF (Informe de síntesis).<br><br>':'')
       +(testRanges>=5?'<b style="color:#1a7f3c">✓ El texto tiene rangos pero ninguno salió fuera de rango.</b><br>Esto puede ser correcto si el paciente está dentro de todos los rangos.<br><br>':'')
       +'<b>Información extraída:</b> Paciente: '+result.paciente+' | Edad: '+result.edad+' | Sexo: '+result.sexo
@@ -4011,8 +4055,13 @@ function parsearReporteBiocuantico(texto,c){
 
   // ── Core: scan ALL lines for range→value pairs using RANGE_TABLE ──
   var lines=workText.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
-  var reRange=/^(\d+)[,.](\d+)\s*[-–]\s*(\d+)[,.](\d+)$/;
+  // Two-line format:  "1,219 - 3,021"  on one line, value on next
+  var reRange=/(\d+)[,.](\d+)\s*[-–]\s*(\d+)[,.](\d+)/;
+  // Value-only line (e.g. "1.983" or "1,983")
   var reVal=/^(\d+)[,.](\d+)$/;
+  // Inline format: "Nombre del Parametro  1,219 - 3,021  1.983"
+  // Captures: label(optional) rmin_int rmin_dec rmax_int rmax_dec  val_int val_dec
+  var reInline=/^(.*?)\s*(\d+)[,.](\d+)\s*[-–]\s*(\d+)[,.](\d+)\s+(\d+)[,.](\d+)\s*$/;
   var reProd=/(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|VITAREN\b|VITALPRO\b|FORTYFLORA\b|GLUTATION\b|VITALIX\b|VITALAGE\b|VITAX\b|KETOCAFÉ\b|KETOCAFE\b|THERMOKAFE\b)/gi;
 
   var outParams=[];   // {display,section,sig,val,rmin,rmax,dir,urgencia,sistemas}
@@ -4025,9 +4074,43 @@ function parsearReporteBiocuantico(texto,c){
     if(norm&&!prodsSeen[norm]){prodsSeen[norm]=true;allProds.push(norm);}
   }
 
+  function processParam(rmin,rmax,val){
+    var isOut=val<rmin*0.95||val>rmax*1.05;
+    if(!isOut)return;
+    var info=lookupByRange(rmin,rmax);
+    if(!info)return;
+    var dir=val>rmax?'alto':'bajo';
+    var pct=dir==='alto'?(val-rmax)/rmax:(rmin-val)/rmin;
+    var urg=pct>0.35?'alta':'media';
+    outParams.push({
+      display:info[0],section:info[1],
+      sig:dir==='alto'?info[2]:info[3],
+      val:val,rmin:rmin,rmax:rmax,
+      dir:dir,urgencia:urg,
+      sistemas:info[4]||[]
+    });
+  }
+
   var i=0;
   while(i<lines.length){
     var line=lines[i];
+
+    // ── Mode 1: inline — rango + valor en la MISMA línea ──
+    var im=line.match(reInline);
+    if(im){
+      var rmin_i=parseFloat(im[2]+'.'+im[3]);
+      var rmax_i=parseFloat(im[4]+'.'+im[5]);
+      var val_i =parseFloat(im[6]+'.'+im[7]);
+      processParam(rmin_i,rmax_i,val_i);
+      // also try product names in the label portion (im[1])
+      var reProdLine2=/(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|VITAREN\b|VITALPRO\b|FORTYFLORA\b|GLUTATION\b|VITALIX\b|VITALAGE\b|VITAX\b|KETOCAFÉ\b|KETOCAFE\b|THERMOKAFE\b)/gi;
+      reProdLine2.lastIndex=0;
+      var pm2;
+      while((pm2=reProdLine2.exec(line))!==null){addProd(pm2[1]);}
+      i++; continue;
+    }
+
+    // ── Mode 2: two-line — rango solo, valor en la(s) línea(s) siguiente(s) ──
     var rm=line.match(reRange);
     if(rm){
       var rmin=parseFloat(rm[1]+'.'+rm[2]);
@@ -4037,26 +4120,12 @@ function parsearReporteBiocuantico(texto,c){
         var vm=lines[j].match(reVal);
         if(vm){
           var val=parseFloat(vm[1]+'.'+vm[2]);
-          var isOut=val<rmin*0.95||val>rmax*1.05;
-          if(isOut){
-            var info=lookupByRange(rmin,rmax);
-            if(info){
-              var dir=val>rmax?'alto':'bajo';
-              var pct=dir==='alto'?(val-rmax)/rmax:(rmin-val)/rmin;
-              var urg=pct>0.35?'alta':'media';
-              outParams.push({
-                display:info[0],section:info[1],
-                sig:dir==='alto'?info[2]:info[3],
-                val:val,rmin:rmin,rmax:rmax,
-                dir:dir,urgencia:urg,
-                sistemas:info[4]||[]
-              });
-            }
-          }
+          processParam(rmin,rmax,val);
           i=j; break;
         }
       }
     }
+
     // Extract products from any line mentioning them
     var pm;
     var reProdLine=/(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|VITAREN\b|VITALPRO\b|FORTYFLORA\b|GLUTATION\b|VITALIX\b|VITALAGE\b|VITAX\b|KETOCAFÉ\b|KETOCAFE\b|THERMOKAFE\b)/gi;
