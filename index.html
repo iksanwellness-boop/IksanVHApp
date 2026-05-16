@@ -1604,294 +1604,186 @@ function selectLoginUser(uid){
 }
 
 function doLogin(){
-  const passEl=document.getElementById('loginPass');
-  const uid=passEl.dataset.uid;
-  const pass=passEl.value;
-  const errEl=document.getElementById('loginErr');
+  var passEl=document.getElementById('loginPass');
+  var uid=passEl.dataset.uid;
+  var pass=passEl.value;
+  var errEl=document.getElementById('loginErr');
+  var loginBtn=document.getElementById('loginBtn'); // declarar aqui para que este disponible en todo doLogin
   errEl.textContent='';
   if(!uid){errEl.textContent='Selecciona un usuario primero';return;}
-  // Handle pending login (user from URL not yet in localStorage)
-  if(uid.startsWith('_pending_')){
-    // [FIX] SIEMPRE verificar contra el Worker — nunca comparar pass localmente
-    // El Worker usa SHA-256; el token puede tener texto plano → comparación local falla siempre
-    const pendingEmail=normalizeEmail(uid.replace('_pending_',''));
-    errEl.textContent='Verificando...';
-    // Leer token solo para recuperar consultor_id y módulos — NO para verificar pass
-    var tokenCtx=null;
-    try{var ts=sessionStorage.getItem('ik_token_user');if(ts)tokenCtx=JSON.parse(ts);}catch(e){}
 
-    API.login(pendingEmail,pass).then(function(res){
-      errEl.textContent='';
-      // res===null significa que API.call tuvo un error de red (catch interno)
-      if(res===null){
-        // Intentar fetch directo al Worker para diagnosticar
-        return fetch('https://iksanmastervh.iksanwellness.workers.dev/auth/login',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({email:pendingEmail,pass:pass})
-        }).then(function(r){return r.json();}).then(function(data){
-          if(data&&data.ok){
-            var u=normalizeUser(data.user);
-            u.consultor_id=u.parent_id||u.consultor_id||u.id;
-            if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
-            var existIdx=users.findIndex(function(x){return x.id===u.id;});
-            if(existIdx>=0)users[existIdx]=u;else users.push(u);
-            S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
-            finishLogin(u);
-          } else {
-            errEl.textContent=(data&&data.error)?data.error:'Contraseña incorrecta';
-          }
-        }).catch(function(e2){
-          console.error('[IKSAN] Error directo al Worker:',e2);
-          errEl.textContent='Sin conexión al servidor ('+(e2&&e2.message?e2.message:'network error')+')';
-        });
-      }
-      if(!res.ok){
-        errEl.textContent=res.error?res.error:'Contraseña incorrecta';
-        return;
-      }
-      var u=normalizeUser(res.user);
-      // Recuperar consultor_id del token si el Worker no lo devuelve (operadores)
-      if(tokenCtx&&tokenCtx.parent_id&&!u.parent_id)u.parent_id=tokenCtx.parent_id;
-      if(tokenCtx&&tokenCtx.consultor_id&&!u.consultor_id)u.consultor_id=tokenCtx.consultor_id;
-      u.consultor_id=u.parent_id||u.consultor_id||u.id;
-      if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
-      var existIdx=users.findIndex(function(x){return x.id===u.id;});
-      if(existIdx>=0)users[existIdx]=u;else users.push(u);
-      S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
-      finishLogin(u);
-    }).catch(function(e){
-      console.error('[IKSAN login error]',e);
-      // Intentar directo al Worker para ver si es problema de API.call
-      fetch('https://iksanmastervh.iksanwellness.workers.dev/auth/login',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email:pendingEmail,pass:pass})
-      }).then(function(r){return r.json();}).then(function(data){
-        if(data&&data.ok){
-          var u=normalizeUser(data.user);
-          u.consultor_id=u.parent_id||u.consultor_id||u.id;
-          if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
-          var existIdx=users.findIndex(function(x){return x.id===u.id;});
-          if(existIdx>=0)users[existIdx]=u;else users.push(u);
-          S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
-          finishLogin(u);
-        } else {
-          errEl.textContent=(data&&data.error)?data.error:'Contraseña incorrecta';
-        }
-      }).catch(function(e2){
-        console.error('[IKSAN fetch directo error]',e2);
-        errEl.textContent='Error: '+(e2&&e2.message?e2.message:'Sin conexión. Verifica internet.');
-      });
-    });
-    return;
-  }
-
-  const uLocal=users.find(x=>x.id===uid);
-  if(!uLocal){errEl.textContent='Usuario no encontrado';return;}
-  // [SEC-P2] Eliminada comparación local de contraseña — siempre verifica en el Worker
-  // Esto asegura que un cambio de contraseña invalida el acceso en TODOS los dispositivos
-  if(!checkAccess(uLocal)&&uLocal.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
-
-  const loginBtn=document.getElementById('loginBtn');
-  if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
-
+  // Función compartida para terminar login exitoso
   function finishLogin(u){
     if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
-    // Set consultor_id properly
-    u.consultor_id = u.parent_id || u.consultor_id || u.id;
+    u.consultor_id=u.parent_id||u.consultor_id||u.id;
     currentUser=u;
-    // Don't clear localStorage here — keep as fallback until Supabase responds
-    // Restore active consultante from localStorage
     var savedActiveId=S.get('ik_activeCon',null);
-    if(savedActiveId){
-      activeConId=savedActiveId;
-    }
+    if(savedActiveId)activeConId=savedActiveId;
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
-
-    // Reset tabs
     ['nt-clientes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
       var el=document.getElementById(id);if(el)el.style.display='none';
     });
-
-    // User pill
-    const pill=document.getElementById('userPill');
+    var pill=document.getElementById('userPill');
     pill.style.display='inline-block';
     pill.textContent=u.role==='admin'?'Admin':u.role==='paid'||u.role==='socio'?'Consultor':u.role==='operador'?'Operador':'Consulta';
     pill.classList.toggle('admin',u.role==='admin');
-
-    // Apply config
     document.getElementById('appNameDisplay').textContent=APP_CFG.appName||'IKSAN';
     document.getElementById('appSubDisplay').textContent=APP_CFG.appSub||'Wellness · VitalHealth';
     setLang(APP_CFG.lang||'es');
     try{document.getElementById('cfgAppName').value=APP_CFG.appName||'IKSAN';}catch(e){}
     try{document.getElementById('cfgAppSub').value=APP_CFG.appSub||'Wellness · VitalHealth';}catch(e){}
     try{document.getElementById('cfgLang').value=APP_CFG.lang||'es';}catch(e){}
-
-    const savedActive=S.get('ik_activeCon',null);
-    if(savedActive&&clientes.find(c=>c.id===savedActive))setActiveConsultante(savedActive);
+    var savedActive=S.get('ik_activeCon',null);
+    if(savedActive&&clientes.find(function(c){return c.id===savedActive;}))setActiveConsultante(savedActive);
     else renderConList();
-
     refreshAllConSelects();
     initCat();
     if(u.role==='admin')safeCall(initPriceTable);
     safeCall(applyModulosTabs,[u]);
-    const boCfg=S.get('ik_boconfig_'+u.id,null);
+    var boCfg=S.get('ik_boconfig_'+u.id,null);
     if(boCfg)setTimeout(function(){applyBoConfig(boCfg);},300);
     showT('Bienvenido/a, '+u.name);
-    // Show DEMO watermark for admin (not on BO Admin)
     if(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op'){
       window._isAdmin=true;
       updateDemoOverlay('clientes');
     }
   }
 
-  // Verify with server + sync data
-  API.login(uLocal.email, pass).then(function(res){
-    var u=uLocal;
-    if(res&&res.ok&&res.user){
-      u=normalizeUser(Object.assign({},uLocal,res.user));
-      // [SEC-P2] adminToken llega del Worker solo para admin — guardarlo en memoria, nunca en localStorage
-      if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
-      u.modulosAsignados=res.user.modulosAsignados||uLocal.modulosAsignados||[];
-      u.consultor_id=res.user.parent_id||res.user.id;
-      u.consultorId=u.consultor_id;
-      const idx2=users.findIndex(function(x){return x.id===u.id;});
-      if(idx2>=0)users[idx2]=u;else users.push(u);
-      S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;})); // [SEC-P1]
-    } else {
-      u.consultorId=uLocal.parent_id||uLocal.id;
+  // Función para procesar respuesta exitosa del Worker
+  function processLoginResponse(res, tokenCtx){
+    if(!res||!res.ok){
+      errEl.textContent=(res&&res.error)?res.error:'Contraseña incorrecta';
+      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
+      return;
     }
+    var u=normalizeUser(res.user||res);
+    if(tokenCtx&&tokenCtx.parent_id&&!u.parent_id)u.parent_id=tokenCtx.parent_id;
+    if(tokenCtx&&tokenCtx.consultor_id&&!u.consultor_id)u.consultor_id=tokenCtx.consultor_id;
+    u.consultor_id=u.parent_id||u.consultor_id||u.id;
+    if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
+    var existIdx=users.findIndex(function(x){return x.id===u.id;});
+    if(existIdx>=0)users[existIdx]=u;else users.push(u);
+    S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
+    finishLogin(u);
+  }
 
-    // Load server data
-    const cid=u.consultor_id||u.consultorId||u.parent_id||u.id;
-    const isAdminU=(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op');
+  // Función fetch directo al Worker (sin pasar por API.call)
+  function fetchDirectWorker(email, pass, tokenCtx){
+    return fetch('https://iksanmastervh.iksanwellness.workers.dev/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:email,pass:pass})
+    }).then(function(r){return r.json();}).then(function(data){
+      processLoginResponse(data, tokenCtx);
+    }).catch(function(e2){
+      console.error('[IKSAN fetch error]',e2);
+      errEl.textContent='Error de red: '+(e2&&e2.message?e2.message:'sin conexión');
+      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
+    });
+  }
+
+  // ── MODO URL: usuario llega via link ?u=email ──
+  if(uid.startsWith('_pending_')){
+    var pendingEmail=normalizeEmail(uid.replace('_pending_',''));
+    errEl.textContent='Verificando...';
+    if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
+    var tokenCtx=null;
+    try{var ts=sessionStorage.getItem('ik_token_user');if(ts)tokenCtx=JSON.parse(ts);}catch(e){}
+    // Siempre fetch directo — API.call puede fallar silenciosamente con null
+    fetchDirectWorker(pendingEmail, pass, tokenCtx);
+    return;
+  }
+
+  // ── MODO NORMAL: usuario en localStorage ──
+  var uLocal=users.find(function(x){return x.id===uid;});
+  if(!uLocal){errEl.textContent='Usuario no encontrado';return;}
+  if(!checkAccess(uLocal)&&uLocal.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
+
+  if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
+
+  // Verificar contra Worker
+  fetchDirectWorker(uLocal.email, pass, null);
+
+  // En paralelo: cargar datos del servidor
+  // (Se ejecuta después de que fetchDirectWorker llame a finishLogin)
+  setTimeout(function(){
+    if(!currentUser||currentUser.id!==uLocal.id)return; // Si no entró, no cargar
+    var cid=currentUser.consultor_id||currentUser.id;
+    var isAdminU=(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
     Promise.all([
-      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid), // 0
-      isAdminU?Promise.resolve([]):API.getVentas(cid),         // 1
-      isAdminU?Promise.resolve([]):API.getGastos(cid),         // 2
-      isAdminU?Promise.resolve([]):API.getCitasBio(cid),       // 3
-      isAdminU?Promise.resolve([]):API.getCitasDr(cid),        // 4
-      API.getConfig(cid),         // 5
-      API.getPrecios(cid),        // 6
-      API.getInventario(cid),     // 7
+      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid),
+      isAdminU?Promise.resolve([]):API.getVentas(cid),
+      isAdminU?Promise.resolve([]):API.getGastos(cid),
+      isAdminU?Promise.resolve([]):API.getCitasBio(cid),
+      isAdminU?Promise.resolve([]):API.getCitasDr(cid),
+      API.getConfig(cid),
+      API.getPrecios(cid),
+      API.getInventario(cid),
     ]).then(function(results){
-      // Only update if Supabase returned actual data
       if(results[0]&&Array.isArray(results[0])&&results[0].length>0){
         clientes=results[0].map(function(c){
-          return{
-            id:c.id,
-            name:c.nombre||c.name||'',
-            phone:c.telefono||c.phone||'',
-            email:c.email||'',
-            notes:c.notas||'',
-            notas:c.notas||'',
-            consultor_id:c.consultor_id,
-            created_at:c.created_at,
-            status:c.status||'prospecto',
-            origin:c.origin||'',
-            statusNote:c.status_note||'',
-            age:c.age||'',
-            sex:c.sex||'',
-            city:c.city||'',
-            occ:c.occ||'',
-            foodPref:c.food_pref||[],
-            conditions:c.padecimientos||[],
-            items:c.items||[],
-            savedCarts:c.saved_carts||[],
-            history:c.history||[],
-            lastUpdate:c.updated_at||c.created_at
-          };
+          return{id:c.id,name:c.nombre||c.name||'',phone:c.telefono||c.phone||'',
+            email:c.email||'',notes:c.notas||'',consultor_id:c.consultor_id,
+            created_at:c.created_at,status:c.status||'prospecto',origin:c.origin||'',
+            statusNote:c.status_note||'',age:c.age||'',sex:c.sex||'',city:c.city||'',
+            occ:c.occ||'',foodPref:c.food_pref||[],conditions:c.padecimientos||[],
+            items:c.items||[],savedCarts:c.saved_carts||[],history:c.history||[],
+            lastUpdate:c.updated_at||c.created_at};
         });
         S.set('ik_consultantes',clientes);
-        // Immediately render so user sees their data
         setTimeout(function(){renderConList();refreshAllConSelects();},100);
       }
-      // Always overwrite localStorage with Supabase — prevents stale cache
       if(results[1]&&Array.isArray(results[1])){
-        var deletedSales=S.get('ik_deleted_sales',[]);
-        sales=results[1].filter(function(s){return deletedSales.indexOf(s.id)<0;});
+        sales=results[1].filter(function(s){return S.get('ik_deleted_sales',[]).indexOf(s.id)<0;});
         S.set('ik_sales',sales);
       }
       if(results[2]&&Array.isArray(results[2])){
-        var deletedGastos=S.get('ik_deleted_gastos',[]);
-        gastos=results[2].filter(function(g){return deletedGastos.indexOf(g.id)<0;});
+        gastos=results[2].filter(function(g){return S.get('ik_deleted_gastos',[]).indexOf(g.id)<0;});
         S.set('ik_gastos',gastos);
       }
       if(results[3]&&Array.isArray(results[3])){
-        var bioMap={};
-        var deletedBio=S.get('ik_deleted_citas_bio',[]);
-        results[3].forEach(function(c){if(deletedBio.indexOf(c.id)<0)bioMap[c.id]=c;});
-        citasBio=Object.values(bioMap);
-        S.set('ik_citasBio',citasBio);
+        var bioMap={};results[3].forEach(function(c){bioMap[c.id]=c;});
+        citasBio=Object.values(bioMap);S.set('ik_citasBio',citasBio);
       }
       if(results[4]&&Array.isArray(results[4])){
-        var drMap={};
-        var deletedDr=S.get('ik_deleted_citas_dr',[]);
-        results[4].forEach(function(c){if(deletedDr.indexOf(c.id)<0)drMap[c.id]=c;});
-        citasDr=Object.values(drMap);
-        S.set('ik_citasDr',citasDr);
+        var drMap={};results[4].forEach(function(c){drMap[c.id]=c;});
+        citasDr=Object.values(drMap);S.set('ik_citasDr',citasDr);
       }
-
-      // Config del consultor — load BO config (colors, logo, name)
-      if(results[5]&&typeof results[5]==='object'&&!Array.isArray(results[5])&&Object.keys(results[5]).length>0){
+      if(results[5]&&typeof results[5]==='object'&&Object.keys(results[5]).length>0){
         var cfg=results[5];
-        if(u.id!=='u_admin'&&u.role!=='admin'){
-          // Save and apply BO config
-          S.set('ik_boconfig_'+u.id,cfg);
-          setTimeout(function(){
-            if(typeof applyBoConfig==='function')safeCall(applyBoConfig,[cfg]);
-          },200);
+        if(currentUser.id!=='u_admin'&&currentUser.role!=='admin'){
+          S.set('ik_boconfig_'+currentUser.id,cfg);
+          setTimeout(function(){if(typeof applyBoConfig==='function')safeCall(applyBoConfig,[cfg]);},200);
         }
       }
-
-      // Precios del catálogo
-      if(results[6]&&typeof results[6]==='object'&&!Array.isArray(results[6])&&Object.keys(results[6]).length){
-        prices=results[6];
-        S.set('ik_prices',prices);
+      if(results[6]&&typeof results[6]==='object'&&Object.keys(results[6]).length){
+        prices=results[6];S.set('ik_prices',prices);
         if(typeof filterCat==='function')safeCall(filterCat);
       }
-
-      // Inventario — only for consultores, not admin
       if(!isAdminU&&results[7]&&Array.isArray(results[7])&&results[7].length>0){
         inventario=results[7].map(function(i){return{
           nombre:i.producto,stock:i.stock||0,sobrePedido:i.sobre_pedido||false,
-          fechaRegistro:i.fecha_registro||null,fechaCaducidad:i.fecha_caducidad||null,
-          updatedAt:i.updated_at
-        };});
+          fechaRegistro:i.fecha_registro||null,fechaCaducidad:i.fecha_caducidad||null};
+        });
         saveInv();
-      } else if(isAdminU){
-        inventario=[];S.set('ik_inventario',[]);
-        // Admin has no own clients — clear any leaked data
-        clientes=clientes.filter(function(c){return c.consultor_id==='u_admin'||c.consultor_id===cid;});
-        S.set('ik_consultantes',clientes);
       }
-
       renderConList();refreshAllConSelects();
     }).catch(function(e){console.warn('Data load error:',e);});
 
-    // Admin: sync all users from server
-    if(u.role==='admin'||u.role==='admin_op'){
+    if(currentUser.role==='admin'||currentUser.role==='admin_op'){
       API.getUsuarios().then(function(serverUsers){
         if(serverUsers&&Array.isArray(serverUsers)){
           var adminLocal=users.find(function(x){return x.id==='u_admin';});
-          // Normalize all users from Supabase
           users=serverUsers.map(normalizeUser);
           if(adminLocal&&!users.find(function(x){return x.id==='u_admin';}))users.unshift(adminLocal);
-          S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;})); // [SEC-P1]
+          S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
           if(typeof renderUsers==='function')safeCall(renderUsers);
-          if(typeof renderAdminOpList==='function')safeCall(renderAdminOpList);
         }
       }).catch(function(){});
     }
+  }, 800); // esperar 800ms para que finishLogin termine primero
 
-    finishLogin(u);
-  }).catch(function(e){
-    console.warn('Server login error, using local:',e);
-    finishLogin(uLocal);
-  });
-}
 
 function doLogout(){
   if(!confirm('¿Cerrar sesión?'))return;
@@ -7047,10 +6939,10 @@ async function adminCambiarPassConsultor(uid){
       var el=document.getElementById('uePassDisplay_'+uid);
       if(el){el.dataset.pass=newPass;el.dataset.loaded='1';el.dataset.shown='0';el.textContent='••••••••';}
       showT('✓ Contraseña actualizada — regenerando link de acceso...');
-      // Regenerar link con nueva contraseña (el token lleva la pass para el primer login)
+      // Regenerar link con nueva contraseña
       setTimeout(function(){
-        // Actualizar pass en el token para que el nuevo link funcione
         window['_tokenPass_'+uid]=newPass;
+        window['_consultLink_'+uid]=null; // [FIX] borrar caché para forzar regeneración
         shortenConsultLink(uid);
       },400);
     } else {
@@ -7323,9 +7215,10 @@ function copyConsultLink(uid){
 
 // Auto-shorten link when Pago & Acceso tab opens
 function shortenConsultLink(uid){
-  var longUrl=window['_consultLink_'+uid];
-  if(!longUrl){
-    // Regenerate the link
+  // Siempre regenerar el token — puede haber cambiado la contraseña o los módulos
+  var longUrl=null;
+  window['_consultLink_'+uid]=null; // invalidar caché
+  {
     var u=users.find(function(x){return x.id===uid;});
     if(!u)return;
     var modsActivos=modulos.filter(function(m){return m.activatedFor&&m.activatedFor.includes(u.id);});
