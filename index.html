@@ -1528,12 +1528,17 @@ function initLogin(){
 
   if(urlUser){
     // ── MODO CONSULTOR: URL tiene ?u= — mostrar SOLO ese usuario ──
-    // BLOCK old format without token — ?u=Name is not secure
-    // Check if token was processed (either full token or 'ok' marker)
-    const hasToken=new URLSearchParams(window.location.search).get('t');
+    const urlParams2=new URLSearchParams(window.location.search);
+    // Si no hay ?u= en la URL actual, el sessionStorage es de sesión anterior — ignorar
+    if(!urlParams2.get('u')){
+      sessionStorage.removeItem('ik_url_user');
+      sessionStorage.removeItem('ik_token_user');
+      initLogin();
+      return;
+    }
+    const hasToken=urlParams2.get('t');
     const hasTokenSession=sessionStorage.getItem('ik_token_user');
     if(!hasToken&&!hasTokenSession){
-      // Old format without token — clear URL and show normal login
       window.history.replaceState({},'',window.location.pathname);
       sessionStorage.removeItem('ik_url_user');
       initLogin();
@@ -1565,8 +1570,7 @@ function initLogin(){
     var sub=document.getElementById('loginSub');
     if(sub)sub.textContent='Ingresa tu contraseña para continuar';
 
-    // [FIX] SIEMPRE usar _pending_ — verificar via Worker sin importar si está en localStorage
-    // Esto hace que links viejos con pass en texto plano ya no funcionen
+    // [FIX] Siempre _pending_ — verificar via Worker sin importar si está en localStorage
     if(target&&target.id){
       sessionStorage.setItem('ik_token_user',JSON.stringify(target));
     }
@@ -1604,200 +1608,260 @@ function selectLoginUser(uid){
 }
 
 function doLogin(){
-  var passEl=document.getElementById('loginPass');
-  var uid=passEl.dataset.uid;
-  var pass=passEl.value;
-  var errEl=document.getElementById('loginErr');
-  var loginBtn=document.getElementById('loginBtn'); // declarar aqui para que este disponible en todo doLogin
+  const passEl=document.getElementById('loginPass');
+  const uid=passEl.dataset.uid;
+  const pass=passEl.value;
+  const errEl=document.getElementById('loginErr');
   errEl.textContent='';
   if(!uid){errEl.textContent='Selecciona un usuario primero';return;}
+  // Handle pending login (user from URL not yet in localStorage)
+  if(uid.startsWith('_pending_')){
+    // [FIX] Siempre verificar contra el Worker — SHA-256 vs texto plano
+    const pendingEmail=normalizeEmail(uid.replace('_pending_',''));
+    errEl.textContent='Verificando...';
+    var tokenCtx=null;
+    try{var ts2=sessionStorage.getItem('ik_token_user');if(ts2)tokenCtx=JSON.parse(ts2);}catch(e){}
 
-  // Función compartida para terminar login exitoso
+    fetch('https://iksanmastervh.iksanwellness.workers.dev/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:pendingEmail,pass:pass})
+    }).then(function(r){return r.json();}).then(function(data){
+      errEl.textContent='';
+      if(!data||!data.ok){
+        errEl.textContent=(data&&data.error)?data.error:'Contraseña incorrecta';
+        return;
+      }
+      var u=normalizeUser(data.user);
+      if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
+      if(tokenCtx&&tokenCtx.parent_id&&!u.parent_id)u.parent_id=tokenCtx.parent_id;
+      if(tokenCtx&&tokenCtx.consultor_id&&!u.consultor_id)u.consultor_id=tokenCtx.consultor_id;
+      u.consultor_id=u.parent_id||u.consultor_id||u.id;
+      var existIdx=users.findIndex(function(x){return x.id===u.id;});
+      if(existIdx>=0)users[existIdx]=u;else users.push(u);
+      S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
+      finishLogin(u);
+    }).catch(function(e){
+      errEl.textContent='Error de red: '+(e&&e.message?e.message:'sin conexión');
+    });
+    return;
+  }
+  const uLocal=users.find(x=>x.id===uid);
+  if(!uLocal){errEl.textContent='Usuario no encontrado';return;}
+  // [SEC-P2] Eliminada comparación local de contraseña — siempre verifica en el Worker
+  // Esto asegura que un cambio de contraseña invalida el acceso en TODOS los dispositivos
+  if(!checkAccess(uLocal)&&uLocal.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
+
+  const loginBtn=document.getElementById('loginBtn');
+  if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
+
   function finishLogin(u){
     if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
-    u.consultor_id=u.parent_id||u.consultor_id||u.id;
+    // Set consultor_id properly
+    u.consultor_id = u.parent_id || u.consultor_id || u.id;
     currentUser=u;
+    // Don't clear localStorage here — keep as fallback until Supabase responds
+    // Restore active consultante from localStorage
     var savedActiveId=S.get('ik_activeCon',null);
-    if(savedActiveId)activeConId=savedActiveId;
+    if(savedActiveId){
+      activeConId=savedActiveId;
+    }
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('mainApp').style.display='block';
+
+    // Reset tabs
     ['nt-clientes','nt-catalogo','nt-bo','nt-admin'].forEach(function(id){
       var el=document.getElementById(id);if(el)el.style.display='none';
     });
-    var pill=document.getElementById('userPill');
+
+    // User pill
+    const pill=document.getElementById('userPill');
     pill.style.display='inline-block';
     pill.textContent=u.role==='admin'?'Admin':u.role==='paid'||u.role==='socio'?'Consultor':u.role==='operador'?'Operador':'Consulta';
     pill.classList.toggle('admin',u.role==='admin');
+
+    // Apply config
     document.getElementById('appNameDisplay').textContent=APP_CFG.appName||'IKSAN';
     document.getElementById('appSubDisplay').textContent=APP_CFG.appSub||'Wellness · VitalHealth';
     setLang(APP_CFG.lang||'es');
     try{document.getElementById('cfgAppName').value=APP_CFG.appName||'IKSAN';}catch(e){}
     try{document.getElementById('cfgAppSub').value=APP_CFG.appSub||'Wellness · VitalHealth';}catch(e){}
     try{document.getElementById('cfgLang').value=APP_CFG.lang||'es';}catch(e){}
-    var savedActive=S.get('ik_activeCon',null);
-    if(savedActive&&clientes.find(function(c){return c.id===savedActive;}))setActiveConsultante(savedActive);
+
+    const savedActive=S.get('ik_activeCon',null);
+    if(savedActive&&clientes.find(c=>c.id===savedActive))setActiveConsultante(savedActive);
     else renderConList();
+
     refreshAllConSelects();
     initCat();
     if(u.role==='admin')safeCall(initPriceTable);
     safeCall(applyModulosTabs,[u]);
-    var boCfg=S.get('ik_boconfig_'+u.id,null);
+    const boCfg=S.get('ik_boconfig_'+u.id,null);
     if(boCfg)setTimeout(function(){applyBoConfig(boCfg);},300);
     showT('Bienvenido/a, '+u.name);
+    // Show DEMO watermark for admin (not on BO Admin)
     if(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op'){
       window._isAdmin=true;
       updateDemoOverlay('clientes');
     }
   }
 
-  // Función para procesar respuesta exitosa del Worker
-  function processLoginResponse(res, tokenCtx){
-    if(!res||!res.ok){
-      errEl.textContent=(res&&res.error)?res.error:'Contraseña incorrecta';
-      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
-      return;
+  // Verify with server + sync data
+  API.login(uLocal.email, pass).then(function(res){
+    var u=uLocal;
+    if(res&&res.ok&&res.user){
+      u=normalizeUser(Object.assign({},uLocal,res.user));
+      // [SEC-P2] adminToken llega del Worker solo para admin — guardarlo en memoria, nunca en localStorage
+      if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
+      if(res.user.adminToken){window._sessionAdminKey=res.user.adminToken;delete res.user.adminToken;}
+      u.modulosAsignados=res.user.modulosAsignados||uLocal.modulosAsignados||[];
+      u.consultor_id=res.user.parent_id||res.user.id;
+      u.consultorId=u.consultor_id;
+      const idx2=users.findIndex(function(x){return x.id===u.id;});
+      if(idx2>=0)users[idx2]=u;else users.push(u);
+      S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;})); // [SEC-P1]
+    } else {
+      u.consultorId=uLocal.parent_id||uLocal.id;
     }
-    var u=normalizeUser(res.user||res);
-    if(tokenCtx&&tokenCtx.parent_id&&!u.parent_id)u.parent_id=tokenCtx.parent_id;
-    if(tokenCtx&&tokenCtx.consultor_id&&!u.consultor_id)u.consultor_id=tokenCtx.consultor_id;
-    u.consultor_id=u.parent_id||u.consultor_id||u.id;
-    if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
-    var existIdx=users.findIndex(function(x){return x.id===u.id;});
-    if(existIdx>=0)users[existIdx]=u;else users.push(u);
-    S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
-    finishLogin(u);
-  }
 
-  // Función fetch directo al Worker (sin pasar por API.call)
-  function fetchDirectWorker(email, pass, tokenCtx){
-    return fetch('https://iksanmastervh.iksanwellness.workers.dev/auth/login',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:email,pass:pass})
-    }).then(function(r){return r.json();}).then(function(data){
-      processLoginResponse(data, tokenCtx);
-    }).catch(function(e2){
-      console.error('[IKSAN fetch error]',e2);
-      errEl.textContent='Error de red: '+(e2&&e2.message?e2.message:'sin conexión');
-      if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
-    });
-  }
-
-  // ── MODO URL: usuario llega via link ?u=email ──
-  if(uid.startsWith('_pending_')){
-    var pendingEmail=normalizeEmail(uid.replace('_pending_',''));
-    errEl.textContent='Verificando...';
-    if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
-    var tokenCtx=null;
-    try{var ts=sessionStorage.getItem('ik_token_user');if(ts)tokenCtx=JSON.parse(ts);}catch(e){}
-    // Siempre fetch directo — API.call puede fallar silenciosamente con null
-    fetchDirectWorker(pendingEmail, pass, tokenCtx);
-    return;
-  }
-
-  // ── MODO NORMAL: usuario en localStorage ──
-  var uLocal=users.find(function(x){return x.id===uid;});
-  if(!uLocal){errEl.textContent='Usuario no encontrado';return;}
-  if(!checkAccess(uLocal)&&uLocal.role!=='admin'){errEl.textContent='Acceso expirado. Contacta al admin.';return;}
-
-  if(loginBtn){loginBtn.textContent='Verificando...';loginBtn.disabled=true;}
-
-  // Verificar contra Worker
-  fetchDirectWorker(uLocal.email, pass, null);
-
-  // En paralelo: cargar datos del servidor
-  // (Se ejecuta después de que fetchDirectWorker llame a finishLogin)
-  setTimeout(function(){
-    if(!currentUser||currentUser.id!==uLocal.id)return; // Si no entró, no cargar
-    var cid=currentUser.consultor_id||currentUser.id;
-    var isAdminU=(currentUser.id==='u_admin'||currentUser.role==='admin'||currentUser.role==='admin_op');
+    // Load server data
+    const cid=u.consultor_id||u.consultorId||u.parent_id||u.id;
+    const isAdminU=(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op');
     Promise.all([
-      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid),
-      isAdminU?Promise.resolve([]):API.getVentas(cid),
-      isAdminU?Promise.resolve([]):API.getGastos(cid),
-      isAdminU?Promise.resolve([]):API.getCitasBio(cid),
-      isAdminU?Promise.resolve([]):API.getCitasDr(cid),
-      API.getConfig(cid),
-      API.getPrecios(cid),
-      API.getInventario(cid),
+      isAdminU?API.call('/consultantes','GET',null,true):API.getConsultantes(cid), // 0
+      isAdminU?Promise.resolve([]):API.getVentas(cid),         // 1
+      isAdminU?Promise.resolve([]):API.getGastos(cid),         // 2
+      isAdminU?Promise.resolve([]):API.getCitasBio(cid),       // 3
+      isAdminU?Promise.resolve([]):API.getCitasDr(cid),        // 4
+      API.getConfig(cid),         // 5
+      API.getPrecios(cid),        // 6
+      API.getInventario(cid),     // 7
     ]).then(function(results){
+      // Only update if Supabase returned actual data
       if(results[0]&&Array.isArray(results[0])&&results[0].length>0){
         clientes=results[0].map(function(c){
-          return{id:c.id,name:c.nombre||c.name||'',phone:c.telefono||c.phone||'',
-            email:c.email||'',notes:c.notas||'',consultor_id:c.consultor_id,
-            created_at:c.created_at,status:c.status||'prospecto',origin:c.origin||'',
-            statusNote:c.status_note||'',age:c.age||'',sex:c.sex||'',city:c.city||'',
-            occ:c.occ||'',foodPref:c.food_pref||[],conditions:c.padecimientos||[],
-            items:c.items||[],savedCarts:c.saved_carts||[],history:c.history||[],
-            lastUpdate:c.updated_at||c.created_at};
+          return{
+            id:c.id,
+            name:c.nombre||c.name||'',
+            phone:c.telefono||c.phone||'',
+            email:c.email||'',
+            notes:c.notas||'',
+            notas:c.notas||'',
+            consultor_id:c.consultor_id,
+            created_at:c.created_at,
+            status:c.status||'prospecto',
+            origin:c.origin||'',
+            statusNote:c.status_note||'',
+            age:c.age||'',
+            sex:c.sex||'',
+            city:c.city||'',
+            occ:c.occ||'',
+            foodPref:c.food_pref||[],
+            conditions:c.padecimientos||[],
+            items:c.items||[],
+            savedCarts:c.saved_carts||[],
+            history:c.history||[],
+            lastUpdate:c.updated_at||c.created_at
+          };
         });
         S.set('ik_consultantes',clientes);
+        // Immediately render so user sees their data
         setTimeout(function(){renderConList();refreshAllConSelects();},100);
       }
+      // Always overwrite localStorage with Supabase — prevents stale cache
       if(results[1]&&Array.isArray(results[1])){
-        sales=results[1].filter(function(s){return S.get('ik_deleted_sales',[]).indexOf(s.id)<0;});
+        var deletedSales=S.get('ik_deleted_sales',[]);
+        sales=results[1].filter(function(s){return deletedSales.indexOf(s.id)<0;});
         S.set('ik_sales',sales);
       }
       if(results[2]&&Array.isArray(results[2])){
-        gastos=results[2].filter(function(g){return S.get('ik_deleted_gastos',[]).indexOf(g.id)<0;});
+        var deletedGastos=S.get('ik_deleted_gastos',[]);
+        gastos=results[2].filter(function(g){return deletedGastos.indexOf(g.id)<0;});
         S.set('ik_gastos',gastos);
       }
       if(results[3]&&Array.isArray(results[3])){
-        var bioMap={};results[3].forEach(function(c){bioMap[c.id]=c;});
-        citasBio=Object.values(bioMap);S.set('ik_citasBio',citasBio);
+        var bioMap={};
+        var deletedBio=S.get('ik_deleted_citas_bio',[]);
+        results[3].forEach(function(c){if(deletedBio.indexOf(c.id)<0)bioMap[c.id]=c;});
+        citasBio=Object.values(bioMap);
+        S.set('ik_citasBio',citasBio);
       }
       if(results[4]&&Array.isArray(results[4])){
-        var drMap={};results[4].forEach(function(c){drMap[c.id]=c;});
-        citasDr=Object.values(drMap);S.set('ik_citasDr',citasDr);
+        var drMap={};
+        var deletedDr=S.get('ik_deleted_citas_dr',[]);
+        results[4].forEach(function(c){if(deletedDr.indexOf(c.id)<0)drMap[c.id]=c;});
+        citasDr=Object.values(drMap);
+        S.set('ik_citasDr',citasDr);
       }
-      if(results[5]&&typeof results[5]==='object'&&Object.keys(results[5]).length>0){
+
+      // Config del consultor — load BO config (colors, logo, name)
+      if(results[5]&&typeof results[5]==='object'&&!Array.isArray(results[5])&&Object.keys(results[5]).length>0){
         var cfg=results[5];
-        if(currentUser.id!=='u_admin'&&currentUser.role!=='admin'){
-          S.set('ik_boconfig_'+currentUser.id,cfg);
-          setTimeout(function(){if(typeof applyBoConfig==='function')safeCall(applyBoConfig,[cfg]);},200);
+        if(u.id!=='u_admin'&&u.role!=='admin'){
+          // Save and apply BO config
+          S.set('ik_boconfig_'+u.id,cfg);
+          setTimeout(function(){
+            if(typeof applyBoConfig==='function')safeCall(applyBoConfig,[cfg]);
+          },200);
         }
       }
-      if(results[6]&&typeof results[6]==='object'&&Object.keys(results[6]).length){
-        prices=results[6];S.set('ik_prices',prices);
+
+      // Precios del catálogo
+      if(results[6]&&typeof results[6]==='object'&&!Array.isArray(results[6])&&Object.keys(results[6]).length){
+        prices=results[6];
+        S.set('ik_prices',prices);
         if(typeof filterCat==='function')safeCall(filterCat);
       }
+
+      // Inventario — only for consultores, not admin
       if(!isAdminU&&results[7]&&Array.isArray(results[7])&&results[7].length>0){
         inventario=results[7].map(function(i){return{
           nombre:i.producto,stock:i.stock||0,sobrePedido:i.sobre_pedido||false,
-          fechaRegistro:i.fecha_registro||null,fechaCaducidad:i.fecha_caducidad||null};
-        });
+          fechaRegistro:i.fecha_registro||null,fechaCaducidad:i.fecha_caducidad||null,
+          updatedAt:i.updated_at
+        };});
         saveInv();
+      } else if(isAdminU){
+        inventario=[];S.set('ik_inventario',[]);
+        // Admin has no own clients — clear any leaked data
+        clientes=clientes.filter(function(c){return c.consultor_id==='u_admin'||c.consultor_id===cid;});
+        S.set('ik_consultantes',clientes);
       }
+
       renderConList();refreshAllConSelects();
     }).catch(function(e){console.warn('Data load error:',e);});
 
-    if(currentUser.role==='admin'||currentUser.role==='admin_op'){
+    // Admin: sync all users from server
+    if(u.role==='admin'||u.role==='admin_op'){
       API.getUsuarios().then(function(serverUsers){
         if(serverUsers&&Array.isArray(serverUsers)){
           var adminLocal=users.find(function(x){return x.id==='u_admin';});
+          // Normalize all users from Supabase
           users=serverUsers.map(normalizeUser);
           if(adminLocal&&!users.find(function(x){return x.id==='u_admin';}))users.unshift(adminLocal);
-          S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
+          S.set('ik_users',users.map(function(u){var s=Object.assign({},u);delete s.pass;return s;})); // [SEC-P1]
           if(typeof renderUsers==='function')safeCall(renderUsers);
+          if(typeof renderAdminOpList==='function')safeCall(renderAdminOpList);
         }
       }).catch(function(){});
     }
-  }, 800); // esperar 800ms para que finishLogin termine primero
 
+    finishLogin(u);
+  }).catch(function(e){
+    console.warn('Server login error, using local:',e);
+    finishLogin(uLocal);
+  });
+}
 
 function doLogout(){
   if(!confirm('¿Cerrar sesión?'))return;
   currentUser=null;
   activeConId=null;
-  // [FIX] Limpiar datos en memoria — evita que clientes de un consultor aparezcan en otra sesión
-  clientes=[];sales=[];gastos=[];citasBio=[];citasDr=[];inventario=[];
-  // Limpiar cache de consultantes del localStorage para que no persistan entre sesiones
-  S.set('ik_consultantes',[]);
-  S.set('ik_sales',[]);
-  S.set('ik_gastos',[]);
-  S.set('ik_citasBio',[]);
-  S.set('ik_citasDr',[]);
+  clientes=[];sales=[];gastos=[];citasBio=[];citasDr=[];
   S.set('ik_activeCon',null);
+  sessionStorage.removeItem('ik_url_user');
+  sessionStorage.removeItem('ik_token_user');
+  sessionStorage.removeItem('ik_pending_login_email');
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginPass').value='';
@@ -4805,8 +4869,7 @@ function confirmSale(){
       payMethod:methodLabel,nota:nota,
       comprobante:_compData||null,
       date:new Date().toISOString(),
-      status:method==='transito'?'transito':'pagado',
-      originLabel:c.origin?(ORIGIN[c.origin]||c.origin):'' // [FIX] guardar origen legible
+      status:method==='transito'?'transito':'pagado'
     };
     _compData=null;
     if(!sales)sales=[];
@@ -4814,7 +4877,6 @@ function confirmSale(){
     try{addToHistory('sale','Venta $'+final.toLocaleString()+' · '+methodLabel+(promo?' · Promo: '+promo:''),{saleId:sale.id,items:sale.items,total:final,bruto:bruto,desc:desc,promo:promo,payMethod:methodLabel,comprobante:sale.comprobante});}catch(e){}
     try{descuentaInventario(sale.items);}catch(e){}
     c.items=[];
-    c.discType='';c.discVal=0;c.discPromo=''; // [FIX] limpiar descuento al confirmar
     if(c.status==='prospecto')c.status='activo';
     try{saveAll();}catch(e){console.warn('saveAll error',e);}
     try{sbSaveVenta(sale).catch(function(){});}catch(e){}
@@ -4830,7 +4892,6 @@ function confirmSale(){
     }catch(e){}
     try{renderActiveConPanel();}catch(e){}
     showT('✓ Venta registrada $'+final.toLocaleString()+' · '+methodLabel);
-    renderActiveConPanel(); // [FIX] limpiar badge de carrito inmediatamente
     setTimeout(function(){mostrarReciboVenta(sale,c);},350);
   }catch(err){
     showT('Error al registrar: '+err.message);
@@ -4878,7 +4939,7 @@ function mostrarReciboVenta(sale,c){
   h+='<button class="btn btn-wa" onclick="enviarReciboWA(window._lastSale)">💬 WhatsApp</button>';
   h+='<button class="btn btn-p" onclick="descargarReciboImagen(window._lastSale,window._lastSaleClient)">🖼 Imagen recibo</button>';
   h+='<button class="btn btn-o" onclick="descargarFichaTecnica(window._lastSale)">📋 Ficha técnica</button>';
-  h+='<button class="btn btn-d btn-sm" onclick="closeMo(2);renderActiveConPanel()">Cerrar</button>';
+  h+='<button class="btn btn-d btn-sm" onclick="closeMo(2)">Cerrar</button>';
   h+='</div>';
   window._lastSale=sale;
   window._lastSaleClient=c;
@@ -6410,18 +6471,11 @@ function renderUserEditModal(uid){
           <option value="consult"${u.role==='consult'?' selected':''}>👁️ Consulta</option>
         </select>`}
     </div>
-    <div style="background:var(--warm);border-radius:8px;padding:9px 13px;margin-bottom:8px">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:5px">🔐 Contraseña actual</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span id="uePassDisplay_${uid}" style="font-family:monospace;font-size:15px;font-weight:700;color:var(--deep);letter-spacing:2px;flex:1">••••••••</span>
-        <button class="btn btn-o btn-sm" style="font-size:10px" onclick="toggleVerPass('${uid}')">👁 Ver</button>
-      </div>
+    <div style="background:var(--warm);border-radius:8px;padding:9px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+      <span style="font-family:monospace;font-size:17px;font-weight:700;color:var(--deep);letter-spacing:2px">${u.pass}</span>
+      <span style="font-size:10px;color:var(--muted)">contraseña actual</span>
     </div>
-    <div style="display:flex;gap:7px;align-items:center;margin-bottom:14px">
-      <input class="in" id="uePass1" type="text" placeholder="Nueva contraseña" style="flex:1">
-      <button class="btn btn-admin btn-sm" onclick="adminCambiarPassConsultor('${uid}')">✓ Cambiar</button>
-    </div>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:14px">La nueva contraseña se hashea en el servidor. El consultor debe usarla en su próximo login.</div>
+    <input class="in" id="uePass1" type="text" placeholder="Nueva contraseña (vacío = no cambiar)" style="margin-bottom:14px">
     <div style="display:flex;gap:7px;flex-wrap:wrap">
       <button class="btn btn-p" style="flex:1" onclick="saveUserEdit('${uid}')">💾 Guardar info</button>
       ${u.role!=='admin'?`<button class="btn btn-d btn-sm" onclick="if(confirm('¿Eliminar a ${u.name}?'))deleteUserFromEdit('${uid}')">🗑️</button>`:''}
@@ -6603,29 +6657,19 @@ function renderUserEditModal(uid){
       </div>
       <button class="btn btn-p btn-sm btn-full" onclick="addSubUser('${uid}')">✓ Crear operador</button>
     </div>`:'<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px">Activa módulos primero</div>'}
-    <div style="display:flex;flex-direction:column;gap:8px">
+    <div style="display:flex;flex-direction:column;gap:6px">
       ${subUsers.length?subUsers.map(su=>`
-      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer" onclick="openUserEditModal('${su.id}')">
-          <div style="width:32px;height:32px;border-radius:50%;background:${su.role==='socio'?'#1a7f3c':'#6b4a6e'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${su.name.charAt(0).toUpperCase()}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:700;color:var(--deep)">${su.name}</div>
-            <div style="font-size:10px;color:var(--muted)">${su.role==='socio'?'🤝 Socio':'🔧 Operador'} · ${su.email}</div>
-          </div>
-          <div style="font-size:16px;color:var(--muted)">›</div>
+      <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer" onclick="openUserEditModal('${su.id}')">
+        <div style="width:32px;height:32px;border-radius:50%;background:${su.role==='socio'?'#1a7f3c':'#6b4a6e'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${su.name.charAt(0).toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:var(--deep)">${su.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${su.role==='socio'?'🤝 Socio':'🔧 Operador'} · ${su.email} · pass: <b>${su.pass}</b></div>
         </div>
-        <div style="border-top:1px solid var(--border);padding:8px 12px;background:#fafafa;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-          <div style="display:flex;align-items:center;gap:6px;flex:1">
-            <span style="font-size:10px;color:var(--muted)">Pass:</span>
-            <span id="suPassDisp_${su.id}" style="font-family:monospace;font-size:12px;font-weight:700;color:var(--deep)">••••••</span>
-            <button class="btn btn-o btn-sm" style="font-size:9px;padding:2px 7px" onclick="event.stopPropagation();toggleVerPassSub('${su.id}')">👁</button>
-          </div>
-          <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
-            <button class="btn btn-wa btn-sm" style="font-size:10px;padding:4px 8px" onclick="enviarWASubUser('${uid}','${su.id}')">💬 Enviar acceso</button>
-            <button class="btn btn-o btn-sm" style="font-size:10px;padding:4px 8px" onclick="copiarLinkSubUser('${uid}','${su.id}')">📋 Link</button>
-            <button class="btn btn-d btn-sm" style="font-size:9px;padding:4px 7px" onclick="deleteSubUser('${uid}','${su.id}')">✕</button>
-          </div>
+        <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
+          <button class="btn btn-wa btn-sm" style="font-size:9px;padding:3px 7px" onclick="enviarWASubUser('${uid}','${su.id}')">💬</button>
+          <button class="btn btn-d btn-sm" style="font-size:9px;padding:3px 7px" onclick="deleteSubUser('${uid}','${su.id}')">✕</button>
         </div>
+        <div style="font-size:16px;color:var(--muted)">›</div>
       </div>`).join('')
       :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Sin operadores creados</div>'}
     </div>`
@@ -6895,106 +6939,6 @@ function toggleUeMod(uid,modId,btn){
   showT((idx>=0?'✕ Módulo desactivado: ':'✓ Módulo activado: ')+(labelMap[modId]||modId));
 }
 
-// [FIX] Ver contraseña actual desde Supabase (solo admin)
-async function toggleVerPass(uid){
-  var el=document.getElementById('uePassDisplay_'+uid);
-  if(!el)return;
-  if(el.dataset.loaded==='1'){
-    // Toggle show/hide
-    if(el.dataset.shown==='1'){el.textContent='••••••••';el.dataset.shown='0';}
-    else{el.textContent=el.dataset.pass||'••••••••';el.dataset.shown='1';}
-    return;
-  }
-  el.textContent='Cargando...';
-  try{
-    var r=await API.call('/usuarios/'+uid+'/pass','GET',null,true);
-    if(r&&r.pass){
-      el.dataset.pass=r.pass;el.dataset.loaded='1';el.dataset.shown='1';
-      el.textContent=r.pass;
-    } else {
-      // Fallback: buscar en users[] si por alguna razón tiene la pass
-      var u=users.find(function(x){return x.id===uid;});
-      if(u&&u.pass&&u.pass.length<64){
-        el.dataset.pass=u.pass;el.dataset.loaded='1';el.dataset.shown='1';
-        el.textContent=u.pass;
-      } else {
-        el.textContent='[hasheada — no visible]';el.dataset.loaded='1';
-      }
-    }
-  }catch(e){el.textContent='Error al cargar';}
-}
-
-// [FIX] Admin cambia contraseña de cualquier consultor via Worker
-async function adminCambiarPassConsultor(uid){
-  var u=users.find(function(x){return x.id===uid;});if(!u)return;
-  var newPass=document.getElementById('uePass1')?.value.trim();
-  if(!newPass){showT('Escribe la nueva contraseña');return;}
-  if(newPass.length<4){showT('Mínimo 4 caracteres');return;}
-  showT('Actualizando contraseña...');
-  try{
-    var r=await API.updateUsuario(uid,{pass:newPass});
-    if(r&&r.ok!==false){
-      document.getElementById('uePass1').value='';
-      // Actualizar display y token data
-      var el=document.getElementById('uePassDisplay_'+uid);
-      if(el){el.dataset.pass=newPass;el.dataset.loaded='1';el.dataset.shown='0';el.textContent='••••••••';}
-      showT('✓ Contraseña actualizada — regenerando link de acceso...');
-      // Regenerar link con nueva contraseña
-      setTimeout(function(){
-        window['_tokenPass_'+uid]=newPass;
-        window['_consultLink_'+uid]=null; // [FIX] borrar caché para forzar regeneración
-        shortenConsultLink(uid);
-      },400);
-    } else {
-      showT('Error: '+(r&&r.error?r.error:'sin respuesta del servidor'));
-    }
-  }catch(e){showT('Error de conexión: '+e.message);}
-}
-
-// [FIX] Ver contraseña del operador
-function toggleVerPassSub(subId){
-  var el=document.getElementById('suPassDisp_'+subId);
-  if(!el)return;
-  var su=users.find(function(x){return x.id===subId;});
-  if(el.dataset.shown==='1'){el.textContent='••••••';el.dataset.shown='0';}
-  else{
-    var pass=el.dataset.pass||(su&&su.pass)||'sin pass';
-    el.textContent=pass;el.dataset.pass=pass;el.dataset.shown='1';
-  }
-}
-
-// [FIX] Copiar link de acceso del operador al portapapeles
-function copiarLinkSubUser(parentId,subId){
-  var su=users.find(function(x){return x.id===subId;});
-  var parent=users.find(function(x){return x.id===parentId;});
-  if(!su||!parent)return;
-  var modsActivos=modulos.filter(function(m){return m.activatedFor&&m.activatedFor.includes(su.id);});
-  var baseUrl=window.location.href.split('?')[0].split('#')[0];
-  var actAt=parent.activatedAt||parent.activated_at||new Date().toISOString();
-  var tokenData={
-    id:su.id,name:su.name,email:su.email,
-    pass:window['_tokenPass_'+subId]||su.pass||'',
-    role:su.role||'operador',
-    parentId:parentId,parent_id:parentId,consultor_id:parentId,
-    phone:su.phone||'',
-    days:parent.days,activatedAt:actAt,
-    active:true,createdAt:su.createdAt||new Date().toISOString(),
-    modulosAsignados:su.modulosAsignados||[],
-    modulosSnapshot:modsActivos.map(function(m){return{id:m.id,name:m.name,icon:m.icon,color:m.color,price:m.price};}),
-  };
-  var token=btoa(unescape(encodeURIComponent(JSON.stringify(tokenData))));
-  var longUrl=baseUrl+'?u='+encodeURIComponent(su.email)+'&t='+token;
-  // Acortar y copiar
-  API.shorten(longUrl).then(function(res){
-    var short=(res&&res.short)?res.short:longUrl;
-    if(navigator.clipboard){
-      navigator.clipboard.writeText(short).then(function(){showT('✓ Link copiado: '+short);});
-    } else {showT('Link: '+short);}
-  }).catch(function(){
-    if(navigator.clipboard)navigator.clipboard.writeText(longUrl).then(function(){showT('✓ Link copiado');});
-  });
-}
-
 function saveUserEdit(uid){
   const u=users.find(x=>x.id===uid);if(!u)return;
   const nombre=document.getElementById('ueNombre')?.value.trim();
@@ -7215,17 +7159,15 @@ function copyConsultLink(uid){
 
 // Auto-shorten link when Pago & Acceso tab opens
 function shortenConsultLink(uid){
-  // Siempre regenerar el token — puede haber cambiado la contraseña o los módulos
-  var longUrl=null;
-  window['_consultLink_'+uid]=null; // invalidar caché
-  {
+  var longUrl=window['_consultLink_'+uid];
+  if(!longUrl){
+    // Regenerate the link
     var u=users.find(function(x){return x.id===uid;});
     if(!u)return;
     var modsActivos=modulos.filter(function(m){return m.activatedFor&&m.activatedFor.includes(u.id);});
     var baseUrl=window.location.href.split('?')[0].split('#')[0];
     var tokenData={
-      id:u.id,name:u.name,email:u.email,
-      pass:window['_tokenPass_'+uid]||u.pass||'', // [FIX] usar pass actualizada si fue cambiada
+      id:u.id,name:u.name,email:u.email,pass:u.pass,
       role:u.role||'paid',phone:u.phone||'',
       days:u.days,activatedAt:u.activatedAt||u.activated_at||new Date().toISOString(),
       active:true,createdAt:u.createdAt||new Date().toISOString(),
@@ -7265,8 +7207,7 @@ function copiarAccesoWA(uid){
   // For operadores: use parent's consultor_id so they share data
   const consultorId=u.parentId||u.parent_id||null;
   const tokenData={
-    id:u.id,name:u.name,email:u.email,
-    pass:window['_tokenPass_'+uid]||u.pass||'', // [FIX] pass actualizada si fue cambiada
+    id:u.id,name:u.name,email:u.email,pass:u.pass,
     role:u.role||'paid',phone:u.phone||'',
     days:u.days,activatedAt:actAt||new Date().toISOString(),
     active:true,createdAt:u.createdAt||new Date().toISOString(),
