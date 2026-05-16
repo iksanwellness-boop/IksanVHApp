@@ -3064,15 +3064,72 @@ function getHealthWeight(sistema){
   return 5; // default medio
 }
 
+// Asigna grupo a cada parámetro
+function getGrupoSistema(nombre){
+  var sn=(nombre||'').toLowerCase();
+  if(/coraz[oó]n|card[ií]|miocardio|perfusi[oó]n|oxígeno miocardial|elasticidad vascular|cristal de colesterol/.test(sn)) return '❤️ Cardiovascular';
+  if(/h[ií]gado|hep[aá]tico|biliar|grasa en el h[ií]|ácidos biliares/.test(sn)) return '🫀 Hígado · Vesícula';
+  if(/pulm[oó]n|respirat|paco2|oxígeno arterial/.test(sn)) return '🫁 Respiratorio';
+  if(/ri[ñn][oó]n|renal/.test(sn)) return '🫘 Renal';
+  if(/plomo|mercurio|arsén|cadmio|metal pesado/.test(sn)) return '☠️ Metales pesados';
+  if(/pesticida|tóxico/.test(sn)) return '🧪 Tóxicos · Pesticidas';
+  if(/memoria|neurológico|nervioso|cerebro/.test(sn)) return '🧠 Neurológico';
+  if(/glucosa|azúcar|insulina|diabet|trigli|lípido|metabolismo lipídico/.test(sn)) return '🩸 Metabólico · Glucosa';
+  if(/[oó]seo|osteoporos|articular|hiperplasia|reumatoid/.test(sn)) return '🦴 Óseo · Articular';
+  if(/zinc|coenzima|vitamina|hierro|calcio|magnesio|mineral|nutriente/.test(sn)) return '💊 Nutrientes';
+  if(/piel|cutáneo|humectación|colágeno|cabello|dermis/.test(sn)) return '🌸 Piel · Colágeno';
+  if(/alergia|sensibilidad/.test(sn)) return '⚡ Alergias';
+  if(/intestino|absorción|gástric|digest/.test(sn)) return '🫃 Digestivo';
+  if(/fatiga visual|ojo|visual/.test(sn)) return '👁️ Visual';
+  return '📋 Otros';
+}
+
+// Agrupa, puntúa cada grupo acumulativamente y devuelve lista plana ordenada sin grupos repetidos.
+// Puntuación del grupo = suma de pesos de sus parámetros × factor de urgencia (alta=1.2, media=1, baja=0.8)
+// Esto hace que el hígado con 4 parámetros supere al corazón con 1, aunque el corazón tenga mayor peso unitario.
 function sortByHealthPriority(sistemas){
-  return sistemas.slice().sort(function(a,b){
-    var wa=getHealthWeight(a.sistema||'');
-    var wb=getHealthWeight(b.sistema||'');
-    if(wb!==wa)return wb-wa; // mayor peso primero
-    // Secundario: nivel urgencia
-    var o={alto:0,alta:0,medio:1,media:1,bajo:2,baja:2};
-    return(o[a.nivel||a.urgencia]||1)-(o[b.nivel||b.urgencia]||1);
+  // 1. Agrupar
+  var grupos={};
+  sistemas.forEach(function(s){
+    var g=getGrupoSistema(s.sistema||'');
+    if(!grupos[g])grupos[g]=[];
+    grupos[g].push(s);
   });
+
+  // 2. Puntuar cada grupo
+  var urgFactor={alto:1.2,alta:1.2,medio:1.0,media:1.0,bajo:0.8,baja:0.8};
+  var grupoPuntos={};
+  Object.keys(grupos).forEach(function(g){
+    var pts=0;
+    grupos[g].forEach(function(s){
+      var w=getHealthWeight(s.sistema||'');
+      var u=s.urgencia||s.nivel||'medio';
+      pts+=w*(urgFactor[u]||1.0);
+    });
+    grupoPuntos[g]=pts;
+  });
+
+  // 3. Ordenar grupos por puntuación descendente
+  var gruposOrdenados=Object.keys(grupos).sort(function(a,b){
+    return grupoPuntos[b]-grupoPuntos[a];
+  });
+
+  // 4. Dentro de cada grupo, ordenar parámetros por peso × urgencia descendente
+  var resultado=[];
+  var numGlobal=1;
+  gruposOrdenados.forEach(function(g){
+    var miembros=grupos[g].slice().sort(function(a,b){
+      var wa=getHealthWeight(a.sistema||'')*(urgFactor[a.urgencia||a.nivel||'medio']||1);
+      var wb=getHealthWeight(b.sistema||'')*(urgFactor[b.urgencia||b.nivel||'medio']||1);
+      return wb-wa;
+    });
+    miembros.forEach(function(s){
+      s._grupo=g;
+      s.num=numGlobal++;
+      resultado.push(s);
+    });
+  });
+  return resultado;
 }
 
 // ═══ RESUMEN PERSONAL combinatorio ═══
@@ -3224,13 +3281,11 @@ function renderResultVH(r){
 
   // ── 2. SISTEMAS FUERA DE RANGO ──
   if(sistemas.length){
-    var sorted=sortByHealthPriority(sistemas);
-    // re-numerar conforme al nuevo orden
-    sorted.forEach(function(s,i){s.num=i+1;});
+    var sorted=sortByHealthPriority(sistemas); // ya numerados y agrupados sin repetición
     h+='<div style="border:1px solid #f5c0c0;border-radius:9px;overflow:hidden;margin-bottom:11px">';
     h+='<div style="background:'+RED_BG+';border-bottom:2px solid '+RED+';padding:6px 13px">';
     h+='<span style="font-size:10px;font-weight:700;color:'+RED+';text-transform:uppercase;letter-spacing:.6px">2. Sistemas Fuera de Rango · Orden de Atención</span></div>';
-    h+='<div style="font-size:9.5px;color:'+GRAY+';padding:5px 13px;background:#fff9f9;border-bottom:1px solid #fde8e8">Ordenados por impacto en salud — los sistemas vitales aparecen primero independientemente del porcentaje de desviación.</div>';
+    h+='<div style="font-size:9.5px;color:'+GRAY+';padding:5px 13px;background:#fff9f9;border-bottom:1px solid #fde8e8">Ordenados por impacto real en la salud — los grupos con mayor carga acumulada aparecen primero.</div>';
     // ── Resumen personal combinatorio ──
     var resumen=generarResumenPersonal(sorted,r.paciente,r.sexo,r.edad);
     if(resumen&&resumen.bloques&&resumen.bloques.length){
@@ -3245,8 +3300,8 @@ function renderResultVH(r){
       });
       h+='</div>';
     }
-    // agrupar por "sistema base" (corazón, hígado, piel, etc.)
-    var prevGroup='';
+    // ── Tabla: grupos ya vienen continuos sin repetición desde sortByHealthPriority ──
+    var prevGrp='';
     h+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
     h+='<tr style="background:'+DARK+';color:#fff">';
     h+='<th style="padding:6px 7px;width:5%;text-align:center">#</th>';
@@ -3255,35 +3310,15 @@ function renderResultVH(r){
     h+='<th style="padding:6px 7px;width:48%">Qué significa</th></tr>';
     sorted.forEach(function(s,i){
       var urg=s.urgencia||s.nivel||'medio';
-      var isAlto=urg==='alto'||urg==='alta';
-      var col=isAlto?RED:ORANGE;
-      var w=getHealthWeight(s.sistema||'');
-      // Determinar grupo del sistema
-      var sistemaBase='';
-      var sn=(s.sistema||'').toLowerCase();
-      if(/coraz[oó]n|card[ií]|miocardio|perfusi[oó]n|oxígeno miocardial|elasticidad vascular|cristal de colesterol/.test(sn)) sistemaBase='❤️ Cardiovascular';
-      else if(/h[ií]gado|hep[aá]tico|biliar|grasa en el h|ácidos biliares/.test(sn)) sistemaBase='🫀 Hígado · Vesícula';
-      else if(/pulm[oó]n|respirat|paco2|oxígeno arterial/.test(sn)) sistemaBase='🫁 Respiratorio';
-      else if(/ri[ñn][oó]n|renal/.test(sn)) sistemaBase='🫘 Renal';
-      else if(/plomo|mercurio|arsén|cadmio|metal pesado/.test(sn)) sistemaBase='☠️ Metales pesados';
-      else if(/pesticida|tóxico/.test(sn)) sistemaBase='🧪 Tóxicos · Pesticidas';
-      else if(/memoria|neurológico|nervioso|cerebro/.test(sn)) sistemaBase='🧠 Neurológico';
-      else if(/glucosa|azúcar|insulina|diabet|trigli|lípido|metabolismo lipídico/.test(sn)) sistemaBase='🩸 Metabólico · Glucosa';
-      else if(/[oó]seo|osteoporos|articular|hiperplasia|reumatoid/.test(sn)) sistemaBase='🦴 Óseo · Articular';
-      else if(/zinc|coenzima|vitamina|hierro|calcio|magnesio|mineral|nutriente/.test(sn)) sistemaBase='💊 Nutrientes';
-      else if(/piel|cutáneo|humectación|colágeno|cabello|dermis/.test(sn)) sistemaBase='🌸 Piel · Colágeno';
-      else if(/alergia|sensibilidad/.test(sn)) sistemaBase='⚡ Alergias';
-      else if(/intestino|absorción|gástrico|digest/.test(sn)) sistemaBase='🫃 Digestivo';
-      else if(/fatiga visual|ojo|visual/.test(sn)) sistemaBase='👁️ Visual';
-      // Separador de grupo
-      if(sistemaBase && sistemaBase!==prevGroup){
-        prevGroup=sistemaBase;
-        h+='<tr><td colspan="4" style="padding:4px 8px;background:#f0f0f0;font-size:9px;font-weight:700;color:#555;letter-spacing:.5px;text-transform:uppercase">'+sistemaBase+'</td></tr>';
+      var col=(urg==='alto'||urg==='alta')?RED:ORANGE;
+      var grp=s._grupo||'';
+      if(grp&&grp!==prevGrp){
+        prevGrp=grp;
+        h+='<tr><td colspan="4" style="padding:4px 8px;background:#f0f0f0;font-size:9px;font-weight:700;color:#555;letter-spacing:.5px;text-transform:uppercase">'+grp+'</td></tr>';
       }
       h+='<tr style="background:'+(i%2===0?'#fff':'#fafafa')+';border-left:3px solid '+col+';border-bottom:1px solid #f0f0f0">';
       h+='<td style="padding:5px 6px;font-weight:800;color:#fff;background:'+col+';text-align:center;font-size:10px">'+(s.num||i+1)+'</td>';
       h+='<td style="padding:5px 7px;font-weight:700;color:'+DARK+';font-size:10.5px">'+(s.sistema||'')+'</td>';
-      // Valor en línea 1, parámetro en línea 2 — columna angosta
       var det=s.detectado||s.hallazgo||'';
       var valMatch=det.match(/Valor:\s*([\d.]+)/i);
       var rangoMatch=det.match(/rango normal:\s*([\d.]+ – [\d.]+)/i);
@@ -3302,51 +3337,52 @@ function renderResultVH(r){
 
   // ── 3. PLAN DE ALIMENTACIÓN + RECOMENDACIONES ──
   var planAlim=r.plan_alimenticio||null;
-  var tieneSeccion3=planAlim||(comida.length>0)||(vida.length>0);
+  // Sin checkbox: plan compacto automático desde tablas (sin semanas)
+  var planCompacto=null;
+  if(!planAlim&&sistemas.length>0){
+    planCompacto=generarPlanAlimentacionTabla(sistemas,'');
+    planCompacto.semanas=null;planCompacto.estiloInfo=null;
+  }
+  var planVisible=planAlim||planCompacto;
+  var tieneSeccion3=planVisible||(vida.length>0);
   if(tieneSeccion3){
     var GREEN='#1a7f3c',GREEN_BG='#e6f4ea',AMBER='#b8690c',AMBER_BG='#fffaf5',RED2='#c04040';
     h+='<div style="border:1px solid '+GREEN_BG+';border-radius:9px;overflow:hidden;margin-bottom:11px">';
     h+='<div style="background:'+GREEN_BG+';border-bottom:2px solid '+GREEN+';padding:6px 13px">';
-    h+='<span style="font-size:10px;font-weight:700;color:'+GREEN+';text-transform:uppercase;letter-spacing:.6px">3. 🥗 Plan de Alimentación Personalizado</span></div>';
-
-    if(planAlim){
-      // ── Encabezado de estilo ──
-      if(planAlim.estiloInfo){
-        var ei=planAlim.estiloInfo;
+    h+='<span style="font-size:10px;font-weight:700;color:'+GREEN+';text-transform:uppercase;letter-spacing:.6px">3. &#127833; '+(planAlim?'Plan de Alimentaci&#xF3;n Mensual Personalizado':'Recomendaciones Alimenticias por Sistemas Detectados')+'</span></div>';
+    if(planVisible){
+      // Estilo (solo plan mensual completo)
+      if(planVisible.estiloInfo){
+        var ei=planVisible.estiloInfo;
         h+='<div style="background:#f0faf0;padding:9px 13px;border-bottom:1px solid '+GREEN_BG+'">';
-        h+='<div style="font-size:10px;font-weight:800;color:'+GREEN+';margin-bottom:4px">📅 Estilo: '+ei.label+'</div>';
+        h+='<div style="font-size:10px;font-weight:800;color:'+GREEN+';margin-bottom:4px">&#128197; Estilo: '+ei.label+'</div>';
         h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">';
-        ei.horarios.forEach(function(hr){
-          h+='<span style="font-size:9.5px;background:#fff;border:1px solid '+GREEN_BG+';border-radius:12px;padding:2px 8px;color:#1C2833">'+hr+'</span>';
-        });
+        ei.horarios.forEach(function(hr){h+='<span style="font-size:9.5px;background:#fff;border:1px solid '+GREEN_BG+';border-radius:12px;padding:2px 8px;color:#1C2833">'+hr+'</span>';});
         h+='</div>';
         if(ei.nota)h+='<div style="font-size:9px;color:#555;font-style:italic">'+ei.nota+'</div>';
         h+='</div>';
       }
-
-      // ── 4 Semanas con menús ──
-      if(planAlim.semanas&&planAlim.semanas.length){
+      // 4 semanas (solo con checkbox)
+      if(planVisible.semanas&&planVisible.semanas.length){
         var colSem=['#1a56db','#1a7f3c','#b8690c','#8b1a5a'];
         h+='<div style="padding:10px 13px">';
-        h+='<div style="font-size:10px;font-weight:700;color:'+AMBER+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 Menú mensual — 4 semanas</div>';
-        planAlim.semanas.forEach(function(sem,si){
-          var sc=colSem[si]||'#555';
+        h+='<div style="font-size:10px;font-weight:700;color:'+AMBER+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">&#128203; Men&#xFA; mensual &#8212; 4 semanas</div>';
+        planVisible.semanas.forEach(function(sem,si2){
+          var sc=colSem[si2]||'#555';
+          var showSnack=planVisible.estilo==='5comidas';
+          var showCena=planVisible.estilo!=='ayuno';
           h+='<div style="border:1px solid #e8e8e8;border-radius:8px;margin-bottom:8px;overflow:hidden">';
           h+='<div style="background:'+sc+';padding:6px 10px;display:flex;justify-content:space-between;align-items:center">';
           h+='<span style="font-size:10px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.5px">Semana '+sem.num+'</span>';
           h+='<span style="font-size:9px;color:rgba(255,255,255,.8)">'+sem.enfoque+'</span>';
           h+='</div>';
-          // tabla de dias
           h+='<table style="width:100%;border-collapse:collapse;font-size:10px">';
-          // header según estilo
-          var showSnack=planAlim.estilo==='5comidas';
-          var showCena=planAlim.estilo!=='ayuno';
           h+='<tr style="background:#f8f8f8">';
-          h+='<th style="padding:4px 6px;width:18%;color:#555;font-weight:700;text-align:left">Días</th>';
-          h+='<th style="padding:4px 6px;color:'+GREEN+';font-weight:700">☀️ '+(planAlim.estilo==='ayuno'?'1ª Comida':'Desayuno')+'</th>';
-          if(showSnack)h+='<th style="padding:4px 6px;color:#b8690c;font-weight:700">🍎 Colación</th>';
-          h+='<th style="padding:4px 6px;color:#1a56db;font-weight:700">🌤️ Comida</th>';
-          if(showCena)h+='<th style="padding:4px 6px;color:#8b1a5a;font-weight:700">🌙 Cena</th>';
+          h+='<th style="padding:4px 6px;width:18%;color:#555;font-weight:700;text-align:left">D&#xED;as</th>';
+          h+='<th style="padding:4px 6px;color:'+GREEN+';font-weight:700">&#9728;&#65039; '+(planVisible.estilo==='ayuno'?'1&#170; Comida':'Desayuno')+'</th>';
+          if(showSnack)h+='<th style="padding:4px 6px;color:'+AMBER+';font-weight:700">&#127822; Colaci&#xF3;n</th>';
+          h+='<th style="padding:4px 6px;color:#1a56db;font-weight:700">&#127780;&#65039; Comida</th>';
+          if(showCena)h+='<th style="padding:4px 6px;color:#8b1a5a;font-weight:700">&#127769; Cena</th>';
           h+='</tr>';
           sem.dias.forEach(function(d,di){
             var bg=di%2===0?'#fff':'#fafafa';
@@ -3362,52 +3398,42 @@ function renderResultVH(r){
         });
         h+='</div>';
       }
-
-      // ── Qué comer / Qué evitar ──
-      if((planAlim.comer&&planAlim.comer.length)||(planAlim.evitar&&planAlim.evitar.length)){
+      // Comer / Evitar — siempre visible
+      if((planVisible.comer&&planVisible.comer.length)||(planVisible.evitar&&planVisible.evitar.length)){
         h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid '+GREEN_BG+'">';
-        if(planAlim.comer&&planAlim.comer.length){
+        if(planVisible.comer&&planVisible.comer.length){
           h+='<div style="padding:9px 11px;border-right:1px solid '+GREEN_BG+'">';
-          h+='<div style="font-size:9.5px;font-weight:800;color:'+GREEN+';margin-bottom:5px;text-transform:uppercase">✅ Incluir más</div>';
-          planAlim.comer.forEach(function(x){h+='<div style="font-size:10px;color:#1C2833;padding:2px 0 2px 11px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+GREEN+'">•</span>'+x+'</div>';});
+          h+='<div style="font-size:9.5px;font-weight:800;color:'+GREEN+';margin-bottom:5px;text-transform:uppercase">&#9989; Incluir m&#xe1;s</div>';
+          planVisible.comer.forEach(function(x){h+='<div style="font-size:10px;color:#1C2833;padding:2px 0 2px 11px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+GREEN+'">&#8226;</span>'+x+'</div>';});
           h+='</div>';
         }
-        if(planAlim.evitar&&planAlim.evitar.length){
+        if(planVisible.evitar&&planVisible.evitar.length){
           h+='<div style="padding:9px 11px">';
-          h+='<div style="font-size:9.5px;font-weight:800;color:'+RED2+';margin-bottom:5px;text-transform:uppercase">❌ Reducir o evitar</div>';
-          planAlim.evitar.forEach(function(x){h+='<div style="font-size:10px;color:#1C2833;padding:2px 0 2px 11px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+RED2+'">•</span>'+x+'</div>';});
+          h+='<div style="font-size:9.5px;font-weight:800;color:'+RED2+';margin-bottom:5px;text-transform:uppercase">&#10060; Reducir o evitar</div>';
+          planVisible.evitar.forEach(function(x){h+='<div style="font-size:10px;color:#1C2833;padding:2px 0 2px 11px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+RED2+'">&#8226;</span>'+x+'</div>';});
           h+='</div>';
         }
         h+='</div>';
       }
-
-      // ── Tips personalizados (de las notas) ──
-      if(planAlim.tipsPersonalizados&&planAlim.tipsPersonalizados.length){
+      // Tips personalizados (solo con checkbox)
+      if(planVisible.tipsPersonalizados&&planVisible.tipsPersonalizados.length){
         h+='<div style="background:#fff8e8;border-top:2px solid #f0c840;padding:9px 11px">';
-        h+='<div style="font-size:9.5px;font-weight:800;color:#8a5c00;text-transform:uppercase;margin-bottom:5px">⭐ Ajustes según tus hábitos</div>';
-        planAlim.tipsPersonalizados.forEach(function(x){h+='<div style="font-size:10.5px;color:#5a3a00;padding:3px 0 3px 12px;position:relative;line-height:1.5"><span style="position:absolute;left:0;color:#e8a830">→</span>'+x+'</div>';});
+        h+='<div style="font-size:9.5px;font-weight:800;color:#8a5c00;text-transform:uppercase;margin-bottom:5px">&#11088; Ajustes seg&#xFA;n tus h&#xe1;bitos</div>';
+        planVisible.tipsPersonalizados.forEach(function(x){h+='<div style="font-size:10.5px;color:#5a3a00;padding:3px 0 3px 12px;position:relative;line-height:1.5"><span style="position:absolute;left:0;color:#e8a830">&#8594;</span>'+x+'</div>';});
         h+='</div>';
       }
-
-      // ── Tips generales ──
-      if(planAlim.tips&&planAlim.tips.length){
+      // Tips generales
+      if(planVisible.tips&&planVisible.tips.length){
         h+='<div style="background:'+AMBER_BG+';border-top:1px solid #f0d880;padding:9px 11px">';
-        h+='<div style="font-size:9.5px;font-weight:800;color:'+AMBER+';text-transform:uppercase;margin-bottom:5px">💡 Consejos adicionales</div>';
-        planAlim.tips.forEach(function(x){h+='<div style="font-size:10px;color:#3a2808;padding:2px 0 2px 12px;position:relative;line-height:1.5"><span style="position:absolute;left:0;color:'+AMBER+'">•</span>'+x+'</div>';});
+        h+='<div style="font-size:9.5px;font-weight:800;color:'+AMBER+';text-transform:uppercase;margin-bottom:5px">&#128161; Consejos pr&#xe1;cticos</div>';
+        planVisible.tips.forEach(function(x){h+='<div style="font-size:10px;color:#3a2808;padding:2px 0 2px 12px;position:relative;line-height:1.5"><span style="position:absolute;left:0;color:'+AMBER+'">&#8226;</span>'+x+'</div>';});
         h+='</div>';
       }
-
-    }else if(comida.length){
-      // Fallback: frases genéricas si no hay plan estructurado
-      h+='<div style="padding:10px 13px">';
-      comida.forEach(function(c){h+='<div style="font-size:11px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';});
-      h+='</div>';
     }
-
     if(vida.length){
       h+='<div style="border-top:1px solid '+GREEN_BG+';padding:9px 13px;background:#fafffe">';
-      h+='<div style="font-size:9.5px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">🏃 Estilo de vida</div>';
-      vida.forEach(function(c){h+='<div style="font-size:10.5px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';});
+      h+='<div style="font-size:9.5px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">&#127939; Estilo de vida</div>';
+      vida.forEach(function(c){h+='<div style="font-size:10.5px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">&#8226;</span>'+c+'</div>';});
       h+='</div>';
     }
     h+='</div>';
@@ -3686,22 +3712,7 @@ function downloadReportePDF2(){
   const sisRows=sis.map((s,i)=>{
     const urg=s.urgencia||s.nivel||'medio';
     const col=urg==='alto'||urg==='alta'?'#C0392B':'#E67E22';
-    const sn=(s.sistema||'').toLowerCase();
-    var grp='';
-    if(/coraz[oó]n|card[ií]|miocardio|perfusi[oó]n|oxígeno miocardial|elasticidad vascular|cristal de colesterol/.test(sn)) grp='❤️ Cardiovascular';
-    else if(/h[ií]gado|hep[aá]tico|biliar|grasa en el h|ácidos biliares/.test(sn)) grp='🫀 Hígado · Vesícula';
-    else if(/pulm[oó]n|respirat|paco2|oxígeno arterial/.test(sn)) grp='🫁 Respiratorio';
-    else if(/ri[ñn][oó]n|renal/.test(sn)) grp='🫘 Renal';
-    else if(/plomo|mercurio|arsén|cadmio|metal pesado/.test(sn)) grp='☠️ Metales pesados';
-    else if(/pesticida|tóxico/.test(sn)) grp='🧪 Tóxicos · Pesticidas';
-    else if(/memoria|neurológico|nervioso|cerebro/.test(sn)) grp='🧠 Neurológico';
-    else if(/glucosa|azúcar|insulina|diabet|trigli|lípido|metabolismo lipídico/.test(sn)) grp='🩸 Metabólico · Glucosa';
-    else if(/[oó]seo|osteoporos|articular|hiperplasia|reumatoid/.test(sn)) grp='🦴 Óseo · Articular';
-    else if(/zinc|coenzima|vitamina|hierro|calcio|magnesio|mineral|nutriente/.test(sn)) grp='💊 Nutrientes';
-    else if(/piel|cutáneo|humectación|colágeno|cabello|dermis/.test(sn)) grp='🌸 Piel · Colágeno';
-    else if(/alergia|sensibilidad/.test(sn)) grp='⚡ Alergias';
-    else if(/intestino|absorción|gástrico|digest/.test(sn)) grp='🫃 Digestivo';
-    else if(/fatiga visual|ojo|visual/.test(sn)) grp='👁️ Visual';
+    const grp=s._grupo||'';
     var grpRow='';
     if(grp&&grp!==prevGrpPDF){prevGrpPDF=grp;grpRow=`<tr><td colspan="4" style="padding:4px 8px;background:#f0f0f0;font-size:9px;font-weight:700;color:#555;letter-spacing:.5px;text-transform:uppercase">${grp}</td></tr>`;}
     const det=s.detectado||s.hallazgo||'';
