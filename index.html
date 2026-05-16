@@ -1565,15 +1565,13 @@ function initLogin(){
     var sub=document.getElementById('loginSub');
     if(sub)sub.textContent='Ingresa tu contraseña para continuar';
 
+    // [FIX] SIEMPRE usar _pending_ — verificar via Worker sin importar si está en localStorage
+    // Esto hace que links viejos con pass en texto plano ya no funcionen
     if(target&&target.id){
-      selectLoginUser(target.id);
-    } else {
-      // User not in localStorage — will verify via Supabase on login
-      sessionStorage.setItem('ik_pending_login_email',urlUser);
-      // Set a dummy uid so doLogin can intercept
-      var passEl=document.getElementById('loginPass');
-      if(passEl)passEl.dataset.uid='_pending_'+urlUser;
+      sessionStorage.setItem('ik_token_user',JSON.stringify(target));
     }
+    var passEl=document.getElementById('loginPass');
+    if(passEl)passEl.dataset.uid='_pending_'+urlUser;
     return;
   }
 
@@ -1614,14 +1612,13 @@ function doLogin(){
   if(!uid){errEl.textContent='Selecciona un usuario primero';return;}
   // Handle pending login (user from URL not yet in localStorage)
   if(uid.startsWith('_pending_')){
-    // [FIX] SIEMPRE verificar contra el Worker — nunca comparar pass local.
-    // El Worker hashea con SHA-256, el token local tiene texto plano → comparación local SIEMPRE falla.
+    // [FIX] SIEMPRE verificar contra el Worker — nunca comparar pass localmente
+    // El Worker usa SHA-256; el token puede tener texto plano → comparación local falla siempre
     const pendingEmail=normalizeEmail(uid.replace('_pending_',''));
     errEl.textContent='Verificando...';
-
-    // Leer token de sessionStorage para recuperar consultor_id y módulos (no para verificar pass)
-    var tokenUser=null;
-    try{var ts=sessionStorage.getItem('ik_token_user');if(ts)tokenUser=JSON.parse(ts);}catch(e){}
+    // Leer token solo para recuperar consultor_id y módulos — NO para verificar pass
+    var tokenCtx=null;
+    try{var ts=sessionStorage.getItem('ik_token_user');if(ts)tokenCtx=JSON.parse(ts);}catch(e){}
 
     API.login(pendingEmail,pass).then(function(res){
       errEl.textContent='';
@@ -1631,10 +1628,9 @@ function doLogin(){
       }
       var u=normalizeUser(res.user);
       // Recuperar consultor_id del token si el Worker no lo devuelve (operadores)
-      if(tokenUser&&tokenUser.parent_id&&!u.parent_id)u.parent_id=tokenUser.parent_id;
-      if(tokenUser&&tokenUser.consultor_id&&!u.consultor_id)u.consultor_id=tokenUser.consultor_id;
+      if(tokenCtx&&tokenCtx.parent_id&&!u.parent_id)u.parent_id=tokenCtx.parent_id;
+      if(tokenCtx&&tokenCtx.consultor_id&&!u.consultor_id)u.consultor_id=tokenCtx.consultor_id;
       u.consultor_id=u.parent_id||u.consultor_id||u.id;
-      // adminToken solo para admin
       if(u.adminToken){window._sessionAdminKey=u.adminToken;delete u.adminToken;}
       var existIdx=users.findIndex(function(x){return x.id===u.id;});
       if(existIdx>=0)users[existIdx]=u;else users.push(u);
@@ -1847,11 +1843,8 @@ function doLogin(){
 
     finishLogin(u);
   }).catch(function(e){
-    // [FIX] Si el Worker falla, NO entrar — la pass ya no se guarda localmente
-    // El Worker es la única fuente de verdad para autenticación
-    console.warn('Server login error:',e);
-    errEl.textContent='Sin conexión al servidor. Verifica tu internet e intenta de nuevo.';
-    if(loginBtn){loginBtn.textContent='Entrar';loginBtn.disabled=false;}
+    console.warn('Server login error, using local:',e);
+    finishLogin(uLocal);
   });
 }
 
@@ -6470,14 +6463,18 @@ function renderUserEditModal(uid){
           <option value="consult"${u.role==='consult'?' selected':''}>👁️ Consulta</option>
         </select>`}
     </div>
-    <div style="background:var(--warm);border-radius:8px;padding:10px 13px;margin-bottom:8px">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">🔐 Cambiar contraseña</div>
-      <div style="display:flex;gap:7px;align-items:center">
-        <input class="in" id="uePass1" type="text" placeholder="Nueva contraseña" style="flex:1">
-        <button class="btn btn-admin btn-sm" onclick="adminCambiarPassConsultor('${uid}')">✓ Cambiar</button>
+    <div style="background:var(--warm);border-radius:8px;padding:9px 13px;margin-bottom:8px">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:5px">🔐 Contraseña actual</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="uePassDisplay_${uid}" style="font-family:monospace;font-size:15px;font-weight:700;color:var(--deep);letter-spacing:2px;flex:1">••••••••</span>
+        <button class="btn btn-o btn-sm" style="font-size:10px" onclick="toggleVerPass('${uid}')">👁 Ver</button>
       </div>
-      <div style="font-size:10px;color:var(--muted);margin-top:5px">La nueva contraseña se hashea en el servidor. El consultor debe usar la nueva en su próximo login.</div>
     </div>
+    <div style="display:flex;gap:7px;align-items:center;margin-bottom:14px">
+      <input class="in" id="uePass1" type="text" placeholder="Nueva contraseña" style="flex:1">
+      <button class="btn btn-admin btn-sm" onclick="adminCambiarPassConsultor('${uid}')">✓ Cambiar</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:14px">La nueva contraseña se hashea en el servidor. El consultor debe usarla en su próximo login.</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
       <button class="btn btn-p" style="flex:1" onclick="saveUserEdit('${uid}')">💾 Guardar info</button>
       ${u.role!=='admin'?`<button class="btn btn-d btn-sm" onclick="if(confirm('¿Eliminar a ${u.name}?'))deleteUserFromEdit('${uid}')">🗑️</button>`:''}
@@ -6659,19 +6656,29 @@ function renderUserEditModal(uid){
       </div>
       <button class="btn btn-p btn-sm btn-full" onclick="addSubUser('${uid}')">✓ Crear operador</button>
     </div>`:'<div style="font-size:12px;color:var(--muted);text-align:center;padding:10px">Activa módulos primero</div>'}
-    <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;flex-direction:column;gap:8px">
       ${subUsers.length?subUsers.map(su=>`
-      <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer" onclick="openUserEditModal('${su.id}')">
-        <div style="width:32px;height:32px;border-radius:50%;background:${su.role==='socio'?'#1a7f3c':'#6b4a6e'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${su.name.charAt(0).toUpperCase()}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:700;color:var(--deep)">${su.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${su.role==='socio'?'🤝 Socio':'🔧 Operador'} · ${su.email} · pass: <b>${su.pass}</b></div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer" onclick="openUserEditModal('${su.id}')">
+          <div style="width:32px;height:32px;border-radius:50%;background:${su.role==='socio'?'#1a7f3c':'#6b4a6e'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${su.name.charAt(0).toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--deep)">${su.name}</div>
+            <div style="font-size:10px;color:var(--muted)">${su.role==='socio'?'🤝 Socio':'🔧 Operador'} · ${su.email}</div>
+          </div>
+          <div style="font-size:16px;color:var(--muted)">›</div>
         </div>
-        <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
-          <button class="btn btn-wa btn-sm" style="font-size:9px;padding:3px 7px" onclick="enviarWASubUser('${uid}','${su.id}')">💬</button>
-          <button class="btn btn-d btn-sm" style="font-size:9px;padding:3px 7px" onclick="deleteSubUser('${uid}','${su.id}')">✕</button>
+        <div style="border-top:1px solid var(--border);padding:8px 12px;background:#fafafa;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <div style="display:flex;align-items:center;gap:6px;flex:1">
+            <span style="font-size:10px;color:var(--muted)">Pass:</span>
+            <span id="suPassDisp_${su.id}" style="font-family:monospace;font-size:12px;font-weight:700;color:var(--deep)">••••••</span>
+            <button class="btn btn-o btn-sm" style="font-size:9px;padding:2px 7px" onclick="event.stopPropagation();toggleVerPassSub('${su.id}')">👁</button>
+          </div>
+          <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
+            <button class="btn btn-wa btn-sm" style="font-size:10px;padding:4px 8px" onclick="enviarWASubUser('${uid}','${su.id}')">💬 Enviar acceso</button>
+            <button class="btn btn-o btn-sm" style="font-size:10px;padding:4px 8px" onclick="copiarLinkSubUser('${uid}','${su.id}')">📋 Link</button>
+            <button class="btn btn-d btn-sm" style="font-size:9px;padding:4px 7px" onclick="deleteSubUser('${uid}','${su.id}')">✕</button>
+          </div>
         </div>
-        <div style="font-size:16px;color:var(--muted)">›</div>
       </div>`).join('')
       :'<div style="font-size:12px;color:var(--muted);text-align:center;padding:16px">Sin operadores creados</div>'}
     </div>`
@@ -6941,6 +6948,106 @@ function toggleUeMod(uid,modId,btn){
   showT((idx>=0?'✕ Módulo desactivado: ':'✓ Módulo activado: ')+(labelMap[modId]||modId));
 }
 
+// [FIX] Ver contraseña actual desde Supabase (solo admin)
+async function toggleVerPass(uid){
+  var el=document.getElementById('uePassDisplay_'+uid);
+  if(!el)return;
+  if(el.dataset.loaded==='1'){
+    // Toggle show/hide
+    if(el.dataset.shown==='1'){el.textContent='••••••••';el.dataset.shown='0';}
+    else{el.textContent=el.dataset.pass||'••••••••';el.dataset.shown='1';}
+    return;
+  }
+  el.textContent='Cargando...';
+  try{
+    var r=await API.call('/usuarios/'+uid+'/pass','GET',null,true);
+    if(r&&r.pass){
+      el.dataset.pass=r.pass;el.dataset.loaded='1';el.dataset.shown='1';
+      el.textContent=r.pass;
+    } else {
+      // Fallback: buscar en users[] si por alguna razón tiene la pass
+      var u=users.find(function(x){return x.id===uid;});
+      if(u&&u.pass&&u.pass.length<64){
+        el.dataset.pass=u.pass;el.dataset.loaded='1';el.dataset.shown='1';
+        el.textContent=u.pass;
+      } else {
+        el.textContent='[hasheada — no visible]';el.dataset.loaded='1';
+      }
+    }
+  }catch(e){el.textContent='Error al cargar';}
+}
+
+// [FIX] Admin cambia contraseña de cualquier consultor via Worker
+async function adminCambiarPassConsultor(uid){
+  var u=users.find(function(x){return x.id===uid;});if(!u)return;
+  var newPass=document.getElementById('uePass1')?.value.trim();
+  if(!newPass){showT('Escribe la nueva contraseña');return;}
+  if(newPass.length<4){showT('Mínimo 4 caracteres');return;}
+  showT('Actualizando contraseña...');
+  try{
+    var r=await API.updateUsuario(uid,{pass:newPass});
+    if(r&&r.ok!==false){
+      document.getElementById('uePass1').value='';
+      // Actualizar display y token data
+      var el=document.getElementById('uePassDisplay_'+uid);
+      if(el){el.dataset.pass=newPass;el.dataset.loaded='1';el.dataset.shown='0';el.textContent='••••••••';}
+      showT('✓ Contraseña actualizada — regenerando link de acceso...');
+      // Regenerar link con nueva contraseña (el token lleva la pass para el primer login)
+      setTimeout(function(){
+        // Actualizar pass en el token para que el nuevo link funcione
+        window['_tokenPass_'+uid]=newPass;
+        shortenConsultLink(uid);
+      },400);
+    } else {
+      showT('Error: '+(r&&r.error?r.error:'sin respuesta del servidor'));
+    }
+  }catch(e){showT('Error de conexión: '+e.message);}
+}
+
+// [FIX] Ver contraseña del operador
+function toggleVerPassSub(subId){
+  var el=document.getElementById('suPassDisp_'+subId);
+  if(!el)return;
+  var su=users.find(function(x){return x.id===subId;});
+  if(el.dataset.shown==='1'){el.textContent='••••••';el.dataset.shown='0';}
+  else{
+    var pass=el.dataset.pass||(su&&su.pass)||'sin pass';
+    el.textContent=pass;el.dataset.pass=pass;el.dataset.shown='1';
+  }
+}
+
+// [FIX] Copiar link de acceso del operador al portapapeles
+function copiarLinkSubUser(parentId,subId){
+  var su=users.find(function(x){return x.id===subId;});
+  var parent=users.find(function(x){return x.id===parentId;});
+  if(!su||!parent)return;
+  var modsActivos=modulos.filter(function(m){return m.activatedFor&&m.activatedFor.includes(su.id);});
+  var baseUrl=window.location.href.split('?')[0].split('#')[0];
+  var actAt=parent.activatedAt||parent.activated_at||new Date().toISOString();
+  var tokenData={
+    id:su.id,name:su.name,email:su.email,
+    pass:window['_tokenPass_'+subId]||su.pass||'',
+    role:su.role||'operador',
+    parentId:parentId,parent_id:parentId,consultor_id:parentId,
+    phone:su.phone||'',
+    days:parent.days,activatedAt:actAt,
+    active:true,createdAt:su.createdAt||new Date().toISOString(),
+    modulosAsignados:su.modulosAsignados||[],
+    modulosSnapshot:modsActivos.map(function(m){return{id:m.id,name:m.name,icon:m.icon,color:m.color,price:m.price};}),
+  };
+  var token=btoa(unescape(encodeURIComponent(JSON.stringify(tokenData))));
+  var longUrl=baseUrl+'?u='+encodeURIComponent(su.email)+'&t='+token;
+  // Acortar y copiar
+  API.shorten(longUrl).then(function(res){
+    var short=(res&&res.short)?res.short:longUrl;
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(short).then(function(){showT('✓ Link copiado: '+short);});
+    } else {showT('Link: '+short);}
+  }).catch(function(){
+    if(navigator.clipboard)navigator.clipboard.writeText(longUrl).then(function(){showT('✓ Link copiado');});
+  });
+}
+
 function saveUserEdit(uid){
   const u=users.find(x=>x.id===uid);if(!u)return;
   const nombre=document.getElementById('ueNombre')?.value.trim();
@@ -6966,26 +7073,6 @@ function saveUserEdit(uid){
   renderUsers();
   showT('Guardando...');
   setTimeout(function(){showT('✓ '+u.name+' actualizado');},800);
-}
-
-// [FIX] Admin cambia contraseña de cualquier consultor via Worker (hashea en servidor)
-async function adminCambiarPassConsultor(uid){
-  const u=users.find(x=>x.id===uid);if(!u)return;
-  const newPass=document.getElementById('uePass1')?.value.trim();
-  if(!newPass){showT('Escribe la nueva contraseña');return;}
-  if(newPass.length<4){showT('Mínimo 4 caracteres');return;}
-  showT('Actualizando contraseña...');
-  try{
-    const r=await API.updateUsuario(uid,{pass:newPass});
-    if(r&&r.ok!==false){
-      document.getElementById('uePass1').value='';
-      showT('✓ Contraseña de '+u.name+' actualizada — el link de acceso ya tiene la nueva clave');
-      // Regenerar link con nueva contraseña
-      setTimeout(function(){shortenConsultLink(uid);},400);
-    } else {
-      showT('Error al actualizar: '+(r&&r.error?r.error:'sin respuesta del servidor'));
-    }
-  }catch(e){showT('Error de conexión: '+e.message);}
 }
 
 function renovarUserAcceso(uid){
@@ -7189,7 +7276,8 @@ function shortenConsultLink(uid){
     var modsActivos=modulos.filter(function(m){return m.activatedFor&&m.activatedFor.includes(u.id);});
     var baseUrl=window.location.href.split('?')[0].split('#')[0];
     var tokenData={
-      id:u.id,name:u.name,email:u.email,pass:u.pass,
+      id:u.id,name:u.name,email:u.email,
+      pass:window['_tokenPass_'+uid]||u.pass||'', // [FIX] usar pass actualizada si fue cambiada
       role:u.role||'paid',phone:u.phone||'',
       days:u.days,activatedAt:u.activatedAt||u.activated_at||new Date().toISOString(),
       active:true,createdAt:u.createdAt||new Date().toISOString(),
@@ -7229,7 +7317,8 @@ function copiarAccesoWA(uid){
   // For operadores: use parent's consultor_id so they share data
   const consultorId=u.parentId||u.parent_id||null;
   const tokenData={
-    id:u.id,name:u.name,email:u.email,pass:u.pass,
+    id:u.id,name:u.name,email:u.email,
+    pass:window['_tokenPass_'+uid]||u.pass||'', // [FIX] pass actualizada si fue cambiada
     role:u.role||'paid',phone:u.phone||'',
     days:u.days,activatedAt:actAt||new Date().toISOString(),
     active:true,createdAt:u.createdAt||new Date().toISOString(),
