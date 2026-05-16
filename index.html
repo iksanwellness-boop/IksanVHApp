@@ -3308,57 +3308,106 @@ function renderResultVH(r){
     h+='<div style="border:1px solid '+GREEN_BG+';border-radius:9px;overflow:hidden;margin-bottom:11px">';
     h+='<div style="background:'+GREEN_BG+';border-bottom:2px solid '+GREEN+';padding:6px 13px">';
     h+='<span style="font-size:10px;font-weight:700;color:'+GREEN+';text-transform:uppercase;letter-spacing:.6px">3. 🥗 Plan de Alimentación Personalizado</span></div>';
+
     if(planAlim){
-      // Plan completo con 3 columnas: comer / evitar / tips
-      h+='<div style="padding:11px 13px">';
-      if(planAlim.grupos_base&&planAlim.grupos_base.length){
-        h+='<div style="font-size:9px;color:'+AMBER+';font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Basado en: '+planAlim.grupos_base.map(function(g){return g.charAt(0).toUpperCase()+g.slice(1);}).join(' · ')+'</div>';
+      // ── Encabezado de estilo ──
+      if(planAlim.estiloInfo){
+        var ei=planAlim.estiloInfo;
+        h+='<div style="background:#f0faf0;padding:9px 13px;border-bottom:1px solid '+GREEN_BG+'">';
+        h+='<div style="font-size:10px;font-weight:800;color:'+GREEN+';margin-bottom:4px">📅 Estilo: '+ei.label+'</div>';
+        h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">';
+        ei.horarios.forEach(function(hr){
+          h+='<span style="font-size:9.5px;background:#fff;border:1px solid '+GREEN_BG+';border-radius:12px;padding:2px 8px;color:#1C2833">'+hr+'</span>';
+        });
+        h+='</div>';
+        if(ei.nota)h+='<div style="font-size:9px;color:#555;font-style:italic">'+ei.nota+'</div>';
+        h+='</div>';
       }
-      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
-      // Columna COMER
-      if(planAlim.comer&&planAlim.comer.length){
-        h+='<div style="background:#f0faf0;border-radius:8px;padding:9px 10px">';
-        h+='<div style="font-size:10px;font-weight:800;color:'+GREEN+';margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">✅ Incluir más</div>';
-        planAlim.comer.forEach(function(x){
-          h+='<div style="font-size:10.5px;color:#1C2833;padding:3px 0 3px 12px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+GREEN+';font-size:12px">•</span>'+x+'</div>';
+
+      // ── 4 Semanas con menús ──
+      if(planAlim.semanas&&planAlim.semanas.length){
+        var colSem=['#1a56db','#1a7f3c','#b8690c','#8b1a5a'];
+        h+='<div style="padding:10px 13px">';
+        h+='<div style="font-size:10px;font-weight:700;color:'+AMBER+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 Menú mensual — 4 semanas</div>';
+        planAlim.semanas.forEach(function(sem,si){
+          var sc=colSem[si]||'#555';
+          h+='<div style="border:1px solid #e8e8e8;border-radius:8px;margin-bottom:8px;overflow:hidden">';
+          h+='<div style="background:'+sc+';padding:6px 10px;display:flex;justify-content:space-between;align-items:center">';
+          h+='<span style="font-size:10px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.5px">Semana '+sem.num+'</span>';
+          h+='<span style="font-size:9px;color:rgba(255,255,255,.8)">'+sem.enfoque+'</span>';
+          h+='</div>';
+          // tabla de dias
+          h+='<table style="width:100%;border-collapse:collapse;font-size:10px">';
+          // header según estilo
+          var showSnack=planAlim.estilo==='5comidas';
+          var showCena=planAlim.estilo!=='ayuno';
+          h+='<tr style="background:#f8f8f8">';
+          h+='<th style="padding:4px 6px;width:18%;color:#555;font-weight:700;text-align:left">Días</th>';
+          h+='<th style="padding:4px 6px;color:'+GREEN+';font-weight:700">☀️ '+(planAlim.estilo==='ayuno'?'1ª Comida':'Desayuno')+'</th>';
+          if(showSnack)h+='<th style="padding:4px 6px;color:#b8690c;font-weight:700">🍎 Colación</th>';
+          h+='<th style="padding:4px 6px;color:#1a56db;font-weight:700">🌤️ Comida</th>';
+          if(showCena)h+='<th style="padding:4px 6px;color:#8b1a5a;font-weight:700">🌙 Cena</th>';
+          h+='</tr>';
+          sem.dias.forEach(function(d,di){
+            var bg=di%2===0?'#fff':'#fafafa';
+            h+='<tr style="background:'+bg+';border-top:1px solid #f0f0f0">';
+            h+='<td style="padding:5px 6px;font-weight:700;color:#555;white-space:nowrap">'+d.dia+'</td>';
+            h+='<td style="padding:5px 6px;color:#1C2833;line-height:1.4">'+d.d+'</td>';
+            if(showSnack)h+='<td style="padding:5px 6px;color:#555;font-style:italic">'+d.sn+'</td>';
+            h+='<td style="padding:5px 6px;color:#1C2833;line-height:1.4">'+d.c+'</td>';
+            if(showCena)h+='<td style="padding:5px 6px;color:#1C2833;line-height:1.4">'+d.ce+'</td>';
+            h+='</tr>';
+          });
+          h+='</table></div>';
         });
         h+='</div>';
       }
-      // Columna EVITAR
-      if(planAlim.evitar&&planAlim.evitar.length){
-        h+='<div style="background:#fff5f5;border-radius:8px;padding:9px 10px">';
-        h+='<div style="font-size:10px;font-weight:800;color:'+RED2+';margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">❌ Reducir o evitar</div>';
-        planAlim.evitar.forEach(function(x){
-          h+='<div style="font-size:10.5px;color:#1C2833;padding:3px 0 3px 12px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+RED2+';font-size:12px">•</span>'+x+'</div>';
-        });
+
+      // ── Qué comer / Qué evitar ──
+      if((planAlim.comer&&planAlim.comer.length)||(planAlim.evitar&&planAlim.evitar.length)){
+        h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid '+GREEN_BG+'">';
+        if(planAlim.comer&&planAlim.comer.length){
+          h+='<div style="padding:9px 11px;border-right:1px solid '+GREEN_BG+'">';
+          h+='<div style="font-size:9.5px;font-weight:800;color:'+GREEN+';margin-bottom:5px;text-transform:uppercase">✅ Incluir más</div>';
+          planAlim.comer.forEach(function(x){h+='<div style="font-size:10px;color:#1C2833;padding:2px 0 2px 11px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+GREEN+'">•</span>'+x+'</div>';});
+          h+='</div>';
+        }
+        if(planAlim.evitar&&planAlim.evitar.length){
+          h+='<div style="padding:9px 11px">';
+          h+='<div style="font-size:9.5px;font-weight:800;color:'+RED2+';margin-bottom:5px;text-transform:uppercase">❌ Reducir o evitar</div>';
+          planAlim.evitar.forEach(function(x){h+='<div style="font-size:10px;color:#1C2833;padding:2px 0 2px 11px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:'+RED2+'">•</span>'+x+'</div>';});
+          h+='</div>';
+        }
         h+='</div>';
       }
-      h+='</div>';
-      // Tips en ancho completo
+
+      // ── Tips personalizados (de las notas) ──
+      if(planAlim.tipsPersonalizados&&planAlim.tipsPersonalizados.length){
+        h+='<div style="background:#fff8e8;border-top:2px solid #f0c840;padding:9px 11px">';
+        h+='<div style="font-size:9.5px;font-weight:800;color:#8a5c00;text-transform:uppercase;margin-bottom:5px">⭐ Ajustes según tus hábitos</div>';
+        planAlim.tipsPersonalizados.forEach(function(x){h+='<div style="font-size:10.5px;color:#5a3a00;padding:3px 0 3px 12px;position:relative;line-height:1.5"><span style="position:absolute;left:0;color:#e8a830">→</span>'+x+'</div>';});
+        h+='</div>';
+      }
+
+      // ── Tips generales ──
       if(planAlim.tips&&planAlim.tips.length){
-        h+='<div style="background:'+AMBER_BG+';border-radius:8px;padding:9px 10px;border-left:3px solid #e8a830">';
-        h+='<div style="font-size:10px;font-weight:800;color:'+AMBER+';margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">💡 Consejos prácticos</div>';
-        planAlim.tips.forEach(function(x){
-          h+='<div style="font-size:10.5px;color:#3a2808;padding:3px 0 3px 12px;position:relative;line-height:1.5"><span style="position:absolute;left:0;color:'+AMBER+';font-size:12px">•</span>'+x+'</div>';
-        });
+        h+='<div style="background:'+AMBER_BG+';border-top:1px solid #f0d880;padding:9px 11px">';
+        h+='<div style="font-size:9.5px;font-weight:800;color:'+AMBER+';text-transform:uppercase;margin-bottom:5px">💡 Consejos adicionales</div>';
+        planAlim.tips.forEach(function(x){h+='<div style="font-size:10px;color:#3a2808;padding:2px 0 2px 12px;position:relative;line-height:1.5"><span style="position:absolute;left:0;color:'+AMBER+'">•</span>'+x+'</div>';});
         h+='</div>';
       }
-      h+='</div>';
+
     }else if(comida.length){
-      // Fallback: lista genérica si no hay plan estructurado
+      // Fallback: frases genéricas si no hay plan estructurado
       h+='<div style="padding:10px 13px">';
-      h+='<div style="font-size:11px;font-weight:700;color:'+DARK+';margin-bottom:5px">Alimentación</div>';
-      comida.forEach(function(c){
-        h+='<div style="font-size:11px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';
-      });
+      comida.forEach(function(c){h+='<div style="font-size:11px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';});
       h+='</div>';
     }
+
     if(vida.length){
       h+='<div style="border-top:1px solid '+GREEN_BG+';padding:9px 13px;background:#fafffe">';
-      h+='<div style="font-size:10px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">🏃 Estilo de vida</div>';
-      vida.forEach(function(c){
-        h+='<div style="font-size:11px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';
-      });
+      h+='<div style="font-size:9.5px;font-weight:700;color:'+TEAL+';text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">🏃 Estilo de vida</div>';
+      vida.forEach(function(c){h+='<div style="font-size:10.5px;padding:2px 0 2px 14px;color:'+GRAY+';position:relative"><span style="position:absolute;left:0;color:'+TEAL+'">•</span>'+c+'</div>';});
       h+='</div>';
     }
     h+='</div>';
@@ -3716,37 +3765,38 @@ function downloadReportePDF2(){
     var pa=r.plan_alimenticio||null;
     var hasVida=recVida.length>0;
     if(!pa&&!recAlim&&!hasVida)return '';
+    var colSem=['#1a56db','#1a7f3c','#b8690c','#8b1a5a'];
     var out='<div style="border:1px solid #e6f4ea;border-radius:8px;overflow:hidden;margin-bottom:14px">';
     out+='<div style="background:#e6f4ea;border-bottom:2px solid #1a7f3c;padding:6px 14px">';
-    out+='<span style="font-size:10px;font-weight:700;color:#1a7f3c;text-transform:uppercase;letter-spacing:.6px">3. 🥗 Plan de Alimentación Personalizado</span></div>';
+    out+='<span style="font-size:10px;font-weight:700;color:#1a7f3c;text-transform:uppercase;letter-spacing:.6px">3. 🥗 Plan de Alimentación Mensual Personalizado</span></div>';
     if(pa){
-      out+='<div style="padding:12px 14px">';
-      if(pa.grupos_base&&pa.grupos_base.length){out+='<div style="font-size:9px;color:#b8690c;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Basado en: '+pa.grupos_base.map(function(g){return g.charAt(0).toUpperCase()+g.slice(1);}).join(' · ')+'</div>';}
-      out+='<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr valign="top">';
-      if(pa.comer&&pa.comer.length){
-        out+='<td style="width:50%;padding-right:8px"><div style="background:#f0faf0;border-radius:6px;padding:8px 10px">';
-        out+='<div style="font-size:10px;font-weight:800;color:#1a7f3c;margin-bottom:5px;text-transform:uppercase">✅ Incluir más</div>';
-        pa.comer.forEach(function(x){out+='<div style="font-size:10px;padding:2px 0 2px 11px;position:relative;color:#1C2833;line-height:1.4"><span style="position:absolute;left:0;color:#1a7f3c">•</span>'+x+'</div>';});
-        out+='</div></td>';
-      }
-      if(pa.evitar&&pa.evitar.length){
-        out+='<td style="width:50%;padding-left:8px"><div style="background:#fff5f5;border-radius:6px;padding:8px 10px">';
-        out+='<div style="font-size:10px;font-weight:800;color:#c04040;margin-bottom:5px;text-transform:uppercase">❌ Reducir o evitar</div>';
-        pa.evitar.forEach(function(x){out+='<div style="font-size:10px;padding:2px 0 2px 11px;position:relative;color:#1C2833;line-height:1.4"><span style="position:absolute;left:0;color:#c04040">•</span>'+x+'</div>';});
-        out+='</div></td>';
-      }
-      out+='</tr></table>';
-      if(pa.tips&&pa.tips.length){
-        out+='<div style="background:#fffaf5;border-radius:6px;padding:8px 10px;border-left:3px solid #e8a830">';
-        out+='<div style="font-size:10px;font-weight:800;color:#b8690c;margin-bottom:5px;text-transform:uppercase">💡 Consejos prácticos</div>';
-        pa.tips.forEach(function(x){out+='<div style="font-size:10px;padding:2px 0 2px 11px;position:relative;color:#3a2808;line-height:1.5"><span style="position:absolute;left:0;color:#e8a830">•</span>'+x+'</div>';});
+      if(pa.estiloInfo){var ei=pa.estiloInfo;out+='<div style="background:#f0faf0;padding:8px 14px;border-bottom:1px solid #e6f4ea"><div style="font-size:10px;font-weight:800;color:#1a7f3c;margin-bottom:3px">📅 Estilo: '+ei.label+'</div><div style="font-size:9px;color:#555">'+ei.horarios.join(' · ')+'</div>'+(ei.nota?'<div style="font-size:9px;color:#888;font-style:italic;margin-top:2px">'+ei.nota+'</div>':'')+'</div>';}
+      if(pa.semanas&&pa.semanas.length){
+        out+='<div style="padding:10px 14px"><div style="font-size:10px;font-weight:700;color:#b8690c;text-transform:uppercase;margin-bottom:8px">📋 Menú mensual — 4 semanas</div>';
+        pa.semanas.forEach(function(sem,si){
+          var sc=colSem[si]||'#555';
+          var showSnack=pa.estilo==='5comidas';
+          var showCena=pa.estilo!=='ayuno';
+          out+='<div style="margin-bottom:10px;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden">';
+          out+='<div style="background:'+sc+';padding:5px 10px;display:flex;justify-content:space-between"><span style="font-size:9px;font-weight:800;color:#fff;text-transform:uppercase">Semana '+sem.num+'</span><span style="font-size:8px;color:rgba(255,255,255,.8)">'+sem.enfoque+'</span></div>';
+          out+='<table style="width:100%;border-collapse:collapse;font-size:9.5px"><tr style="background:#f8f8f8"><th style="padding:3px 6px;width:15%;color:#555;font-weight:700;text-align:left">Días</th><th style="padding:3px 6px;color:#1a7f3c;font-weight:700">☀️ '+(pa.estilo==='ayuno'?'1ª Comida':'Desayuno')+'</th>'+(showSnack?'<th style="padding:3px 6px;color:#b8690c;font-weight:700">🍎 Colación</th>':'')+'<th style="padding:3px 6px;color:#1a56db;font-weight:700">🌤️ Comida</th>'+(showCena?'<th style="padding:3px 6px;color:#8b1a5a;font-weight:700">🌙 Cena</th>':'')+'</tr>';
+          sem.dias.forEach(function(d,di){var bg=di%2===0?'#fff':'#fafafa';out+='<tr style="background:'+bg+';border-top:1px solid #f0f0f0"><td style="padding:4px 6px;font-weight:700;color:#555;white-space:nowrap;font-size:9px">'+d.dia+'</td><td style="padding:4px 6px;color:#1C2833;line-height:1.3">'+d.d+'</td>'+(showSnack?'<td style="padding:4px 6px;color:#666;font-style:italic">'+d.sn+'</td>':'')+'<td style="padding:4px 6px;color:#1C2833;line-height:1.3">'+d.c+'</td>'+(showCena?'<td style="padding:4px 6px;color:#1C2833;line-height:1.3">'+d.ce+'</td>':'')+'</tr>';});
+          out+='</table></div>';
+        });
         out+='</div>';
       }
-      out+='</div>';
+      if((pa.comer&&pa.comer.length)||(pa.evitar&&pa.evitar.length)){
+        out+='<table style="width:100%;border-collapse:collapse;border-top:1px solid #e6f4ea"><tr valign="top">';
+        if(pa.comer&&pa.comer.length){out+='<td style="width:50%;padding:9px 12px;border-right:1px solid #e6f4ea"><div style="font-size:9px;font-weight:800;color:#1a7f3c;margin-bottom:4px;text-transform:uppercase">✅ Incluir más</div>';pa.comer.forEach(function(x){out+='<div style="font-size:9.5px;padding:2px 0 2px 10px;position:relative;color:#1C2833;line-height:1.4"><span style="position:absolute;left:0;color:#1a7f3c">•</span>'+x+'</div>';});out+='</td>';}
+        if(pa.evitar&&pa.evitar.length){out+='<td style="width:50%;padding:9px 12px"><div style="font-size:9px;font-weight:800;color:#c04040;margin-bottom:4px;text-transform:uppercase">❌ Reducir o evitar</div>';pa.evitar.forEach(function(x){out+='<div style="font-size:9.5px;padding:2px 0 2px 10px;position:relative;color:#1C2833;line-height:1.4"><span style="position:absolute;left:0;color:#c04040">•</span>'+x+'</div>';});out+='</td>';}
+        out+='</tr></table>';
+      }
+      if(pa.tipsPersonalizados&&pa.tipsPersonalizados.length){out+='<div style="background:#fff8e8;border-top:2px solid #f0c840;padding:8px 12px"><div style="font-size:9px;font-weight:800;color:#8a5c00;text-transform:uppercase;margin-bottom:4px">⭐ Ajustes según tus hábitos</div>';pa.tipsPersonalizados.forEach(function(x){out+='<div style="font-size:9.5px;color:#5a3a00;padding:2px 0 2px 11px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:#e8a830">→</span>'+x+'</div>';});out+='</div>';}
+      if(pa.tips&&pa.tips.length){out+='<div style="background:#fffaf5;border-top:1px solid #f0d880;padding:8px 12px"><div style="font-size:9px;font-weight:800;color:#b8690c;text-transform:uppercase;margin-bottom:4px">💡 Consejos adicionales</div>';pa.tips.forEach(function(x){out+='<div style="font-size:9.5px;color:#3a2808;padding:2px 0 2px 10px;position:relative;line-height:1.4"><span style="position:absolute;left:0;color:#b8690c">•</span>'+x+'</div>';});out+='</div>';}
     }else if(recAlim){
       out+='<div style="padding:11px 14px"><div style="font-size:11px;font-weight:700;color:#1C2833;margin-bottom:5px">Alimentación</div>'+recAlim+'</div>';
     }
-    if(hasVida){out+='<div style="border-top:1px solid #e6f4ea;padding:9px 14px;background:#fafffe"><div style="font-size:10px;font-weight:700;color:#0B7E8A;text-transform:uppercase;margin-bottom:5px">🏃 Estilo de vida</div>'+recVida+'</div>';}
+    if(hasVida){out+='<div style="border-top:1px solid #e6f4ea;padding:9px 14px;background:#fafffe"><div style="font-size:9px;font-weight:700;color:#0B7E8A;text-transform:uppercase;margin-bottom:4px">🏃 Estilo de vida</div>'+recVida+'</div>';}
     out+='</div>';
     return out;
   })()}
@@ -3851,58 +3901,149 @@ function clearVHText(){
 }
 
 async function vhSetMode(v){S.set('ik_vh_mode',v);}
-// ═══ PLAN DE ALIMENTACIÓN — Tablas por sistema ═══
-// Genera plan_alimenticio {comer, evitar, tips} a partir de sistemas detectados + notas del cliente
+// ═══════════════════════════════════════════════════
+// PLAN DE ALIMENTACIÓN MENSUAL — Tablas por sistema
+// Genera plan completo: estilo de comidas, 4 semanas,
+// qué comer/evitar, tips. Gratis, sin API.
+// ═══════════════════════════════════════════════════
+
+// ── Base de alimentos terapéuticos por sistema ──
 var ALIM_TABLE={
-  // Cardiovascular
   'cardiovascular':{
-    comer:['Aguacate, nueces y semillas de chía (grasas saludables)','Avena, linaza y vegetales de hoja verde (fibra)','Ajo y cebolla crudos (apoyo circulatorio natural)','Salmón o sardinas 2 veces por semana (Omega-3)','Frutos rojos: arándanos, fresas, frambuesas (antioxidantes)'],
-    evitar:['Embutidos, carnes procesadas y frituras','Sal en exceso — máximo 1 cucharadita al día','Grasas trans (margarinas, galletas industriales, snacks)','Café en exceso (más de 2 tazas al día)','Bebidas azucaradas y refrescos'],
-    tips:['Caminar 30 minutos diarios reduce el riesgo cardiovascular hasta un 35%','Comer en porciones pequeñas y frecuentes reduce la carga al corazón','Revisar etiquetas: evitar productos con "aceite vegetal hidrogenado"']
+    desayuno:['Avena con chía, manzana verde y canela','Huevo revuelto con espinacas y aguacate + té verde','Smoothie de arándanos, linaza y leche de almendra','Tostadas de centeno con aguacate y tomate'],
+    comida:['Pechuga de pollo a la plancha con ensalada de espinacas, betabel y nueces','Salmón al vapor con verduras al vapor y arroz integral','Lentejas con zanahoria, apio y chile ancho (sin embutidos)','Caldo de pollo con verduras y tortilla de maíz'],
+    cena:['Sopa de verduras con brócoli y col (sin crema)','Ensalada de atún (sin mayonesa) con pepino y lechuga','Verduras al vapor con hummus y 1 tortilla de maíz','Gelatina natural con fruta fresca'],
+    snack:['Puño de nueces o almendras (no saladas)','Manzana verde o pera con mantequilla de almendra','Zanahoria con hummus','Té de hibisco frío sin azúcar'],
+    comer:['Aguacate, nueces y semillas de chía','Avena, linaza y vegetales de hoja verde','Ajo y cebolla crudos en ensaladas','Salmón o sardinas 2 veces por semana','Frutos rojos: arándanos, fresas, frambuesas'],
+    evitar:['Embutidos, carnes procesadas y frituras','Sal en exceso (máximo 1 cdita al día)','Grasas trans: margarinas, galletas industriales','Café más de 2 tazas al día','Bebidas azucaradas y refrescos de cualquier tipo'],
+    tips:['Caminar 30 min diarios reduce riesgo cardiovascular 35%','Comer en porciones pequeñas y frecuentes reduce carga al corazón','Revisar etiquetas: evitar "aceite vegetal hidrogenado"','Desayunar siempre — el corazón trabaja mejor con glucosa estable']
   },
-  // Hígado / vesícula
   'higado':{
-    comer:['Alcachofa, betabel y diente de león (desintoxicantes hepáticos)','Agua de limón en ayunas todos los días','Verduras crucíferas: brócoli, coliflor, col (activan enzimas del hígado)','Manzana verde y papaya (estimulan la vesícula)','Aceite de oliva extra virgen en frío (no cocinar)'],
-    evitar:['Alcohol en cualquier cantidad','Frituras y comida rápida','Azúcar refinada y harinas blancas','Salsas comerciales, aderezos en botella','Exceso de carne roja (máximo 2 veces por semana)'],
-    tips:['El té de cardo mariano después de comer apoya la regeneración hepática','Evitar comer después de las 8 pm — el hígado trabaja mejor sin digestión nocturna','Hidratarse con al menos 2 litros de agua al día facilita la eliminación de toxinas']
+    desayuno:['Agua tibia con limón en ayunas + avena con manzana verde','Smoothie verde: espinacas, pepino, limón, jengibre, manzana','Papaya con semillas molidas y jugo de naranja natural','Huevo tibio con verduras salteadas en aceite de oliva'],
+    comida:['Ensalada de betabel, zanahoria, apio con aceite de oliva y limón','Pollo a la plancha con alcachofa al vapor y arroz integral','Caldo de verduras con brócoli, coliflor y espinacas','Sopa de lentejas con cúrcuma y jengibre'],
+    cena:['Caldo de pollo ligero con verduras (sin crema ni grasa)','Ensalada verde con aguacate y semillas de calabaza','Verduras al vapor con limón y aceite de oliva','Fruta fresca: papaya, manzana o pera'],
+    snack:['Agua de jamaica sin azúcar','Manzana verde (estimula la vesícula biliar)','Jugo de betabel, zanahoria y jengibre','Té de diente de león o cardo mariano'],
+    comer:['Alcachofa, betabel y diente de león','Agua de limón en ayunas todos los días','Brócoli, coliflor, col (activan enzimas del hígado)','Manzana verde y papaya (estimulan la vesícula)','Aceite de oliva extra virgen en frío (no cocinar)'],
+    evitar:['Alcohol en cualquier cantidad','Frituras y comida rápida','Azúcar refinada y harinas blancas','Salsas comerciales, aderezos en botella','Carne roja más de 2 veces por semana'],
+    tips:['Té de cardo mariano después de comer: apoya la regeneración hepática','No comer después de las 8 pm — el hígado trabaja en la madrugada','2 litros de agua al día facilitan eliminación de toxinas','El ayuno nocturno de 12 horas (8 pm a 8 am) es el más beneficioso para el hígado']
   },
-  // Metales pesados / toxinas
   'toxinas':{
-    comer:['Cilantro fresco (quelante natural de metales pesados)','Alga espirulina o chlorella (absorbe metales en el intestino)','Ajo crudo machacado (sulfuros que ayudan a expulsar toxinas)','Frutas ricas en vitamina C: guayaba, kiwi, naranja (protección celular)','Semillas de girasol y calabaza (zinc y selenio protectores)'],
-    evitar:['Atún enlatado y peces grandes (mercurio acumulado)','Alimentos en latas (posible BPA y metales)','Vegetales sin lavar o no orgánicos (pesticidas)','Agua de la llave sin filtrar','Cocinar en utensilios de aluminio o teflón rayado'],
-    tips:['Lavar todos los vegetales con bicarbonato o vinagre antes de consumir','Preferir recipientes de vidrio sobre plástico para almacenar alimentos','El protocolo de desintoxicación funciona mejor con el apoyo de V-Organex y V-Glutation']
+    desayuno:['Smoothie de cilantro, manzana verde, limón y spirulina','Jugo de zanahoria, betabel y jengibre + huevo cocido','Avena con semillas de calabaza y chía + té de jengibre','Fruta fresca con semillas de girasol y almendras'],
+    comida:['Ensalada de cilantro, pepino, aguacate y limón','Pollo orgánico con verduras al vapor y arroz integral','Caldo de verduras con ajo, cebolla y cúrcuma','Lentejas con espinacas y limón'],
+    cena:['Sopa de ajo asado con caldo de hueso','Ensalada de espinacas con semillas de calabaza y limón','Verduras al vapor con cilantro fresco y aceite de oliva','Gelatina natural sin azúcar con fruta'],
+    snack:['Agua con limón y 1 pizca de bicarbonato (alcalinizante)','Semillas de calabaza o girasol','Jugo verde: apio, pepino, limón, manzana','Té de cilantro o perejil'],
+    comer:['Cilantro fresco (quelante natural de metales pesados)','Spirulina o chlorella en polvo (absorbe metales en intestino)','Ajo crudo machacado en comidas','Frutas ricas en vitamina C: guayaba, kiwi, naranja','Semillas de girasol y calabaza (zinc y selenio)'],
+    evitar:['Atún enlatado y peces grandes (mercurio)','Alimentos en latas (BPA y metales)','Vegetales sin lavar con agua+bicarbonato','Agua de la llave sin filtrar','Utensilios de aluminio o teflón rayado'],
+    tips:['Lavar vegetales con agua + bicarbonato 5 minutos antes de comer','Preferir recipientes de vidrio sobre plástico','V-Organex + V-Glutation es el protocolo base para desintoxicación','Sudar con ejercicio o sauna acelera la eliminación de metales']
   },
-  // Metabólico / triglicéridos / peso
   'metabolico':{
-    comer:['Proteína en cada comida: pollo, huevo, leguminosas, queso cottage','Canela en infusión o polvo (regula glucosa e insulina)','Grasas buenas: aguacate, aceite de coco, almendras','Verduras de color intenso en cada plato','Agua antes de comer (15 min) reduce apetito y mejora digestión'],
-    evitar:['Pan blanco, tortillas de harina, arroz blanco','Jugos de fruta (aunque sean naturales — sube rápido la glucosa)','Productos "light" o "0% grasa" (suelen tener azúcar escondida)','Comer frente a pantallas (aumenta el consumo calórico sin darse cuenta)','Saltarse comidas (produce picos de insulina)'],
-    tips:['Comer cada 3-4 horas en porciones moderadas activa el metabolismo','El ejercicio de fuerza (pesas, pilates) aumenta la grasa parda activa','Dormir 7-8 horas es fundamental para regular cortisol y metabolismo de grasas']
+    desayuno:['Huevo revuelto con nopal y chile (bajo índice glucémico)','Avena con canela, chía y nueces sin azúcar','Yogurt natural sin azúcar con semillas y fruta','Licuado de proteína (sin azúcar) con espinacas y chía'],
+    comida:['Pechuga de pollo o pescado + verduras al vapor + porción pequeña de arroz integral','Ensalada grande con proteína (huevo, atún, pollo), aguacate y aceite de oliva','Caldo de pollo con verduras y leguminosas','Frijoles negros con verduras y tortilla de maíz nixtamalizado'],
+    cena:['Verduras salteadas con huevo o pollo (sin arroz ni frijoles)','Sopa de verduras ligera con proteína','Ensalada verde con aguacate y semillas','Gelatina natural o fruta de bajo índice glucémico'],
+    snack:['Puño de almendras o nueces','Apio con mantequilla de almendra','Pepino con limón y chile','Té de canela sin azúcar'],
+    comer:['Proteína en cada comida: pollo, huevo, leguminosas, queso cottage','Canela en infusión (regula glucosa e insulina)','Grasas buenas: aguacate, aceite de coco, almendras','Verduras de color intenso en cada plato','Agua 15 min antes de comer (reduce apetito)'],
+    evitar:['Pan blanco, tortillas de harina, arroz blanco','Jugos de fruta (aunque sean naturales)','Productos "light" (suelen tener azúcar escondida)','Comer frente a pantallas','Saltarse comidas (produce picos de insulina)'],
+    tips:['Comer cada 3-4 horas activa el metabolismo y evita atracones','El ejercicio de fuerza 3 veces/semana aumenta la grasa parda activa','Dormir 7-8 horas regula cortisol y metabolismo de grasas','Registrar lo que comes la primera semana — la conciencia es el primer cambio']
   },
-  // Óseo / articular
   'oseo':{
-    comer:['Leche de vaca o de coco (calcio), queso fresco','Sardinas con hueso (calcio y Omega-3 antiinflamatorio)','Cúrcuma con pimienta negra en comidas (antiinflamatorio potente)','Germinados: alfalfa, brócoli (vitamina K para huesos)','Nueces y semillas (magnesio para absorción del calcio)'],
-    evitar:['Refrescos de cola (fósforo que descalcifica)','Sal en exceso (aumenta excreción de calcio)','Alcohol (interfiere con absorción de calcio y vitamina D)','Azúcar refinada (pro-inflamatoria)','Comida ultra-procesada (inhibe absorción de minerales)'],
-    tips:['Tomar sol 15 minutos al día (sin bloqueador) activa la vitamina D natural','El colágeno se absorbe mejor con vitamina C: tomar V-Collagen con jugo de naranja','Caminar descalzo sobre superficies naturales mejora la densidad ósea']
+    desayuno:['Yogurt natural con semillas de chía y fruta + té verde','Smoothie de leche de almendra, espinacas y semillas de ajonjolí','Huevo con espinacas y queso fresco + jugo de naranja (vitamina D)','Avena con leche y frutas ricas en vitamina C'],
+    comida:['Sardinas en salsa de tomate natural con ensalada y arroz integral','Caldo de hueso con verduras y tortilla de maíz','Pollo con cúrcuma y pimienta negra + brócoli al vapor','Lentejas con zanahoria y germinados'],
+    cena:['Queso fresco con verduras crudas y aceite de oliva','Sopa de espinacas con caldo de hueso','Ensalada con nueces, semillas de ajonjolí y limón','Leche tibia de almendra con cúrcuma (golden milk)'],
+    snack:['Queso fresco o cottage','Semillas de ajonjolí con fruta','Té de cúrcuma con pimienta negra','Almendras (ricas en calcio y magnesio)'],
+    comer:['Sardinas con hueso (calcio + Omega-3 antiinflamatorio)','Cúrcuma con pimienta negra (antiinflamatorio potente)','Germinados: alfalfa, brócoli (vitamina K para huesos)','Nueces y semillas (magnesio para absorción del calcio)','Leche de vaca o coco, queso fresco (calcio)'],
+    evitar:['Refrescos de cola (fósforo que descalcifica)','Sal en exceso (aumenta excreción de calcio)','Alcohol (interfiere con absorción de calcio)','Azúcar refinada (pro-inflamatoria)','Comida ultraprocesada (inhibe absorción de minerales)'],
+    tips:['15 minutos de sol sin bloqueador activa la vitamina D natural','V-Collagen se absorbe mejor con vitamina C — tomar con jugo de naranja','Caminar descalzo mejora la densidad ósea y el equilibrio','El caldo de hueso diario es la fuente más biodisponible de colágeno tipo I']
   },
-  // Digestivo
   'digestivo':{
-    comer:['Kéfir o yogurt natural sin azúcar (probióticos naturales)','Plátano maduro y avena (prebióticos que alimentan la flora)','Papaya con semillas (enzimas digestivas y antiparasitario)','Caldo de hueso (restaura la mucosa intestinal)','Masticar muy bien — mínimo 20 veces por bocado'],
-    evitar:['Gluten en exceso si hay colitis o intestino irritable','Lácteos pasteurizados en exceso si hay gases o distensión','Comer de prisa o bajo estrés','Antibióticos sin probióticos de apoyo','Agua durante la comida (diluye enzimas digestivas)'],
-    tips:['Esperar 20 minutos después de comer antes de acostarse o sentarse','El jengibre en agua caliente antes de comer estimula la digestión','Los fermentados caseros (kéfir, kombucha) son los mejores aliados del intestino']
+    desayuno:['Papaya con semillas (enzimas digestivas + antiparasitario)','Kéfir natural con fruta y semillas de chía','Avena cocida con plátano y miel de abeja','Smoothie de yogurt, plátano y linaza'],
+    comida:['Caldo de hueso con verduras bien cocidas (restaura mucosa)','Arroz integral con pollo a la plancha y verduras suaves','Sopa de lentejas bien cocidas con zanahoria y apio','Pollo guisado con calabacita y chayote'],
+    cena:['Sopa de verduras suaves (sin coles o crucíferas en la noche)','Arroz blanco con pollo (fácil digestión)','Gelatina natural con fruta cocida','Yogurt natural con miel de abeja'],
+    snack:['Plátano maduro (prebiótico)','Té de jengibre antes de comer','Manzana cocida con canela','Agua de avena sin azúcar'],
+    comer:['Kéfir o yogurt natural sin azúcar (probióticos)','Plátano maduro y avena (prebióticos)','Papaya con semillas (enzimas digestivas)','Caldo de hueso (restaura la mucosa intestinal)','Masticar mínimo 20 veces por bocado'],
+    evitar:['Gluten en exceso (colitis, intestino irritable)','Lácteos pasteurizados en exceso (gases, distensión)','Comer de prisa o bajo estrés','Agua durante la comida (diluye enzimas)','Antibióticos sin probióticos de apoyo'],
+    tips:['Esperar 20 min después de comer antes de acostarse','Jengibre en agua caliente antes de comer estimula la digestión','Kéfir casero o kombucha son los mejores aliados del intestino','Comer en calma, sin pantallas ni estrés mejora la absorción hasta un 30%']
   },
-  // Neurológico / cerebro
   'neurologico':{
-    comer:['Huevo entero (colina para la memoria y mielina neuronal)','Nueces y almendras (Omega-3 y vitamina E cerebrales)','Cacao puro al 70%+ (flavonoides que mejoran la circulación cerebral)','Arándanos y mora azul (antioxidantes neuroprotectores)','Aguacate (grasas buenas para la mielina)'],
-    evitar:['Azúcar refinada (inflamación cerebral y niebla mental)','Alcohol (destruye conexiones neuronales)','Comida rápida alta en grasas trans (deterioro cognitivo)','Pantallas antes de dormir (interrumpe la consolidación de memoria)','Falta de sueño (el cerebro elimina toxinas durante el sueño)'],
-    tips:['Leer, resolver puzzles o aprender algo nuevo todos los días crea nuevas conexiones','El ejercicio aeróbico 3 veces por semana aumenta el BDNF (proteína de crecimiento neuronal)','La meditación 10 minutos diarios mejora el índice de memoria y concentración']
+    desayuno:['Huevo entero con espinacas y aguacate (colina para la memoria)','Smoothie de arándanos, nueces, leche de almendra y cacao puro','Avena con nueces, chía y cacao en polvo sin azúcar','Tostada de centeno con aguacate y huevo pochado'],
+    comida:['Salmón al vapor con ensalada de espinacas y nueces','Pollo con cúrcuma y romero + verduras al vapor','Lentejas con espinacas, ajo y aceite de oliva','Ensalada grande con huevo, aguacate, arándanos y semillas'],
+    cena:['Taza de leche de almendra tibia con cacao (magnesio para el sueño)','Ensalada ligera con nueces y aceite de oliva','Pechuga de pavo (triptófano que mejora el sueño)','Infusión de valeriana o manzanilla antes de dormir'],
+    snack:['Puño de nueces o almendras (Omega-3)','Cuadrito de chocolate negro 70%+ (flavonoides)','Arándanos frescos','Té verde (L-teanina para la concentración)'],
+    comer:['Huevo entero (colina para la memoria y mielina)','Nueces y almendras (Omega-3 y vitamina E)','Cacao puro 70%+ (flavonoides neuroprotectores)','Arándanos y mora azul (antioxidantes cerebrales)','Aguacate (grasas buenas para la mielina)'],
+    evitar:['Azúcar refinada (inflamación cerebral y niebla mental)','Alcohol (destruye conexiones neuronales)','Comida rápida con grasas trans (deterioro cognitivo)','Pantallas 1 hora antes de dormir','Falta de sueño (el cerebro elimina toxinas al dormir)'],
+    tips:['Leer o aprender algo nuevo todos los días crea conexiones neuronales','Ejercicio aeróbico 3 veces/semana aumenta BDNF (proteína de crecimiento neuronal)','Meditación 10 min diarios mejora el índice de memoria','El sueño de 7-8 horas es cuando el cerebro se "lava" de toxinas (sistema glinfático)']
   },
-  // Piel / colágeno
   'piel':{
-    comer:['Gelatina natural sin sabor (colágeno puro de bajo costo)','Caldo de hueso 1 taza al día (mejor fuente de colágeno tipo I y III)','Vitamina C: kiwi, guayaba, pimiento rojo (activa síntesis de colágeno)','Zanahoria y calabaza (betacarotenos para la piel)','Pepino y agua de coco (hidratación celular profunda)'],
-    evitar:['Azúcar (glicación — destruye el colágeno existente)','Tabaco (reduce producción de colágeno hasta un 40%)','Exposición solar sin protección (degrada la elastina)','Alcohol (deshidrata las células de la piel)','Dietas muy bajas en proteína (falta de aminoácidos para el colágeno)'],
-    tips:['Dormir de lado del mismo siempre causa arrugas — intentar dormir boca arriba','Lavar la cara con agua fría activa la circulación y retrasa el envejecimiento','El retinol nocturno es el activo más probado para estimular el colágeno dérmico']
+    desayuno:['Caldo de hueso con limón en ayunas (colágeno)','Smoothie de pepino, kiwi, espinacas y limón (vitamina C)','Gelatina natural con fruta rica en vitamina C','Huevo con verduras y jugo de naranja natural'],
+    comida:['Salmón o sardinas con ensalada de pepino, aguacate y limón','Pollo con verduras ricas en betacarotenos: zanahoria, calabaza','Ensalada de espinacas, zanahoria, aguacate y semillas de calabaza','Caldo de hueso con verduras y limón'],
+    cena:['Papaya o mango (vitamina C nocturna para regeneración)','Leche de almendra tibia con colágeno en polvo','Verduras al vapor con aceite de oliva y semillas','Gelatina natural sin azúcar'],
+    snack:['Kiwi o guayaba (vitamina C)','Pepino con limón (hidratación celular)','Agua de coco natural','Semillas de calabaza (zinc para la piel)'],
+    comer:['Caldo de hueso (colágeno tipo I y III biodisponible)','Vitamina C: kiwi, guayaba, pimiento rojo','Zanahoria y calabaza (betacarotenos)','Pepino y agua de coco (hidratación profunda)','Gelatina natural sin sabor (colágeno accesible)'],
+    evitar:['Azúcar (glicación — destruye el colágeno)','Tabaco (reduce producción de colágeno 40%)','Exposición solar sin protección (degrada la elastina)','Alcohol (deshidrata las células de la piel)','Dietas muy bajas en proteína (falta aminoácidos para colágeno)'],
+    tips:['Lavar la cara con agua fría activa la circulación','El retinol nocturno es el activo más probado para el colágeno dérmico','Caldo de hueso diario + vitamina C = protocolo de colágeno más efectivo','Dormir 8 horas permite la regeneración celular de la piel (hora pico: 11 pm a 3 am)']
   }
 };
+
+// ── Semanas tipo por estilo de comida ──
+var SEMANAS_TIPO={
+  '3comidas':{
+    label:'3 comidas principales al día',
+    horarios:['☀️ Desayuno (7-9 am)','🌤️ Comida (1-3 pm)','🌙 Cena (7-8 pm)'],
+    nota:'Sin botana entre comidas. Agua abundante entre alimentos.'
+  },
+  '5comidas':{
+    label:'5 comidas pequeñas al día',
+    horarios:['☀️ Desayuno (7-8 am)','🍎 Colación (10-11 am)','🌤️ Comida (1-2 pm)','🍎 Merienda (4-5 pm)','🌙yCena ligera (7 pm)'],
+    nota:'Porciones más pequeñas en comidas principales. Snacks nutritivos.'
+  },
+  'ayuno':{
+    label:'Ayuno intermitente 16:8',
+    horarios:['🚫 Ayuno (8 pm – 12 pm)','☀️ Primera comida (12-1 pm)','🌤️ Comida principal (3-4 pm)','🌙 Última comida antes 8 pm'],
+    nota:'Solo agua, té sin azúcar o café negro durante el ayuno. Comenzar gradualmente si es nuevo en el ayuno.'
+  }
+};
+
+// ── Menús semanales rotativos por grupo ──
+// Cada grupo tiene 4 semanas. Cada semana tiene D/C/Ce (desayuno/comida/cena).
+function buildSemanas(grupos){
+  // Rotar combinaciones de los grupos activos para 4 semanas
+  var s1g=grupos[0]||'metabolico';
+  var s2g=grupos[1]||grupos[0]||'metabolico';
+  var s3g=grupos[0]||'metabolico';
+  var s4g=grupos[1]||grupos[0]||'metabolico';
+
+  function pick(g,arr,i){var t=ALIM_TABLE[g];return t&&t[arr]?t[arr][i%t[arr].length]:'Alimentación balanceada con proteína, vegetales y grasas saludables';}
+
+  return [
+    {num:1,enfoque:'Desintoxicación inicial y activación',
+      dias:[
+        {dia:'Lun–Mar',d:pick(s1g,'desayuno',0),c:pick(s1g,'comida',0),ce:pick(s1g,'cena',0),sn:pick(s1g,'snack',0)},
+        {dia:'Mié–Jue',d:pick(s1g,'desayuno',1),c:pick(s1g,'comida',1),ce:pick(s1g,'cena',1),sn:pick(s1g,'snack',1)},
+        {dia:'Vie–Dom',d:pick(s1g,'desayuno',2),c:pick(s1g,'comida',2),ce:pick(s1g,'cena',2),sn:pick(s1g,'snack',2)},
+      ]
+    },
+    {num:2,enfoque:'Soporte a los sistemas más afectados',
+      dias:[
+        {dia:'Lun–Mar',d:pick(s2g,'desayuno',1),c:pick(s2g,'comida',1),ce:pick(s2g,'cena',1),sn:pick(s2g,'snack',0)},
+        {dia:'Mié–Jue',d:pick(s2g,'desayuno',2),c:pick(s2g,'comida',2),ce:pick(s2g,'cena',2),sn:pick(s2g,'snack',1)},
+        {dia:'Vie–Dom',d:pick(s2g,'desayuno',3),c:pick(s2g,'comida',3),ce:pick(s2g,'cena',3),sn:pick(s2g,'snack',2)},
+      ]
+    },
+    {num:3,enfoque:'Consolidación y regeneración celular',
+      dias:[
+        {dia:'Lun–Mar',d:pick(s3g,'desayuno',2),c:pick(s3g,'comida',2),ce:pick(s3g,'cena',0),sn:pick(s3g,'snack',1)},
+        {dia:'Mié–Jue',d:pick(s3g,'desayuno',0),c:pick(s3g,'comida',3),ce:pick(s3g,'cena',1),sn:pick(s3g,'snack',0)},
+        {dia:'Vie–Dom',d:pick(s3g,'desayuno',3),c:pick(s3g,'comida',0),ce:pick(s3g,'cena',2),sn:pick(s3g,'snack',2)},
+      ]
+    },
+    {num:4,enfoque:'Mantenimiento y nuevos hábitos',
+      dias:[
+        {dia:'Lun–Mar',d:pick(s4g,'desayuno',1),c:pick(s4g,'comida',0),ce:pick(s4g,'cena',2),sn:pick(s4g,'snack',0)},
+        {dia:'Mié–Jue',d:pick(s4g,'desayuno',3),c:pick(s4g,'comida',1),ce:pick(s4g,'cena',0),sn:pick(s4g,'snack',1)},
+        {dia:'Vie–Dom',d:pick(s4g,'desayuno',0),c:pick(s4g,'comida',3),ce:pick(s4g,'cena',3),sn:pick(s4g,'snack',2)},
+      ]
+    }
+  ];
+}
 
 function generarPlanAlimentacionTabla(sistemasDetectados, habitosTexto){
   var nombres=sistemasDetectados.map(function(s){return(s.sistema||'').toLowerCase();});
@@ -3918,42 +4059,61 @@ function generarPlanAlimentacionTabla(sistemasDetectados, habitosTexto){
   if(tiene('absorción gástrica')||tiene('intestino')||tiene('gástrica')) grupos.push('digestivo');
   if(tiene('memoria')||tiene('neurológico')||tiene('cerebro')) grupos.push('neurologico');
   if(tiene('colágeno')||tiene('cutáneo')||tiene('humectación')||tiene('dermis')) grupos.push('piel');
+  if(!grupos.length) grupos=['metabolico'];
 
-  if(!grupos.length) grupos=['metabolico']; // fallback
-
-  // Priorizar: cardiovascular y hígado primero, piel último
   var orden=['toxinas','cardiovascular','higado','neurologico','metabolico','digestivo','oseo','piel'];
   grupos.sort(function(a,b){return orden.indexOf(a)-orden.indexOf(b);});
-  // Máximo 3 grupos para no saturar
   grupos=grupos.slice(0,3);
 
-  // Fusionar recomendaciones: 3 de comer y 3 de evitar por grupo activo, deduplicar
+  // ── Detectar estilo de alimentación desde las notas ──
+  var ht=(habitosTexto||'').toLowerCase();
+  var estilo='3comidas'; // default
+  if(ht.indexOf('ayuno')>=0||ht.indexOf('intermitente')>=0||ht.indexOf('16:8')>=0||ht.indexOf('16/8')>=0) estilo='ayuno';
+  else if(ht.indexOf('5 comida')>=0||ht.indexOf('5comida')>=0||ht.indexOf('cinco comida')>=0||ht.indexOf('colacion')>=0||ht.indexOf('merienda')>=0) estilo='5comidas';
+  else if(ht.indexOf('3 comida')>=0||ht.indexOf('tres comida')>=0) estilo='3comidas';
+  // si dice "como poco" o "no tengo hambre" → 3 comidas con snack opcional
+  var estiloInfo=SEMANAS_TIPO[estilo];
+
+  // ── Fusionar qué comer/evitar/tips de todos los grupos ──
   var seen_c={},seen_e={},seen_t={};
   var comer=[],evitar=[],tips=[];
   grupos.forEach(function(g){
     var t=ALIM_TABLE[g];if(!t)return;
-    t.comer.slice(0,3).forEach(function(x){if(!seen_c[x]){seen_c[x]=true;comer.push(x);}});
-    t.evitar.slice(0,3).forEach(function(x){if(!seen_e[x]){seen_e[x]=true;evitar.push(x);}});
-    t.tips.slice(0,2).forEach(function(x){if(!seen_t[x]){seen_t[x]=true;tips.push(x);}});
+    t.comer.forEach(function(x){if(!seen_c[x]){seen_c[x]=true;comer.push(x);}});
+    t.evitar.slice(0,4).forEach(function(x){if(!seen_e[x]){seen_e[x]=true;evitar.push(x);}});
+    t.tips.forEach(function(x){if(!seen_t[x]){seen_t[x]=true;tips.push(x);}});
   });
 
-  // Si hay notas/habitos del cliente, agregar tip personalizado
-  if(habitosTexto&&habitosTexto.length>3){
-    var ht=habitosTexto.toLowerCase();
-    if(ht.indexOf('refresco')>=0||ht.indexOf('soda')>=0||ht.indexOf('cola')>=0)
-      tips.unshift('Sustituir los refrescos por agua con limón, té de jamaica o agua mineral — el cambio más impactante para el metabolismo.');
-    if(ht.indexOf('pan')>=0||ht.indexOf('harina')>=0||ht.indexOf('tortilla')>=0)
-      tips.unshift('Reducir el pan y harinas blancas a máximo 1 porción por día; sustituir por tortilla de maíz nixtamalizado o pan integral de centeno.');
-    if(ht.indexOf('carne')>=0||ht.indexOf('carnívoro')>=0)
-      tips.unshift('Mantener las carnes, pero preferir carnes blancas (pollo, pescado) y reducir la roja a 2 veces por semana máximo.');
-    if(ht.indexOf('vegetarian')>=0||ht.indexOf('vegano')>=0)
-      comer.unshift('Combinar leguminosas + cereal en cada comida para proteína completa (ej: frijoles + arroz, lentejas + tortilla).');
-  }
+  // ── Tips personalizados desde las notas ──
+  var tipsPersonalizados=[];
+  if(ht.indexOf('refresco')>=0||ht.indexOf('soda')>=0||ht.indexOf('coca')>=0)
+    tipsPersonalizados.push('Sustituir los refrescos por agua con limón, té de jamaica o agua mineral — es el cambio más impactante para el metabolismo.');
+  if(ht.indexOf('pan')>=0||ht.indexOf('harina')>=0)
+    tipsPersonalizados.push('Reducir pan y harinas blancas a máximo 1 porción al día; sustituir por tortilla de maíz nixtamalizado o pan integral de centeno.');
+  if(ht.indexOf('carne')>=0&&ht.indexOf('vegetar')<0)
+    tipsPersonalizados.push('Mantener las carnes pero preferir blancas (pollo, pescado) y limitar la carne roja a 2 veces por semana.');
+  if(ht.indexOf('vegetarian')>=0||ht.indexOf('vegano')>=0)
+    tipsPersonalizados.push('Combinar leguminosas + cereal en cada comida para proteína completa (frijoles + arroz, lentejas + tortilla).');
+  if(ht.indexOf('no le gusta el pescado')>=0||ht.indexOf('no como pescado')>=0)
+    tipsPersonalizados.push('Para el Omega-3 sin pescado: linaza molida, chía, nueces de castilla y suplemento V-Omega 3 son excelentes alternativas.');
+  if(ht.indexOf('lactosa')>=0||ht.indexOf('intolerante')>=0)
+    tipsPersonalizados.push('Sustituir lácteos por leche de almendra, arroz o coco. Para el calcio: sardinas, almendras, brócoli y semillas de ajonjolí.');
+  if(ht.indexOf('poco tiempo')>=0||ht.indexOf('trabajo')>=0||ht.indexOf('ocupad')>=0)
+    tipsPersonalizados.push('Preparar batch cooking los domingos: cocinar proteínas y verduras para 3-4 días y refrigerar en porciones listas.');
+  if(ht.indexOf('dulce')>=0||ht.indexOf('azúcar')>=0||ht.indexOf('azucar')>=0)
+    tipsPersonalizados.push('Para el antojo de dulce: fruta fresca, dátiles o cuadrito de chocolate negro 70%. La canela en agua reduce el antojo de azúcar.');
+
+  // Construir semanas
+  var semanas=buildSemanas(grupos);
 
   return{
-    comer:comer.slice(0,7),
-    evitar:evitar.slice(0,7),
-    tips:tips.slice(0,4),
+    estilo:estilo,
+    estiloInfo:estiloInfo,
+    comer:comer.slice(0,8),
+    evitar:evitar.slice(0,8),
+    tips:tips.slice(0,5),
+    tipsPersonalizados:tipsPersonalizados,
+    semanas:semanas,
     grupos_base:grupos
   };
 }
