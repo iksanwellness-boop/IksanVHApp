@@ -1642,6 +1642,70 @@ function doLogin(){
       if(existIdx>=0)users[existIdx]=u;else users.push(u);
       S.set('ik_users',users.map(function(x){var s=Object.assign({},x);delete s.pass;return s;}));
       finishLogin(u);
+      // [FIX] Cargar datos del servidor — igual que en login normal
+      var cid2=u.consultor_id||u.id;
+      var isAdminU2=(u.id==='u_admin'||u.role==='admin'||u.role==='admin_op');
+      Promise.all([
+        isAdminU2?API.call('/consultantes','GET',null,true):API.getConsultantes(cid2),
+        isAdminU2?Promise.resolve([]):API.getVentas(cid2),
+        isAdminU2?Promise.resolve([]):API.getGastos(cid2),
+        isAdminU2?Promise.resolve([]):API.getCitasBio(cid2),
+        isAdminU2?Promise.resolve([]):API.getCitasDr(cid2),
+        API.getConfig(cid2),
+        API.getPrecios(cid2),
+        API.getInventario(cid2),
+      ]).then(function(results){
+        if(results[0]&&Array.isArray(results[0])&&results[0].length>0){
+          clientes=results[0].map(function(c){
+            return{id:c.id,name:c.nombre||c.name||'',phone:c.telefono||c.phone||'',
+              email:c.email||'',notes:c.notas||'',notas:c.notas||'',
+              consultor_id:c.consultor_id,created_at:c.created_at,
+              status:c.status||'prospecto',origin:c.origin||'',
+              statusNote:c.status_note||'',age:c.age||'',sex:c.sex||'',
+              city:c.city||'',occ:c.occ||'',foodPref:c.food_pref||[],
+              conditions:c.padecimientos||[],items:c.items||[],
+              savedCarts:c.saved_carts||[],history:c.history||[],
+              lastUpdate:c.updated_at||c.created_at};
+          });
+          S.set('ik_consultantes',clientes);
+          renderConList();refreshAllConSelects();
+        }
+        if(results[1]&&Array.isArray(results[1])){
+          sales=results[1].filter(function(s){return S.get('ik_deleted_sales',[]).indexOf(s.id)<0;});
+          S.set('ik_sales',sales);
+        }
+        if(results[2]&&Array.isArray(results[2])){
+          gastos=results[2].filter(function(g){return S.get('ik_deleted_gastos',[]).indexOf(g.id)<0;});
+          S.set('ik_gastos',gastos);
+        }
+        if(results[3]&&Array.isArray(results[3])){
+          var bMap={};results[3].forEach(function(c){bMap[c.id]=c;});
+          citasBio=Object.values(bMap);S.set('ik_citasBio',citasBio);
+        }
+        if(results[4]&&Array.isArray(results[4])){
+          var dMap={};results[4].forEach(function(c){dMap[c.id]=c;});
+          citasDr=Object.values(dMap);S.set('ik_citasDr',citasDr);
+        }
+        if(results[5]&&typeof results[5]==='object'&&Object.keys(results[5]).length>0){
+          var cfg2=results[5];
+          if(u.id!=='u_admin'&&u.role!=='admin'){
+            S.set('ik_boconfig_'+u.id,cfg2);
+            setTimeout(function(){if(typeof applyBoConfig==='function')safeCall(applyBoConfig,[cfg2]);},200);
+          }
+        }
+        if(results[6]&&typeof results[6]==='object'&&Object.keys(results[6]).length){
+          prices=results[6];S.set('ik_prices',prices);
+          if(typeof filterCat==='function')safeCall(filterCat);
+        }
+        if(!isAdminU2&&results[7]&&Array.isArray(results[7])&&results[7].length>0){
+          inventario=results[7].map(function(i){return{
+            nombre:i.producto,stock:i.stock||0,sobrePedido:i.sobre_pedido||false,
+            fechaRegistro:i.fecha_registro||null,fechaCaducidad:i.fecha_caducidad||null};
+          });
+          saveInv();
+        }
+        renderConList();refreshAllConSelects();
+      }).catch(function(e){console.warn('[IKSAN] data load error:',e);});
     }).catch(function(e){
       errEl.textContent='Error de red: '+(e&&e.message?e.message:'sin conexión');
     });
