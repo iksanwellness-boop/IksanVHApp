@@ -3977,3 +3977,149 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
 }
 
 
+// Fallback: watch when admin-modulos div becomes visible and auto-render
+(function(){
+  var checked=false;
+  setInterval(function(){
+    var el=document.getElementById('admin-modulos');
+    var ml=document.getElementById('modulosList');
+    if(!el||!ml)return;
+    var visible=el.style.display!=='none'&&el.offsetParent!==null;
+    if(visible&&ml.innerHTML.indexOf('Cargando')>=0&&!checked){
+      checked=true;
+      if(typeof renderModulos==='function')renderModulos();
+    }
+    if(!visible)checked=false;
+  },300);
+})();
+
+window.addEventListener('load',function(){
+  // ── DOMAIN SECURITY CHECK ────────────────────────────────────────────
+  (function(){
+    var host=window.location.hostname;
+    var allowed=['iksanwellness-boop.github.io','localhost','127.0.0.1',''];
+    var isLocal=host===''||host==='localhost'||host==='127.0.0.1';
+    var isAllowed=allowed.some(function(a){return host===a||host.endsWith('.github.io');});
+    if(!isAllowed){
+      document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:-apple-system,sans-serif;background:#0d0818;color:#fff;text-align:center;padding:20px">'
+        +'<div><div style="font-size:48px;margin-bottom:16px">🔒</div>'
+        +'<div style="font-size:22px;font-weight:700;margin-bottom:8px">Acceso no autorizado</div>'
+        +'<div style="font-size:14px;color:#a090c0;max-width:320px">Esta aplicación solo puede ejecutarse desde su dominio autorizado.<br><br>© IKSAN Wellness — Herramienta propietaria</div></div></div>';
+      throw new Error('Unauthorized domain');
+    }
+  })();
+
+  // ── URL PARAMETERS ────────────────────────────────────────────────────
+  (function(){
+    var params=new URLSearchParams(window.location.search);
+    var uParam=params.get('u');
+    var tParam=params.get('t'); // provisioning token
+
+    // Token de activación: auto-crear usuario en este dispositivo
+    if(tParam){
+      try{
+        var decoded=JSON.parse(atob(tParam));
+        if(decoded&&decoded.id&&decoded.email){
+          // Cargar usuarios actuales del dispositivo
+          var existing=JSON.parse(localStorage.getItem('ik_users')||'[]');
+          // Solo instalar si no existe ya
+          var alreadyExists=existing.find(function(u){return u.id===decoded.id||u.email===decoded.email;});
+          if(!alreadyExists){
+            existing.push(decoded);
+            localStorage.setItem('ik_users',JSON.stringify(existing));
+          } else {
+            // Actualizar módulos y datos si ya existe (para re-activaciones)
+            var idx=existing.findIndex(function(u){return u.id===decoded.id;});
+            if(idx>=0){
+              existing[idx].modulosAsignados=decoded.modulosAsignados||[];
+              existing[idx].days=decoded.days;
+              existing[idx].activatedAt=decoded.activatedAt;
+              existing[idx].active=true;
+              localStorage.setItem('ik_users',JSON.stringify(existing));
+            }
+          }
+          // También instalar los módulos activados
+          if(decoded.modulosSnapshot){
+            try{
+              var mods=JSON.parse(localStorage.getItem('ik_modulos')||'[]');
+              decoded.modulosSnapshot.forEach(function(snap){
+                var m=mods.find(function(x){return x.id===snap.id;});
+                if(m){
+                  if(!m.activatedFor)m.activatedFor=[];
+                  if(m.activatedFor.indexOf(decoded.id)<0)m.activatedFor.push(decoded.id);
+                }
+              });
+              localStorage.setItem('ik_modulos',JSON.stringify(mods));
+            }catch(e){}
+          }
+          // Guardar el usuario en sessionStorage para auto-seleccionarlo
+          sessionStorage.setItem('ik_url_user', normalizeEmail(decoded.email));
+          // Save full user data for login screen display
+          sessionStorage.setItem('ik_token_user', JSON.stringify(decoded));
+          // Keep ?u=email in URL so initLogin knows this is a consultant URL
+          // Don't strip token — it's already saved to sessionStorage securely
+          window.history.replaceState({},'',window.location.pathname+'?u='+encodeURIComponent(decoded.email)+'&t=ok');
+        }
+      }catch(e){console.warn('Token inválido:',e);}
+    }
+
+    if(uParam){
+      sessionStorage.setItem('ik_url_user', uParam.toLowerCase().trim());
+    }
+  })();
+
+  // Version check - clear corrupted data from old versions
+  var APP_VER='1778796914';
+  var storedVer=localStorage.getItem('ik_appver');
+
+  // CRITICAL: ensure only u_admin exists as master, clean any corruption
+  (function(){
+    try{
+      var saved=JSON.parse(localStorage.getItem('ik_users')||'[]');
+      if(!Array.isArray(saved))saved=[];
+      // Remove any user that has role=admin and is NOT u_admin
+      var cleaned=saved.filter(function(u){return u.id==='u_admin'||u.role!=='admin';});
+      // Fix u_admin always
+      var adminIdx=cleaned.findIndex(function(u){return u.id==='u_admin';});
+      if(adminIdx>=0){
+        cleaned[adminIdx].name='Admin Iksan';
+        cleaned[adminIdx].email='admin';
+        cleaned[adminIdx].pass='iksan2024';
+        cleaned[adminIdx].role='admin';
+        cleaned[adminIdx].active=true;
+        cleaned[adminIdx].days=-1;
+      } else {
+        cleaned.unshift({id:'u_admin',name:'Admin Iksan',email:'admin',pass:'iksan2024',
+          role:'admin',active:true,days:-1,
+          activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()});
+      }
+      localStorage.setItem('ik_users',JSON.stringify(cleaned));
+    }catch(e){}
+  })();
+
+  if(storedVer!==APP_VER){
+    // Clear potentially corrupted ik_users and ik_modulos from old versions
+    localStorage.removeItem('ik_modulos');
+    // Force re-init users
+    users=(function(){
+      try{
+        var saved=JSON.parse(localStorage.getItem('ik_users')||'[]');
+        var arr=Array.isArray(saved)?saved:[];
+        var cleaned=arr.filter(function(u){return u.role!=='admin'||u.id==='u_admin';});
+        var idx=cleaned.findIndex(function(u){return u.id==='u_admin';});
+        if(idx>=0){cleaned[idx].pass='iksan2024';cleaned[idx].role='admin';cleaned[idx].active=true;cleaned[idx].days=-1;}
+        else{cleaned.unshift(Object.assign({},ADMIN_DEFAULT));}
+        localStorage.setItem('ik_users',JSON.stringify(cleaned));
+        return cleaned;
+      }catch(e){var a=[Object.assign({},ADMIN_DEFAULT)];localStorage.setItem('ik_users',JSON.stringify(a));return a;}
+    })();
+    // Re-init modulos
+    modulos=MODULOS_DEFAULT.map(function(d){return Object.assign({},d);});
+    localStorage.setItem('ik_appver',APP_VER);
+  }
+  initLogin();
+  renderCitaAlerts();
+});
+</script>
+</body>
+</html>
