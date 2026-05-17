@@ -3135,8 +3135,12 @@ function getGrupoSistema(nombre){
   if(/pesticida|radiación electromagnética|radicales libres|bebidas carbonatadas/.test(sn)) return '🧪 Tóxicos · Pesticidas';
   // Cardiovascular
   if(/corazón|card[ií]|miocardio|perfusi[oó]n|oxígeno miocardial|elasticidad vascular|cristal de colesterol|vaso cerebral|coronar|ventricular|stroke|sistólico|resistencia periférica|onda del pulso|cerebrovascular|viscosidad.*líp|colesterol total|ldl|hdl|triglicéridos.*tg|grasas neutras|complejos inmunes circ|viscosidad sangu/.test(sn)) return '❤️ Cardiovascular';
+  // Óseo ANTES de hígado para que fosfatasa alcalina ósea no matchee hígado
+  if(/[oó]seo|osteoporos|articular|hiperplasia.*[oó]sea|reumat|calcificac|osteoclasto|pérdida de calcio óseo|fosfatasa alcal.*ósea|osteocalcina|densidad mineral/.test(sn)) return '🦴 Óseo · Articular';
   // Hepática
-  if(/h[ií]gado|hep[aá]t|bilirrubina|fosfatasa alcal|ácidos biliares|secreción de bilis|desintoxicación hepática|metabolismo de prot.*hepá|producción de energía hepática|grasa en el hígado|seroglobulina/.test(sn)) return '🫀 Hígado · Vesícula';
+  if(/h[ií]gado|hep[aá]t|bilirrubina|fosfatasa alcalina \(alp\)|fosfatasa alcalina$|ácidos biliares|secreción de bilis|desintoxicación hepática|metabolismo de prot.*hepá|producción de energía hepática|grasa en el hígado|seroglobulina/.test(sn)) return '🫀 Hígado · Vesícula';
+  // Digestivo — absorción y peristalsis gastrointestinal
+  if(/absorción gástrica|absorción colónica|absorción.*intestino|peristalsis.*gástrica|peristalsis.*intestino|peristalsis.*colón|peristalsis.*colon|flora intestinal|presión intraluminal|secreción de pepsina|pepsina/.test(sn)) return '🫃 Digestivo';
   // Renal
   if(/ri[ñn][oó]n|renal|proteinuria|nitrógeno ureico|ácido úrico|urobilinógeno/.test(sn)) return '🫘 Renal';
   // Pulmonar
@@ -3160,7 +3164,7 @@ function getGrupoSistema(nombre){
   // Colágeno sistémico
   if(/colágeno — (ojos|dientes|cabello|endocrino|circulatorio|digestivo|inmunológico|motor|muscular|grasas|desintoxicación|reproductivo|nervioso|respiratorio)/.test(sn)) return '🧬 Colágeno Sistémico';
   // Nutrientes
-  if(/vitamina|aminoácido|ácido panto|ácido fólico|coenzima|glutatión|nicotinamida|biotina|ácido linoleico|linolénico|araquidónico|ácidos grasos|fosfolípido|esfingolípido|esfingomielina|lecitina|liposomal/.test(sn)) return '💊 Nutrientes · Suplementos';
+  if(/vitamina|aminoácido|ácido panto|ácido fólico|coenzima|glutatión|nicotinamida|biotina|ácido linoleico|linolénico|araquidónico|ácidos grasos|fosfolípido|esfingolípido|esfingomielina|lecitina|liposomal|triptófano|lisina|fenilalanina|metionina|treonina|isoleucina|leucina|valina|histidina|arginina|silicio$|estroncio|boro$|molibdeno|vanadio|estaño|flúor|níquel|manganeso|cobalto/.test(sn)) return '💊 Nutrientes · Suplementos';
   // Oligoelementos
   if(/calcio$|hierro$|zinc$|selenio|fósforo$|potasio|magnesio|cobre$|cobalto|manganeso|yodo$|níquel|flúor|molibdeno|vanadio|estaño|silicio$|estroncio|boro$/.test(sn)) return '⚗️ Oligoelementos';
   // Piel / Colágeno estético
@@ -3184,17 +3188,20 @@ function sortByHealthPriority(sistemas){
     grupos[g].push(s);
   });
 
-  // 2. Puntuar cada grupo
+  // 2. Puntuar cada grupo con bonus de volumen (techo ×2)
   var urgFactor={alto:1.2,alta:1.2,medio:1.0,media:1.0,bajo:0.8,baja:0.8};
   var grupoPuntos={};
   Object.keys(grupos).forEach(function(g){
     var pts=0;
+    var n=grupos[g].length;
     grupos[g].forEach(function(s){
       var w=getHealthWeight(s.sistema||'');
       var u=s.urgencia||s.nivel||'medio';
       pts+=w*(urgFactor[u]||1.0);
     });
-    grupoPuntos[g]=pts;
+    // Bonus: más parámetros afectados = grupo más urgente (techo ×2)
+    var bonus=Math.min(1+0.15*n,2.0);
+    grupoPuntos[g]=pts*bonus;
   });
 
   // 3. Ordenar grupos por puntuación descendente
@@ -3398,14 +3405,16 @@ function renderResultVH(r){
     h+='<th style="padding:6px 7px;width:48%">Qué significa</th></tr>';
     sorted.forEach(function(s,i){
       var urg=s.urgencia||s.nivel||'medio';
-      var col=(urg==='alto'||urg==='alta')?RED:ORANGE;
+      var urgLvl=urg==='alta'||urg==='alto'?3:urg==='media'||urg==='medio'?2:1;
+      var col=urgLvl===3?RED:urgLvl===2?ORANGE:'#e8a020';
+      var urgBadge=urgLvl===3?'+++':urgLvl===2?'++':'+';
       var grp=s._grupo||'';
       if(grp&&grp!==prevGrp){
         prevGrp=grp;
         h+='<tr><td colspan="4" style="padding:4px 8px;background:#f0f0f0;font-size:9px;font-weight:700;color:#555;letter-spacing:.5px;text-transform:uppercase">'+grp+'</td></tr>';
       }
       h+='<tr style="background:'+(i%2===0?'#fff':'#fafafa')+';border-left:3px solid '+col+';border-bottom:1px solid #f0f0f0">';
-      h+='<td style="padding:5px 6px;font-weight:800;color:#fff;background:'+col+';text-align:center;font-size:10px">'+(s.num||i+1)+'</td>';
+      h+='<td style="padding:5px 6px;font-weight:800;color:#fff;background:'+col+';text-align:center;font-size:10px;min-width:30px">'+(s.num||i+1)+'<div style="font-size:7px;letter-spacing:1px;opacity:.9">'+urgBadge+'</div></td>';
       h+='<td style="padding:5px 7px;font-weight:700;color:'+DARK+';font-size:10.5px">'+(s.sistema||'')+'</td>';
       var det=s.detectado||s.hallazgo||'';
       var valMatch=det.match(/Valor:\s*([\d.]+)/i);
@@ -3428,7 +3437,7 @@ function renderResultVH(r){
   // Sin checkbox: plan compacto automático desde tablas (sin semanas)
   var planCompacto=null;
   if(!planAlim&&sistemas.length>0){
-    planCompacto=generarPlanAlimentacionTabla(sistemas,'');
+    planCompacto=generarPlanAlimentacionTabla(sistemas,'',{edad:r.edad,sexo:r.sexo,nombre:r.paciente});
     planCompacto.semanas=null;planCompacto.estiloInfo=null;
   }
   var planVisible=planAlim||planCompacto;
@@ -3503,6 +3512,32 @@ function renderResultVH(r){
         }
         h+='</div>';
       }
+      // ── Tabla de alimentación por parámetro afectado ──
+      if(planVisible.tablaParamAlim&&planVisible.tablaParamAlim.length){
+        h+='<div style="border-top:2px solid '+GREEN_BG+';padding:10px 13px">';
+        h+='<div style="font-size:10px;font-weight:800;color:'+GREEN+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">&#127789; Alimentos recomendados por sistema afectado</div>';
+        var tpa=planVisible.tablaParamAlim;
+        h+='<table style="width:100%;border-collapse:collapse;font-size:10px">';
+        h+='<tr style="background:#f0faf0">';
+        h+='<th style="padding:5px 8px;text-align:left;color:'+GREEN+';font-weight:700;border-bottom:1px solid '+GREEN_BG+'">Sistema</th>';
+        h+='<th style="padding:5px 8px;text-align:left;color:'+GREEN+';font-weight:700;border-bottom:1px solid '+GREEN_BG+'">&#9989; Incluir</th>';
+        h+='<th style="padding:5px 8px;text-align:left;color:#c04040;font-weight:700;border-bottom:1px solid '+GREEN_BG+'">&#10060; Reducir</th>';
+        h+='</tr>';
+        tpa.forEach(function(row,ri){
+          var bg=ri%2===0?'#fff':'#f8fdf8';
+          h+='<tr style="background:'+bg+';border-bottom:1px solid #f0f0f0">';
+          h+='<td style="padding:6px 8px;font-weight:700;color:#1a3a1a;white-space:nowrap;vertical-align:top">'+row.categoria+'</td>';
+          h+='<td style="padding:6px 8px;color:#1C2833;vertical-align:top">'+row.alimentos.slice(0,5).join(' · ')+'</td>';
+          h+='<td style="padding:6px 8px;color:#7a2020;vertical-align:top">'+row.evitar.slice(0,4).join(' · ')+'</td>';
+          h+='</tr>';
+        });
+        h+='</table>';
+        if(planVisible.esMayor){
+          h+='<div style="margin-top:6px;font-size:9px;color:#555;font-style:italic">&#9889; Para mayores de 60: prioriza proteínas de fácil digestión, vitamina D y calcio diario.</div>';
+        }
+        h+='</div>';
+      }
+
       // Tips personalizados (solo con checkbox)
       if(planVisible.tipsPersonalizados&&planVisible.tipsPersonalizados.length){
         h+='<div style="background:#fff8e8;border-top:2px solid #f0c840;padding:9px 11px">';
@@ -4144,78 +4179,164 @@ function buildSemanas(grupos){
   ];
 }
 
-function generarPlanAlimentacionTabla(sistemasDetectados, habitosTexto){
-  var nombres=sistemasDetectados.map(function(s){return(s.sistema||'').toLowerCase();});
-  function tiene(kw){return nombres.some(function(n){return n.indexOf(kw)>=0;});}
+function generarPlanAlimentacionTabla(sistemasDetectados, habitosTexto, pacienteInfo){
+  // pacienteInfo: {edad, sexo, nombre}
+  var edad = pacienteInfo && pacienteInfo.edad ? parseInt(pacienteInfo.edad)||40 : 40;
+  var sexo = pacienteInfo && pacienteInfo.sexo ? pacienteInfo.sexo.toLowerCase() : '';
+  var esMayor = edad >= 60;
+  var esMujer = /femen|mujer|f/.test(sexo);
+  var esHombre = /mascul|hombre|m/.test(sexo);
 
-  // Detectar grupos activos
-  var grupos=[];
-  if(tiene('miocardial')||tiene('perfusión')||tiene('vascular')||tiene('colesterol')||tiene('triglicéridos')) grupos.push('cardiovascular');
-  if(tiene('hígado')||tiene('lipídico')||tiene('biliares')||tiene('vesícula')) grupos.push('higado');
-  if(tiene('plomo')||tiene('pesticidas')||tiene('metales')||tiene('tóxico')) grupos.push('toxinas');
-  if(tiene('metabolismo')||tiene('adiposo')||tiene('glucosa')||tiene('insulina')) grupos.push('metabolico');
-  if(tiene('hiperplasia')||tiene('reumatoide')||tiene('osteoporosis')) grupos.push('oseo');
-  if(tiene('absorción gástrica')||tiene('intestino')||tiene('gástrica')) grupos.push('digestivo');
-  if(tiene('memoria')||tiene('neurológico')||tiene('cerebro')) grupos.push('neurologico');
-  if(tiene('colágeno')||tiene('cutáneo')||tiene('humectación')||tiene('dermis')) grupos.push('piel');
-  if(!grupos.length) grupos=['metabolico'];
+  // ── Tabla de alimentos por sistema ──
+  var ALIM = {
+    'colesterol':     {s:'↓ Colesterol',  a:['Avena','Nueces','Aceite de oliva','Salmón','Aguacate','Ajo','Legumbres'], e:['Embutidos','Frituras','Mantequilla','Quesos grasos','Comida rápida']},
+    'corazon':        {s:'❤️ Corazón',     a:['Salmón','Sardinas','Espinacas','Arándanos','Almendras','Granada','Ajo'], e:['Sal en exceso','Alcohol','Grasas trans','Bebidas energéticas']},
+    'higado':         {s:'🫀 Hígado',      a:['Alcachofa','Remolacha','Limón en agua','Cúrcuma','Ajo','Verduras crucíferas','Té verde'], e:['Alcohol','Frituras','Refrescos','Azúcar refinada','Embutidos']},
+    'huesos':         {s:'🦴 Huesos',      a:['Leche y derivados','Sardinas con espina','Espinacas','Almendras','Tofu','Brócoli','Sésamo'], e:['Refrescos de cola','Exceso de café','Alcohol','Sal en exceso']},
+    'reumatismo':     {s:'🦴 Anti-inflamat.',a:['Cúrcuma con pimienta','Jengibre','Omega-3 (salmón)','Cerezas','Piña','Aceite de oliva'], e:['Azúcar','Trigo refinado','Carnes rojas','Lácteos en exceso','Alcohol']},
+    'glucosa':        {s:'🩸 Glucosa',      a:['Canela','Avena integral','Lentejas','Verduras de hoja','Aguacate','Nueces','Semillas de chía'], e:['Azúcar','Pan blanco','Jugos industriales','Dulces','Refrescos']},
+    'digestivo':      {s:'🫃 Digestión',    a:['Yogur natural','Kefir','Papaya','Piña','Jengibre','Hinojo','Verduras al vapor'], e:['Comida muy grasa','Alcohol','Picante en exceso','Azúcar','Trigo refinado']},
+    'nervioso':       {s:'🧠 Cerebro',      a:['Aguacate','Nueces','Arándanos','Huevo','Salmón','Espinacas','Chocolate 70%'], e:['Azúcar','Alcohol','Comida ultraprocesada','Exceso de cafeína']},
+    'renal':          {s:'🫘 Riñones',      a:['Agua (2L+/día)','Arándano rojo','Manzana','Col','Coliflor','Ajo','Cebolla'], e:['Sal','Carnes rojas en exceso','Refrescos','Embutidos','Alcohol']},
+    'pulmonar':       {s:'🫁 Pulmón',       a:['Manzana','Cebolla','Jengibre','Cúrcuma','Vitamina C (cítricos)','Ajo','Té verde'], e:['Tabaco','Lácteos en exceso','Azúcar','Alimentos muy fríos']},
+    'toxinas':        {s:'🧪 Detox',        a:['Agua con limón','Clorofila (verduras verdes)','Ajo','Cúrcuma','Té verde','Remolacha','Cilantro'], e:['Alcohol','Comida procesada','Azúcar refinada','Frituras']},
+    'metales':        {s:'☠️ Anti-metales', a:['Cilantro fresco','Ajo','Espirulina','Cúrcuma','Agua pura (abundante)','Verduras crucíferas'], e:['Pescado contaminado (atún en exceso)','Mariscos','Tabaco']},
+    'inmuno':         {s:'🛡️ Inmunidad',    a:['Ajo','Jengibre','Cítricos','Kefir','Zinc (semillas calabaza)','Hongos shiitake','Equinácea'], e:['Azúcar','Alcohol','Comida ultraprocesada','Tabaco']},
+    'piel':           {s:'🌸 Piel',         a:['Aguacate','Zanahoria','Tomate','Colágeno natural (caldo de hueso)','Agua 2L+','Berries','Vitamina E'], e:['Azúcar','Alcohol','Sol sin protección','Comida frita']},
+    'tiroides':       {s:'🔬 Tiroides',     a:['Yodo (mariscos, algas)','Selenio (nueces de Brasil)','Zinc','Verduras de colores','Proteína magra'], e:['Soya en exceso','Gluten si hay Hashimoto','Azúcar','Alcohol']},
+    'vitaminas':      {s:'💊 Vitaminas',    a:['Frutas variadas de colores','Verduras crudas','Huevo','Hígado de res','Cereales integrales','Nueces'], e:['Alcohol (destruye vitaminas B)','Cocción excesiva','Tabaco','Azúcar']},
+    'aminoacidos':    {s:'💊 Proteínas',    a:['Huevo','Pollo sin piel','Atún','Lentejas','Quinoa','Yogur griego','Tofu'], e:['Proteína en exceso (daña riñones)','Carnes muy procesadas','Embutidos']},
+    'coenzimas':      {s:'💊 Coenzimas',    a:['Espinacas','Brócoli','Salmón','Aguacate','Nueces','Legumbres','Aceite de oliva'], e:['Alcohol','Azúcar','Comida ultraprocesada','Frituras']},
+    'colesterol_hdl': {s:'↑ HDL',           a:['Aceite de oliva','Aguacate','Nueces','Salmón','Ajo','Ejercicio aeróbico*'], e:['Grasas trans','Tabaco','Sedentarismo','Azúcar refinada']},
+    'obesidad':       {s:'⚖️ Metabolismo',  a:['Agua 2L+','Proteína magra','Verduras sin almidón','Té verde','Canela','Vinagre de manzana'], e:['Azúcar','Harinas blancas','Frituras','Bebidas azucaradas','Alcohol']},
+  };
 
-  var orden=['toxinas','cardiovascular','higado','neurologico','metabolico','digestivo','oseo','piel'];
-  grupos.sort(function(a,b){return orden.indexOf(a)-orden.indexOf(b);});
-  grupos=grupos.slice(0,3);
+  // Agregar alimentos específicos por edad y sexo
+  if(esMayor){
+    ALIM['huesos'].a.unshift('Vitamina D (sol 20min/día)');
+    ALIM['nervioso'].a.unshift('Omega-3 (muy importante >60 años)');
+    ALIM['digestivo'].a.unshift('Fibra suave (avena, manzana)');
+  }
+  if(esMujer){
+    ALIM['huesos'].a.push('Hierro (legumbres, espinacas)');
+    ALIM['tiroides'].a.push('Selenio extra (nueces de Brasil 2/día)');
+  }
+  if(esHombre){
+    ALIM['renal'].a.push('Licopeno (jitomate cocido)');
+    ALIM['corazon'].a.push('L-arginina (nueces, semillas)');
+  }
 
-  // ── Detectar estilo de alimentación desde las notas ──
-  var ht=(habitosTexto||'').toLowerCase();
-  var estilo='3comidas'; // default
-  if(ht.indexOf('ayuno')>=0||ht.indexOf('intermitente')>=0||ht.indexOf('16:8')>=0||ht.indexOf('16/8')>=0) estilo='ayuno';
-  else if(ht.indexOf('5 comida')>=0||ht.indexOf('5comida')>=0||ht.indexOf('cinco comida')>=0||ht.indexOf('colacion')>=0||ht.indexOf('merienda')>=0) estilo='5comidas';
-  else if(ht.indexOf('3 comida')>=0||ht.indexOf('tres comida')>=0) estilo='3comidas';
-  // si dice "como poco" o "no tengo hambre" → 3 comidas con snack opcional
-  var estiloInfo=SEMANAS_TIPO[estilo];
+  // ── Mapear cada parámetro afectado a su categoría alimentaria ──
+  var PARAM_ALIM = {
+    'cristal de colesterol':'colesterol','colesterol total':'colesterol',
+    'ldl':'colesterol','hdl':'colesterol_hdl','grasas neutras':'colesterol',
+    'triglicéridos':'colesterol','metabolismo lipídico':'colesterol',
+    'perfusión sanguínea':'corazon','impedancia ventricular':'corazon',
+    'elasticidad vascular':'corazon','volumen de latido':'corazon',
+    'presión de perfusión':'corazon','elasticidad de arteria':'corazon',
+    'viscosidad sanguínea':'corazon','índice de stroke':'corazon',
+    'bilirrubina':'higado','fosfatasa alcalina (alp)':'higado',
+    'ácidos biliares':'higado','secreción de bilis':'higado',
+    'desintoxicación hepática':'higado','grasa en el hígado':'higado',
+    'producción de energía hepática':'higado','metabolismo de proteínas hepático':'higado',
+    'hiperplasia ósea':'huesos','osteoporosis':'huesos',
+    'densidad mineral ósea':'huesos','osteoclasto':'huesos',
+    'pérdida de calcio óseo':'huesos','osteocalcina':'huesos',
+    'fosfatasa alcalina ósea':'huesos',
+    'reumatismo':'reumatismo','calcificación':'reumatismo',
+    'glucosa':'glucosa','insulina':'glucosa','glucagón':'glucosa',
+    'hiperinsulinemia':'glucosa','glucosa en orina':'glucosa',
+    'absorción gástrica':'digestivo','absorción del intestino':'digestivo',
+    'peristalsis':'digestivo','flora intestinal':'digestivo',
+    'absorción colónica':'digestivo','presión intraluminal':'digestivo',
+    'pepsina':'digestivo',
+    'memoria':'nervioso','nervio craneal':'nervioso','arterioesclerosis cerebral':'nervioso',
+    'índice de emoción':'nervioso','suministro sanguíneo cerebral':'nervioso',
+    'oxígeno arterial':'pulmonar','capacidad vital':'pulmonar',
+    'vías aéreas':'pulmonar','resistencia de vías':'pulmonar',
+    'ácido úrico':'renal','proteinuria':'renal','nitrógeno ureico':'renal',
+    'urobilinógeno':'renal',
+    'pesticidas':'toxinas','radicales libres':'toxinas','bebidas carbonatadas':'toxinas',
+    'plomo':'metales','mercurio':'metales','cadmio':'metales','arsénico':'metales',
+    'talio':'metales','cromo':'metales','antimonio':'metales','aluminio':'metales',
+    'ganglios':'inmuno','amígdalas':'inmuno','médula ósea':'inmuno',
+    'inmunoglobulina':'inmuno','barrera tisular':'inmuno','células inmunes':'inmuno',
+    'tiroxina':'tiroides','tiroglobulina':'tiroides','triyodotironina':'tiroides',
+    'glándula tiroides':'tiroides','suprarrenales':'tiroides','pituitaria':'tiroides',
+    'vitamina a':'vitaminas','vitamina b':'vitaminas','vitamina c':'vitaminas',
+    'vitamina d':'vitaminas','vitamina e':'vitaminas','vitamina k':'vitaminas',
+    'silicio':'vitaminas','selenio':'vitaminas','zinc':'vitaminas','magnesio':'vitaminas',
+    'calcio':'huesos','hierro':'vitaminas','fósforo':'vitaminas',
+    'potasio':'vitaminas','cobre':'vitaminas','cobalto':'vitaminas',
+    'triptófano':'aminoacidos','lisina':'aminoacidos','fenilalanina':'aminoacidos',
+    'metionina':'aminoacidos','leucina':'aminoacidos','valina':'aminoacidos',
+    'isoleucina':'aminoacidos','histidina':'aminoacidos','arginina':'aminoacidos',
+    'treonina':'aminoacidos',
+    'coenzima q10':'coenzimas','glutatión':'coenzimas','ácido pantoténico':'coenzimas',
+    'biotina':'coenzimas','ácido fólico':'coenzimas','nicotinamida':'coenzimas',
+    'ácido linoleico':'coenzimas','linolénico':'coenzimas','araquidónico':'coenzimas',
+    'colágeno':'piel','cutáneo':'piel','melanina':'piel','humectación':'piel',
+    'piel':'piel','elasticidad cutánea':'piel','endurecimiento':'piel',
+    'metabolismo lipídico':'obesidad','tejido adiposo':'obesidad',
+    'núcleo hipotalámico':'obesidad',
+    'ph sanguíneo':'digestivo',
+  };
 
-  // ── Fusionar qué comer/evitar/tips de todos los grupos ──
-  var seen_c={},seen_e={},seen_t={};
-  var comer=[],evitar=[],tips=[];
-  grupos.forEach(function(g){
-    var t=ALIM_TABLE[g];if(!t)return;
-    t.comer.forEach(function(x){if(!seen_c[x]){seen_c[x]=true;comer.push(x);}});
-    t.evitar.slice(0,4).forEach(function(x){if(!seen_e[x]){seen_e[x]=true;evitar.push(x);}});
-    t.tips.forEach(function(x){if(!seen_t[x]){seen_t[x]=true;tips.push(x);}});
+  function getCategAlim(nombreParam){
+    var n = (nombreParam||'').toLowerCase();
+    for(var k in PARAM_ALIM){
+      if(n.indexOf(k)>=0) return PARAM_ALIM[k];
+    }
+    return null;
+  }
+
+  // ── Construir tabla por parámetro afectado ──
+  var tablaParamAlim = [];
+  var categoriasSeen = {};
+  sistemasDetectados.forEach(function(s){
+    var cat = getCategAlim(s.sistema||'');
+    if(cat && ALIM[cat] && !categoriasSeen[cat]){
+      categoriasSeen[cat] = true;
+      tablaParamAlim.push({
+        categoria: ALIM[cat].s,
+        alimentos: ALIM[cat].a,
+        evitar: ALIM[cat].e,
+        param: s.sistema
+      });
+    }
   });
 
-  // ── Tips personalizados desde las notas ──
-  var tipsPersonalizados=[];
-  if(ht.indexOf('refresco')>=0||ht.indexOf('soda')>=0||ht.indexOf('coca')>=0)
-    tipsPersonalizados.push('Sustituir los refrescos por agua con limón, té de jamaica o agua mineral — es el cambio más impactante para el metabolismo.');
-  if(ht.indexOf('pan')>=0||ht.indexOf('harina')>=0)
-    tipsPersonalizados.push('Reducir pan y harinas blancas a máximo 1 porción al día; sustituir por tortilla de maíz nixtamalizado o pan integral de centeno.');
-  if(ht.indexOf('carne')>=0&&ht.indexOf('vegetar')<0)
-    tipsPersonalizados.push('Mantener las carnes pero preferir blancas (pollo, pescado) y limitar la carne roja a 2 veces por semana.');
-  if(ht.indexOf('vegetarian')>=0||ht.indexOf('vegano')>=0)
-    tipsPersonalizados.push('Combinar leguminosas + cereal en cada comida para proteína completa (frijoles + arroz, lentejas + tortilla).');
-  if(ht.indexOf('no le gusta el pescado')>=0||ht.indexOf('no como pescado')>=0)
-    tipsPersonalizados.push('Para el Omega-3 sin pescado: linaza molida, chía, nueces de castilla y suplemento V-Omega 3 son excelentes alternativas.');
-  if(ht.indexOf('lactosa')>=0||ht.indexOf('intolerante')>=0)
-    tipsPersonalizados.push('Sustituir lácteos por leche de almendra, arroz o coco. Para el calcio: sardinas, almendras, brócoli y semillas de ajonjolí.');
-  if(ht.indexOf('poco tiempo')>=0||ht.indexOf('trabajo')>=0||ht.indexOf('ocupad')>=0)
-    tipsPersonalizados.push('Preparar batch cooking los domingos: cocinar proteínas y verduras para 3-4 días y refrigerar en porciones listas.');
-  if(ht.indexOf('dulce')>=0||ht.indexOf('azúcar')>=0||ht.indexOf('azucar')>=0)
-    tipsPersonalizados.push('Para el antojo de dulce: fruta fresca, dátiles o cuadrito de chocolate negro 70%. La canela en agua reduce el antojo de azúcar.');
+  // ── Detectar grupos activos (para compatibilidad con el resto del render) ──
+  var nombres=sistemasDetectados.map(function(s){return(s.sistema||'').toLowerCase();});
+  function tiene(kw){return nombres.some(function(n){return n.indexOf(kw)>=0;});}
+  var grupos=[];
+  if(tiene('colesterol')||tiene('perfusión')||tiene('vascular')||tiene('triglicérid')) grupos.push('cardiovascular');
+  if(tiene('hígado')||tiene('biliares')||tiene('vesícula')) grupos.push('higado');
+  if(tiene('plomo')||tiene('pesticidas')||tiene('metales')) grupos.push('toxinas');
+  if(tiene('glucosa')||tiene('insulina')||tiene('adiposo')) grupos.push('metabolico');
+  if(tiene('hiperplasia')||tiene('reumatoide')||tiene('osteoporosis')||tiene('ósea')) grupos.push('oseo');
+  if(tiene('absorción')||tiene('intestino')||tiene('gástrica')||tiene('digestivo')) grupos.push('digestivo');
+  if(tiene('memoria')||tiene('nervio')||tiene('cerebro')) grupos.push('neurologico');
+  if(tiene('colágeno')||tiene('cutáneo')||tiene('humectación')) grupos.push('piel');
+  if(!grupos.length) grupos=['metabolico'];
 
-  // Construir semanas
-  var semanas=buildSemanas(grupos);
+  var ht=(habitosTexto||'').toLowerCase();
+  var estilo='3comidas';
+  if(ht.indexOf('ayuno')>=0||ht.indexOf('intermitente')>=0) estilo='ayuno';
+  else if(ht.indexOf('5 comida')>=0||ht.indexOf('colacion')>=0||ht.indexOf('merienda')>=0) estilo='5comidas';
 
-  return{
-    estilo:estilo,
-    estiloInfo:estiloInfo,
-    comer:comer.slice(0,8),
-    evitar:evitar.slice(0,8),
-    tips:tips.slice(0,5),
-    tipsPersonalizados:tipsPersonalizados,
-    semanas:semanas,
-    grupos_base:grupos
+  return {
+    grupos: grupos,
+    estilo: estilo,
+    estiloInfo: null,
+    tablaParamAlim: tablaParamAlim,
+    semanas: null,
+    edad: edad,
+    sexo: sexo,
+    esMayor: esMayor
   };
 }
+
 
 function runVHTextAnalysis(){
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
@@ -4354,23 +4475,23 @@ async function runVHTextAnalysisAPI(){
 // Fuente: 3 reportes reales — Rachael Flug (F/43), Luz Garcia (F/51), Suegro Dany (M/75)
 var RANGE_TABLE={
   // ── CARDIOVASCULAR ──
-  "48.264_65.371":["Viscosidad Sanguínea","Cardiovascular","Sangre espesa; mayor riesgo de coágulos, trombosis y accidente cardiovascular.","Sangre muy fluida; posible riesgo de sangrado.",["cardiovascular","sangre","circulación"]],
-  "56.749_67.522":["Cristal de Colesterol","Cardiovascular","Colesterol elevado; mayor riesgo de obstrucción arterial e infarto.","Colesterol bajo; puede afectar producción hormonal.",["colesterol","cardiovascular","arterias"]],
+  "48.264_65.371":["Viscosidad Sanguínea","Cardiovascular","Sangre espesa; mayor riesgo de coágulos, trombosis y accidente cardiovascular.","Tu sangre está demasiado fluida — aunque suena bien, puede dificultar el transporte de nutrientes y aumentar el riesgo de sangrado.",["sangre","cardiovascular","circulación","trombosis"]],
+  "56.749_67.522":["Cristal de Colesterol","Cardiovascular","Tu colesterol está alto — esto puede obstruir las arterias poco a poco y aumentar el riesgo de infarto.","Tu colesterol está bajo — aunque suena bien, en este nivel puede afectar la producción de hormonas y energía.",["colesterol","cardiovascular","arterias"]],
   "0.481_1.043":["Grasa en Sangre","Cardiovascular","Grasa en sangre elevada; riesgo de hiperlipidemia y arteriosclerosis.","Grasa en sangre baja; puede indicar déficit nutricional.",["cardiovascular","grasa","circulación"]],
   "0.327_0.937":["Resistencia Vascular","Cardiovascular","Resistencia alta en arterias; mayor esfuerzo cardíaco y riesgo de hipertensión.","Resistencia baja; posible hipotensión o vasodilatación excesiva.",["cardiovascular","presión","vasos"]],
-  "1.672_1.978":["Elasticidad Vascular","Cardiovascular","Vasos sanguíneos tensos; riesgo de hipertensión.","Vasos sanguíneos rígidos; mayor riesgo de arteriosclerosis.",["cardiovascular","vasos","circulación","presión"]],
+  "1.672_1.978":["Elasticidad Vascular","Cardiovascular","Tus vasos sanguíneos están tensos y rígidos — esto eleva la presión arterial y hace que el corazón trabaje más duro de lo normal.","Vasos sanguíneos rígidos; mayor riesgo de arteriosclerosis.",["cardiovascular", "vasos", "circulación", "presión"]],
   "0.192_0.412":["Demanda de Sangre Miocardial","Cardiovascular","El corazón demanda más sangre de lo normal; señal de sobrecarga.",["corazón","cardiovascular","oxígeno"]],
-  "4.832_5.147":["Perfusión Sanguínea Cardíaca","Cardiovascular","El corazón recibe más sangre de la necesaria; posible sobrecarga.","El corazón recibe menos sangre; riesgo de isquemia cardíaca.",["corazón","cardiovascular","oxígeno","circulación"]],
+  "4.832_5.147":["Perfusión Sanguínea Cardíaca","Cardiovascular","El corazón está recibiendo más sangre de la que necesita — puede generar sobrecarga con el tiempo.","El corazón no está recibiendo suficiente sangre — esto puede causar fatiga, mareos y riesgo de isquemia.",["corazón","cardiovascular","oxígeno","circulación"]],
   "3.321_4.244":["Consumo de Oxígeno Miocardial","Cardiovascular","El corazón consume más oxígeno del necesario; señal de sobrecarga cardíaca.","El corazón consume poco oxígeno; función cardíaca reducida.",["corazón","oxígeno","cardiovascular"]],
   "1.338_1.672":["Volumen de Latido","Cardiovascular","El corazón bombea demasiada sangre por latido; posible dilatación cardíaca.","El corazón bombea poca sangre por latido; fatiga y bajo rendimiento.",["corazón","cardiovascular","circulación"]],
-  "0.669_1.544":["Impedancia Ventricular Izquierda","Cardiovascular","Resistencia elevada en el canal de salida ventricular; esfuerzo cardíaco aumentado.","Impedancia baja; posible debilidad en expulsión ventricular.",["corazón","cardiovascular","presión"]],
+  "0.669_1.544":["Impedancia Ventricular Izquierda","Cardiovascular","Tu corazón está trabajando con mayor esfuerzo para bombear la sangre — como empujar contra resistencia.r; esfuerzo cardíaco aumentado.","Impedancia baja; posible debilidad en expulsión ventricular.",["corazón","cardiovascular","presión"]],
   "1.554_1.988":["Fuerza de Bombeo Ventricular","Cardiovascular","El ventrículo trabaja en exceso; posible hipertrofia cardíaca.","Fuerza de bombeo reducida; riesgo de insuficiencia cardíaca.",["corazón","cardiovascular","músculo"]],
   "1.553_2.187":["Elasticidad de Arteria Coronaria","Cardiovascular","Arterias coronarias tensas; riesgo de cardiopatía coronaria.","Arterias coronarias rígidas; mayor riesgo de arteriosclerosis coronaria.",["corazón","arterias","cardiovascular"]],
   "11.719_18.418":["Presión de Perfusión Coronaria","Cardiovascular","Presión coronaria elevada; sobrecarga del músculo cardíaco.","Presión coronaria baja; riesgo de isquemia miocárdica.",["corazón","cardiovascular","presión"]],
   "0.708_1.942":["Elasticidad de Vaso Cerebral","Cardiovascular","Vasos cerebrales tensos; riesgo de accidente cerebrovascular.","Vasos cerebrales rígidos; riesgo de trombosis cerebral.",["cerebro","cardiovascular","circulación"]],
   "6.138_21.396":["Suministro Sanguíneo Cerebral","Cardiovascular","Exceso de flujo al cerebro; posibles cefaleas y presión intracraneal.","Flujo insuficiente al cerebro; riesgo de isquemia cerebral.",["cerebro","circulación","cardiovascular"]],
   // ── GASTROINTESTINAL ──
-  "59.847_65.234":["Secreción de Pepsina","Gastrointestinal","Exceso de pepsina; puede irritar la mucosa gástrica y causar gastritis.","Poca pepsina; digestión deficiente de proteínas.",["estómago","digestión","absorción"]],
+  "59.847_65.234":["Secreción de Pepsina","Gastrointestinal","Exceso de pepsina; puede irritar la mucosa gástrica y causar gastritis.","Tu estómago produce poca enzima digestiva — las proteínas de los alimentos no se procesan bien y puedes sentir pesadez, hinchazón o sensación de indigestión.",["estómago","digestión","absorción"]],
   "58.425_61.213":["Peristalsis Gástrica","Gastrointestinal","Movimientos gástricos muy rápidos; mala absorción y diarrea.","Movimientos gástricos lentos; digestión lenta y distensión.",["digestión","estómago","absorción"]],
   "34.367_35.642":["Absorción Gástrica","Gastrointestinal","Absorción gástrica excesiva; posible irritación de mucosa.","El estómago no absorbe bien los nutrientes; déficit nutricional.",["absorción","estómago","digestión"]],
   "133.437_140.476":["Peristalsis del Intestino Delgado","Gastrointestinal","Tránsito intestinal acelerado; mala absorción de nutrientes.","Tránsito intestinal lento; estreñimiento y acumulación de toxinas.",["intestino","digestión","absorción"]],
@@ -4388,8 +4509,8 @@ var RANGE_TABLE={
   "0.097_0.419":["Contenido de Grasa en el Hígado","Función Hepática","El hígado acumula grasa en exceso (hígado graso); riesgo de daño hepático crónico.","Grasa hepática baja; puede indicar déficit de lípidos esenciales.",["hígado","grasa","desintoxicación"]],
   // ── VESÍCULA BILIAR ──
   "126_159":["Seroglobulina (A/G)","Vesícula Biliar","Seroglobulina elevada; posible hiperactividad inmune, cirrosis o hepatitis.","Seroglobulina baja; posible insuficiencia de hígado y vesícula.",["hígado","vesícula","inmunidad"]],
-  "0.232_0.686":["Bilirrubina Total (TBIL)","Vesícula Biliar","Bilirrubina alta; posible ictericia, obstrucción biliar o daño hepático.","Bilirrubina baja; generalmente sin riesgo clínico.",["hígado","bilis","vesícula"]],
-  "0.082_0.342":["Fosfatasa Alcalina (ALP)","Vesícula Biliar","Posible obstrucción biliar, enfermedad hepática o ósea.","Niveles bajos; puede indicar hipotiroidismo o desnutrición.",["hígado","huesos","vesícula"]],
+  "0.232_0.686":["Bilirrubina Total (TBIL)","Vesícula Biliar","La bilirrubina está alta — puede causar coloración amarilla en piel/ojos (ictericia) y señala que el hígado o la vesícula no están drenando bien.","La bilirrubina está baja — generalmente no representa un problema de salud significativo.",["hígado","bilis","vesícula"]],
+  "0.082_0.342":["Fosfatasa Alcalina (ALP)","Vesícula Biliar","Esta enzima está alta — puede indicar que hay obstrucción en los conductos del hígado o de la vesícula, o inflamación hepática.","Esta enzima está baja — puede relacionarse con tiroides poco activa o carencias nutricionales.",["hígado","huesos","vesícula"]],
   "0.317_0.695":["Ácidos Biliares Totales (TBA)","Vesícula Biliar","La vesícula no drena correctamente; riesgo de cálculos y acumulación de bilis.","Producción insuficiente de bilis; digestión de grasas deficiente.",["vesícula","bilis","digestión","hígado"]],
   "0.218_0.549":["Bilirrubina Directa (DBIL)","Vesícula Biliar","Obstrucción biliar o daño hepático; bilis no fluye correctamente.","Bilirrubina directa baja; posible ictericia hemolítica.",["hígado","bilis","vesícula"]],
   // ── PÁNCREAS ──
@@ -4397,92 +4518,93 @@ var RANGE_TABLE={
   "3.21_6.854":["Polipéptido Pancreático (PP)","Función Pancreática","Función pancreática exocrina elevada; posible irritación pancreática.","Función pancreática reducida; mala digestión de grasas y proteínas.",["páncreas","digestión","enzimas"]],
   "2.412_2.974":["Glucagón","Función Pancreática","Glucagón alto; el cuerpo libera demasiada glucosa al torrente sanguíneo.","Glucagón bajo; riesgo de hipoglucemia sin respuesta adecuada.",["glucosa","páncreas","metabolismo","azúcar"]],
   // ── RENAL ──
-  "2.762_5.424":["Urobilinógeno","Función Renal","Posible daño hepático o anemia hemolítica.","Obstrucción biliar; la bilis no llega al intestino.",["riñón","hígado","bilis"]],
+  "2.762_5.424":["Urobilinógeno","Función Renal","El urobilinógeno está alto — puede indicar que el hígado está trabajando de más o que hay destrucción acelerada de glóbulos rojos.","El urobilinógeno está bajo — puede ser señal de que la bilis no está llegando al intestino correctamente.",["riñón","hígado","bilis"]],
   "1.435_1.987":["Ácido Úrico","Función Renal","Ácido úrico elevado; riesgo de gota, cálculos renales e inflamación articular.","Ácido úrico bajo; puede indicar enfermedad hepática o dieta baja en proteínas.",["riñón","articulaciones","gota","inflamación"]],
   "4.725_8.631":["Nitrógeno Ureico (BUN)","Función Renal","Los riñones no eliminan bien los desechos; posible insuficiencia renal.","BUN bajo; puede indicar baja ingesta proteica o enfermedad hepática.",["riñón","renal","proteínas"]],
-  "1.571_4.079":["Proteinuria","Función Renal","Los riñones pierden proteínas en orina; señal de daño en el filtro renal.","Sin proteínas en orina; normal.",["riñón","proteínas","renal"]],
+  "1.571_4.079":["Proteinuria","Función Renal","Tus riñones están dejando escapar proteínas por la orina — esto es una señal de que el filtro renal no está funcionando bien y necesita atención.","No hay proteínas en la orina — el filtro de los riñones está funcionando bien en este aspecto.",["riñón","proteínas","renal"]],
   // ── PULMONAR ──
   "3348_3529":["Capacidad Vital Pulmonar (VC)","Función Pulmonar","Capacidad pulmonar aumentada; puede indicar enfisema o hiperventilación.","Capacidad pulmonar reducida; dificultad para respirar profundo.",["pulmón","respiración","oxígeno"]],
-  "4301_4782":["Capacidad Pulmonar Total (TLC)","Función Pulmonar","Posible enfisema; pulmones hiperinflados.","Lesiones en tejido pulmonar; bronquitis crónica o atrofia pulmonar.",["pulmón","respiración","oxígeno"]],
+  "4301_4782":["Capacidad Pulmonar Total (TLC)","Función Pulmonar","La capacidad total de tus pulmones está elevada — puede indicar que el aire queda atrapado (enfisema) o que los pulmones están sobredistendidos.","La capacidad pulmonar total está reducida — tus pulmones no pueden llenarse de aire completamente; puede sentirse como falta de aire al hacer esfuerzo.",["pulmón","respiración","oxígeno"]],
   "1.374_1.709":["Resistencia de Vías Aéreas (RAM)","Función Pulmonar","Obstrucción de vías aéreas; asma, bronquitis o inflamación respiratoria.","Vías aéreas con poca resistencia; posible hipotensión respiratoria.",["pulmón","respiración","inflamación"]],
-  "17.903_21.012":["Oxígeno Arterial (PaCO2)","Función Pulmonar","Exceso de CO2 en sangre; el pulmón no ventila bien, respiración forzada.","Oxígeno arterial bajo; dificultad respiratoria o anemia.",["pulmón","oxígeno","respiración"]],
+  "17.903_21.012":["Oxígeno Arterial (PaCO2)","Función Pulmonar","Hay demasiado CO2 acumulado en la sangre — los pulmones no están ventilando bien; puedes sentir cansancio al respirar.iración forzada.","Oxígeno arterial bajo; dificultad respiratoria o anemia.",["pulmón","oxígeno","respiración"]],
   // ── NERVIO CEREBRAL ──
   "143.37_210.81":["Suministro Sanguíneo al Tejido Cerebral","Nervio Cerebral","Exceso de flujo sanguíneo; posibles cefaleas o presión intracraneal.","Flujo insuficiente; mareos, falta de concentración y riesgo de isquemia.",["cerebro","circulación","memoria"]],
-  "0.103_0.642":["Arterioesclerosis Cerebral","Nervio Cerebral","Arterias cerebrales endurecidas; riesgo de accidente cerebrovascular.","Arterias cerebrales en buen estado.",["cerebro","arterias","circulación"]],
+  "0.103_0.642":["Arterioesclerosis Cerebral","Nervio Cerebral","Las arterias del cerebro están endureciéndose — esto reduce el flujo de sangre al cerebro y aumenta el riesgo de accidente cerebrovascular.","No se detectan señales de endurecimiento arterial en el cerebro — buena circulación cerebral.",["cerebro", "arterias", "circulación"]],
   "0.253_0.659":["Función del Nervio Craneal","Nervio Cerebral","Actividad craneal elevada; posible ansiedad o hiperactividad nerviosa.","Deterioro de función craneal; problemas de cálculo, comprensión e identificación.",["cerebro","sistema nervioso","cognición"]],
-  "0.109_0.351":["Índice de Emoción","Nervio Cerebral","Daño emocional en células cerebrales; estrés crónico o alteración psicológica.","Emoción dentro del rango normal.",["cerebro","sistema nervioso","estrés"]],
-  "0.442_0.817":["Índice de Memoria (ZS)","Nervio Cerebral","Actividad cerebral elevada; puede indicar ansiedad o estrés crónico.","Memoria y concentración reducidas; riesgo de deterioro cognitivo.",["cerebro","memoria","concentración","sistema nervioso"]],
+  "0.109_0.351":["Índice de Emoción","Nervio Cerebral","El área emocional del cerebro está bajo estrés — puede manifestarse como ansiedad, irritabilidad, cambios de humor o dificultad para manejar el estrés.","El índice emocional está dentro del rango normal — equilibrio emocional adecuado.",["cerebro","emociones","sistema nervioso"]],
+  "0.442_0.817":["Índice de Memoria (ZS)","Nervio Cerebral","El cerebro está trabajando de más — puede ser señal de estrés crónico, ansiedad o dificultad para desconectarse.","Tu memoria y concentración están por debajo del rango — puede sentirse como olvidos frecuentes, dificultad para enfocarse o cansancio mental.",["cerebro","memoria","concentración","sistema nervioso"]],
   // ── DENSIDAD MINERAL ÓSEA ──
   "86.73_180.97":["Actividad de Osteoclastos","Densidad Mineral Ósea","Destrucción ósea acelerada; riesgo de osteoporosis.","Actividad de osteoclastos baja; remodelación ósea lenta.",["huesos","calcio","densidad ósea"]],
-  "0.209_0.751":["Pérdida de Calcio Óseo","Densidad Mineral Ósea","Alta pérdida de calcio; huesos débiles y riesgo de fractura.","Pérdida de calcio baja; huesos en buen estado.",["calcio","huesos","densidad ósea"]],
-  "0.046_0.167":["Grado de Hiperplasia Ósea","Densidad Mineral Ósea","Crecimiento óseo anormal; señal de inflamación crónica articular.","Remodelación ósea insuficiente; pérdida de densidad.",["huesos","articulaciones","inflamación","calcio"]],
-  "0.124_0.453":["Grado de Osteoporosis","Densidad Mineral Ósea","Pérdida ósea moderada a severa; consultar médico para prevenir fracturas.","Huesos en buen estado.",["huesos","calcio","densidad ósea"]],
-  "0.433_0.796":["Fosfatasa Alcalina Ósea","Índice de Crecimiento Óseo","Actividad ósea elevada; puede indicar enfermedad ósea o de Paget.","Fosfatasa alcalina ósea baja; mineralización insuficiente.",["huesos","calcio","densidad ósea"]],
+  "0.209_0.751":["Pérdida de Calcio Óseo","Densidad Mineral Ósea","Alta pérdida de calcio; huesos débiles y riesgo de fractura.","La pérdida de calcio está controlada — tus huesos están reteniendo bien los minerales necesarios para mantenerse fuertes.",["calcio","huesos","densidad ósea"]],
+  "0.046_0.167":["Grado de Hiperplasia Ósea","Densidad Mineral Ósea","Los huesos están creciendo de forma anormal — señal de inflamación crónica en las articulaciones; puede causar dolor y rigidez.ca articular.","Remodelación ósea insuficiente; pérdida de densidad.",["huesos","articulaciones","inflamación","calcio"]],
+  "0.124_0.453":["Grado de Osteoporosis","Densidad Mineral Ósea","La osteoporosis está avanzando — tus huesos están perdiendo densidad y se vuelven más frágiles; el riesgo de fracturas aumenta considerablemente.","No se detectan señales de osteoporosis en este módulo — buena densidad ósea.",["huesos", "calcio", "densidad ósea"]],
+  "0.796_0.433":["Densidad Mineral Ósea","Densidad Mineral Ósea","Tu densidad ósea está por encima del rango — puede haber acumulación mineral atípica.","Tus huesos están perdiendo densidad; esto aumenta el riesgo de fracturas y osteoporosis.",["huesos","calcio","densidad ósea","osteoporosis"]],
+  "0.433_0.796":["Fosfatasa Alcalina Ósea","Índice de Crecimiento Óseo","La actividad de formación de hueso está elevada — puede indicar reparación activa o proceso inflamatorio óseo.ósea o de Paget.","Fosfatasa alcalina ósea baja; mineralización insuficiente.",["huesos","calcio","densidad ósea"]],
   "0.525_0.817":["Osteocalcina (BGP)","Índice de Crecimiento Óseo","Osteocalcina elevada; alta tasa de remodelación ósea.",["huesos","calcio","osteoporosis"]],
   // ── HUESO REUMATOIDE ──
-  "421_490":["Calcificación Cervical","Hueso Reumatoide","Calcificación en columna cervical; puede causar dolor de cuello y mareos.","Sin calcificación cervical.",["huesos","columna","calcio","inflamación"]],
-  "4.326_7.531":["Calcificación Lumbar","Hueso Reumatoide","Calcificación en columna lumbar; dolor de espalda baja y rigidez.","Sin calcificación lumbar.",["huesos","columna","calcio","espalda"]],
-  "2.954_5.543":["Hiperplasia Ósea Reumatoide","Hueso Reumatoide","Inflamación articular severa; riesgo de desgaste y deformación ósea.","Regeneración ósea baja; riesgo de fragilidad.",["huesos","articulaciones","reumatismo","inflamación"]],
-  "2.019_4.721":["Osteoporosis Reumatoide","Hueso Reumatoide","Alta pérdida de densidad ósea; riesgo elevado de fracturas.","Densidad ósea adecuada.",["huesos","calcio","densidad ósea"]],
-  "4.023_11.627":["Coeficiente de Reumatismo","Hueso Reumatoide","Proceso inflamatorio articular activo; dolor, rigidez y desgaste articular.","Sin indicios de proceso reumatoide activo.",["articulaciones","inflamación","reumatismo"]],
+  "421_490":["Calcificación Cervical","Hueso Reumatoide","Hay calcificación en la columna cervical (cuello) — esto puede causar dolor, rigidez, y a veces mareos o entumecimiento en brazos si comprime nervios.","No hay calcificación en la columna cervical — el cuello está libre de depósitos minerales.",["huesos","columna","calcio","inflamación"]],
+  "4.326_7.531":["Calcificación Lumbar","Hueso Reumatoide","Hay calcificación en la columna lumbar (espalda baja) — puede causar dolor crónico, rigidez y limitar el movimiento; con el tiempo puede comprimir nervios.","No hay calcificación en la columna lumbar — la espalda baja está libre de depósitos minerales.",["huesos","columna","calcio","espalda"]],
+  "2.954_5.543":["Hiperplasia Ósea Reumatoide","Hueso Reumatoide","Hay un crecimiento anormal del hueso relacionado con inflamación articular crónica — puede causar deformidades, rigidez y dolor persistente.","La regeneración ósea en el contexto reumatoide está baja — los huesos pueden estar perdiendo capacidad de renovación, lo que los hace más vulnerables.",["huesos","articulaciones","inflamación","reumatismo"]],
+  "2.019_4.721":["Osteoporosis Reumatoide","Hueso Reumatoide","La osteoporosis asociada a inflamación articular está activa — la pérdida de densidad ósea en este contexto es más rápida y el riesgo de fractura es alto.","La densidad ósea en el contexto reumatoide está adecuada — los huesos están bien mineralizados a pesar de la inflamación.",["huesos","calcio","densidad ósea"]],
+  "4.023_11.627":["Coeficiente de Reumatismo","Hueso Reumatoide","Hay inflamación activa en las articulaciones — puede sentirse como rigidez matutina, hinchazón y dolor que empeora con el clima.","No hay señales de inflamación articular reumatoide activa — tus articulaciones están bien.",["articulaciones","inflamación","reumatismo"]],
   // ── GLUCOSA ──
   "2.967_3.528":["Secreción de Insulina","Glucosa","El páncreas produce demasiada insulina; riesgo de hipoglucemia reactiva.","El páncreas produce poca insulina; riesgo de diabetes.",["glucosa","insulina","páncreas","metabolismo"]],
-  "2.163_7.321":["Glucosa en Sangre","Glucosa","Nivel de azúcar elevado; precursor de diabetes tipo 2.","Azúcar baja (hipoglucemia); mareos y fatiga.",["glucosa","azúcar","diabetes","metabolismo","insulina"]],
-  "2.204_2.819":["Glucosa en Orina","Glucosa","Azúcar en orina (glucosuria); posible diabetes o daño renal.","Sin glucosa en orina; normal.",["glucosa","riñón","diabetes"]],
+  "2.163_7.321":["Glucosa en Sangre","Glucosa","Tu nivel de azúcar en sangre está alto — señal de alerta temprana de diabetes; el cuerpo no está procesando bien la glucosa.","Tu azúcar en sangre está baja (hipoglucemia) — puedes sentir mareos, temblores, hambre repentina, sudoración o dificultad para concentrarte; requiere atención inmediata.",["glucosa","azúcar","metabolismo","diabetes","insulina"]],
+  "2.204_2.819":["Glucosa en Orina","Glucosa","Hay azúcar en la orina (glucosuria) — normalmente la orina no debe tener glucosa; cuando aparece, es señal de que el nivel de azúcar en sangre está muy alto o que el riñón no filtra bien.","No hay azúcar en la orina — los riñones están filtrando bien la glucosa.",["glucosa","riñón","diabetes"]],
   // ── OLIGOELEMENTOS ──
   "1.219_3.021":["Calcio","Oligoelementos","Exceso de calcio; puede calcificar tejidos y formar cálculos renales.","Déficit de calcio; debilita huesos, dientes y aumenta riesgo de osteoporosis.",["calcio","huesos","dientes","músculos"]],
   "1.151_1.847":["Hierro","Oligoelementos","Exceso de hierro; puede dañar hígado y corazón (hemocromatosis).","Déficit de hierro; anemia, fatiga crónica y debilidad.",["hierro","sangre","anemia","energía"]],
   "1.143_1.989":["Zinc","Oligoelementos","Exceso de zinc; interfiere con absorción de cobre.","Déficit de zinc; afecta sistema inmune, cicatrización, piel y cabello.",["zinc","inmunidad","piel","cicatrización","cabello"]],
   "0.847_2.045":["Selenio","Oligoelementos","Exceso de selenio; pérdida de cabello y daño neurológico.","Déficit de selenio; sistema inmune débil y mayor estrés oxidativo.",["selenio","inmunidad","tiroides","antioxidante"]],
-  "1.195_2.134":["Fósforo","Oligoelementos","Exceso de fósforo; interfiere con absorción de calcio y debilita huesos.","Déficit de fósforo; debilidad muscular y ósea.",["fósforo","huesos","calcio","músculos"]],
-  "0.689_0.987":["Potasio","Oligoelementos","Exceso de potasio; riesgo de arritmias cardíacas.","Déficit de potasio; calambres musculares, fatiga y arritmias leves.",["potasio","corazón","músculos","electrolitos"]],
+  "1.195_2.134":["Fósforo","Oligoelementos","Exceso de fósforo; interfiere con absorción de calcio y debilita huesos.","Tu fósforo está bajo — sin suficiente fósforo los huesos y dientes se debilitan, los músculos pierden fuerza y puedes sentir fatiga y dificultad para concentrarte.",["fósforo", "huesos", "calcio", "músculos"]],
+  "0.689_0.987":["Potasio","Oligoelementos","Tu potasio está demasiado alto (hipercalemia) — puede causar latidos irregulares del corazón, debilidad muscular y en casos severos es una emergencia médica.","Déficit de potasio; calambres musculares, fatiga y arritmias leves.",["potasio", "corazón", "músculos", "electrolitos"]],
   "0.568_0.992":["Magnesio","Oligoelementos","Exceso de magnesio; puede causar diarrea o presión baja.","Déficit de magnesio; calambres, insomnio, ansiedad y presión alta.",["magnesio","músculos","sistema nervioso","huesos","estrés"]],
-  "0.474_0.749":["Cobre","Oligoelementos","Exceso de cobre; daño hepático y neurológico.","Déficit de cobre; anemia, debilidad ósea y problemas del sistema nervioso.",["cobre","hígado","sistema nervioso","sangre"]],
-  "2.326_5.531":["Cobalto","Oligoelementos","Exceso de cobalto; toxicidad cardíaca y tiroidea.","Déficit de cobalto; relacionado con déficit de vitamina B12.",["vitaminas","sangre","sistema nervioso"]],
+  "0.474_0.749":["Cobre","Oligoelementos","Tienes exceso de cobre — esto puede dañar el hígado, causar problemas neurológicos y producir síntomas similares a la intoxicación.","Déficit de cobre; anemia, debilidad ósea y problemas del sistema nervioso.",["cobre", "hígado", "sistema nervioso", "sangre"]],
+  "2.326_5.531":["Cobalto","Oligoelementos","El cobalto está elevado — en exceso puede ser tóxico para el corazón y la tiroides, y está asociado a implantes metálicos que liberan este mineral.","Déficit de cobalto; relacionado con déficit de vitamina B12.",["vitaminas", "sangre", "sistema nervioso"]],
   "0.497_0.879":["Manganeso","Oligoelementos","Exceso de manganeso; puede afectar el sistema nervioso.","Déficit de manganeso; afecta metabolismo óseo y función cerebral.",["manganeso","huesos","cerebro","metabolismo"]],
-  "1.421_5.49":["Yodo","Oligoelementos","Exceso de yodo; puede causar bocio por yodo y disfunción tiroidea.","Déficit de yodo; hipotiroidismo y bocio.",["tiroides","metabolismo","hormonas"]],
-  "2.462_5.753":["Níquel","Oligoelementos","Exceso de níquel; alergias cutáneas e irritación de mucosas.","Sin déficit clínicamente relevante.",["alergias","piel"]],
+  "1.421_5.49":["Yodo","Oligoelementos","Exceso de yodo; puede causar bocio por yodo y disfunción tiroidea.","Tu yodo está bajo — sin suficiente yodo la tiroides no puede producir bien sus hormonas, lo que causa hipotiroidismo, bocio, fatiga y aumento de peso.",["yodo","tiroides","hormonas","metabolismo"]],
+  "2.462_5.753":["Níquel","Oligoelementos","El níquel está elevado — puede causar reacciones alérgicas en piel, irritación de mucosas y en altas concentraciones afecta el sistema respiratorio.","El níquel está en nivel seguro — no representa riesgo de toxicidad en este momento.",["alergias", "piel"]],
   "1.954_4.543":["Flúor","Oligoelementos","Exceso de flúor; puede afectar huesos y dientes (fluorosis).","Déficit de flúor; mayor riesgo de caries y debilidad dental.",["dientes","huesos","flúor"]],
   "0.938_1.712":["Molibdeno","Oligoelementos","Exceso de molibdeno; puede afectar metabolismo del cobre.","Déficit de molibdeno; acumulación de sulfitos y fatiga.",["metabolismo","enzimas"]],
   "1.019_3.721":["Vanadio","Oligoelementos","Exceso de vanadio; puede ser tóxico en altas concentraciones.","Déficit de vanadio; puede afectar metabolismo de glucosa.",["glucosa","metabolismo"]],
   "1.023_7.627":["Estaño","Oligoelementos","Exceso de estaño; puede inhibir metabolismo de proteínas.","Déficit de estaño; puede frenar crecimiento y desarrollo.",["metabolismo","proteínas"]],
-  "1.425_5.872":["Silicio","Oligoelementos","Exceso de silicio; raro, puede irritar tejidos.","Déficit de silicio; afecta colágeno, piel, cabello y uñas.",["colágeno","piel","cabello","uñas","silicio"]],
+  "1.425_5.872":["Silicio","Oligoelementos","El silicio está elevado — en exceso y en forma inhalada puede causar silicosis; en el contexto de este análisis puede indicar exposición ambiental.","Déficit de silicio; afecta colágeno, piel, cabello y uñas.",["colágeno", "piel", "cabello", "uñas", "silicio"]],
   "1.142_5.862":["Estroncio","Oligoelementos","Exceso de estroncio; puede competir con el calcio en huesos.","Déficit de estroncio; puede relacionarse con menor densidad ósea.",["huesos","calcio"]],
   "1.124_3.453":["Boro","Oligoelementos","Exceso de boro; puede interferir con metabolismo hormonal.","Déficit de boro; afecta salud ósea, calcio y vitamina D.",["huesos","calcio","hormonas"]],
   // ── VITAMINAS ──
   "0.346_0.401":["Vitamina A","Vitaminas","Toxicidad por vitamina A; náuseas, visión borrosa y daño hepático.","Déficit de vitamina A; visión nocturna reducida, piel seca e inmunidad baja.",["vitaminas","visión","piel","inmunidad"]],
-  "2.124_4.192":["Vitamina B1 (Tiamina)","Vitaminas","Exceso raro; se elimina por orina.","Déficit de B1; fatiga, irritabilidad y problemas neurológicos.",["vitaminas","sistema nervioso","energía"]],
-  "1.549_2.213":["Vitamina B2 (Riboflavina)","Vitaminas","Exceso raro.","Déficit de B2; llagas en boca, piel seca y fatiga.",["vitaminas","piel","energía","metabolismo"]],
+  "2.124_4.192":["Vitamina B1 (Tiamina)","Vitaminas","La vitamina B1 está alta — normalmente el exceso se elimina por la orina sin causar daño; no suele ser problemático.","Déficit de B1; fatiga, irritabilidad y problemas neurológicos.",["vitaminas","sistema nervioso","energía"]],
+  "1.549_2.213":["Vitamina B2 (Riboflavina)","Vitaminas","La vitamina B2 está alta — el exceso es eliminado fácilmente por los riñones; raramente causa problemas.","Déficit de B2; llagas en boca, piel seca y fatiga.",["vitaminas","piel","energía","metabolismo"]],
   "14.477_21.348":["Vitamina B3 (Niacina)","Vitaminas","Exceso; puede causar enrojecimiento y problemas hepáticos en dosis altas.","Déficit de B3; fatiga, problemas digestivos y pelagra.",["vitaminas","energía","metabolismo","sistema nervioso"]],
   "0.824_1.942":["Vitamina B6","Vitaminas","Exceso de B6; puede causar daño nervioso (neuropatía).","Déficit de B6; anemia, dermatitis e irritabilidad.",["vitaminas","sistema nervioso","metabolismo","inmunidad"]],
-  "6.428_21.396":["Vitamina B12","Vitaminas","B12 elevada; puede indicar enfermedad hepática.","Déficit de B12; anemia, entumecimiento y deterioro cognitivo.",["vitaminas","sangre","sistema nervioso","energía"]],
+  "6.428_21.396":["Vitamina B12","Vitaminas","Tu vitamina B12 está alta — niveles muy elevados pueden indicar que el hígado está liberando B12 almacenada por daño celular; vale la pena investigarlo.","Déficit de B12; anemia, entumecimiento y deterioro cognitivo.",["vitaminas", "sangre", "sistema nervioso", "energía"]],
   "4.543_5.023":["Vitamina C","Vitaminas","Exceso de vitamina C; puede causar cálculos renales en altas dosis.","Déficit de vitamina C; encías débiles, piel dañada e inmunidad baja.",["vitaminas","inmunidad","colágeno","antioxidante"]],
   "5.327_7.109":["Vitamina D3","Vitaminas","Exceso de vitamina D3; hipercalcemia y daño renal.","Déficit de vitamina D3; huesos débiles, depresión e inmunidad baja.",["vitaminas","huesos","calcio","inmunidad"]],
   "4.826_6.013":["Vitamina E","Vitaminas","Exceso de vitamina E; puede aumentar el riesgo de sangrado.","Déficit de vitamina E; daño oxidativo en células y músculos.",["vitaminas","antioxidante","piel","sistema nervioso"]],
   "0.717_1.486":["Vitamina K","Vitaminas","Exceso de vitamina K; puede interferir con anticoagulantes.","Déficit de vitamina K; sangrado fácil y huesos débiles.",["vitaminas","huesos","coagulación"]],
   // ── AMINOÁCIDOS ──
-  "0.962_1.213":["Lisina","Aminoácidos","Exceso de lisina; raro, generalmente eliminado.","Déficit de lisina; fatiga, cabello débil y sistema inmune comprometido.",["aminoácidos","proteínas","inmunidad","colágeno"]],
+  "0.962_1.213":["Lisina","Aminoácidos","Tu lisina está alta — el exceso de lisina es poco común y generalmente el cuerpo lo elimina sin problema.","Déficit de lisina; fatiga, cabello débil y sistema inmune comprometido.",["aminoácidos", "proteínas", "inmunidad", "colágeno"]],
   "4.978_6.289":["Triptófano","Aminoácidos","Exceso de triptófano; puede causar somnolencia excesiva.","Déficit de triptófano; afecta producción de serotonina; ansiedad e insomnio.",["aminoácidos","sistema nervioso","sueño","estado de ánimo"]],
-  "1.928_2.491":["Fenilalanina","Aminoácidos","Exceso; puede ser neurotóxico en fenilcetonuria.","Déficit; afecta producción de dopamina y noradrenalina.",["aminoácidos","sistema nervioso","cerebro"]],
+  "1.928_2.491":["Fenilalanina","Aminoácidos","Tu fenilalanina está alta — en personas con fenilcetonuria esto es muy problemático; en general puede causar cefaleas y irritabilidad en exceso.","Déficit; afecta producción de dopamina y noradrenalina.",["aminoácidos", "sistema nervioso", "cerebro"]],
   "1.245_1.637":["Metionina","Aminoácidos","Exceso de metionina; puede elevar homocisteína, riesgo cardiovascular.","Déficit de metionina; afecta desintoxicación hepática.",["aminoácidos","hígado","desintoxicación","cardiovascular"]],
-  "1.194_1.685":["Treonina","Aminoácidos","Exceso; raro.","Déficit de treonina; afecta sistema inmune y función hepática.",["aminoácidos","inmunidad","hígado"]],
-  "4.582_5.657":["Isoleucina","Aminoácidos","Exceso; puede alterar niveles de glucosa.","Déficit de isoleucina; pérdida muscular y fatiga.",["aminoácidos","músculos","glucosa","energía"]],
-  "6.982_9.256":["Leucina","Aminoácidos","Exceso; puede alterar glucosa en sangre.","Déficit de leucina; pérdida muscular y fatiga.",["aminoácidos","músculos","energía"]],
-  "6.982_9.677":["Valina","Aminoácidos","Elevado; raro.","Déficit de valina; pérdida muscular y dificultad para concentrarse.",["aminoácidos","músculos","sistema nervioso"]],
+  "1.194_1.685":["Treonina","Aminoácidos","Tu treonina está alta — el exceso es poco frecuente y generalmente no causa daño significativo.","Déficit de treonina; afecta sistema inmune y función hepática.",["aminoácidos", "inmunidad", "hígado"]],
+  "4.582_5.657":["Isoleucina","Aminoácidos","Tu isoleucina está alta — en exceso puede alterar el metabolismo de la glucosa y sobrecargar el hígado y los riñones.","Tu isoleucina está baja — este aminoácido es esencial para la energía muscular; sin él puedes sentir fatiga, debilidad y recuperación lenta del ejercicio.",["aminoácidos", "músculos", "glucosa", "energía"]],
+  "6.982_9.256":["Leucina","Aminoácidos","Tu leucina está alta — en exceso puede elevar el azúcar en sangre y producir resistencia a la insulina con el tiempo.","Tu leucina está baja — es el aminoácido más importante para conservar la masa muscular; sin ella los músculos se atrofian más rápido.",["aminoácidos", "músculos", "energía"]],
+  "6.982_9.677":["Valina","Aminoácidos","Tu valina está alta — en exceso puede producir temblores, sensación de hormigueo y problemas neurológicos leves.","Déficit de valina; pérdida muscular y dificultad para concentrarse.",["aminoácidos", "músculos", "sistema nervioso"]],
   "5.113_6.258":["Histidina","Aminoácidos","Exceso de histidina; puede liberar demasiada histamina, alergias.","Déficit de histidina; afecta reparación de tejidos y función inmune.",["aminoácidos","alergias","inmunidad"]],
-  "1.812_2.337":["Arginina","Aminoácidos","Exceso; puede reducir presión arterial en exceso.","Déficit de arginina; cicatrización lenta y función inmune reducida.",["aminoácidos","cardiovascular","cicatrización","inmunidad"]],
+  "1.812_2.337":["Arginina","Aminoácidos","Tu arginina está alta — en dosis muy altas puede bajar demasiado la presión arterial y causar malestar digestivo.","Déficit de arginina; cicatrización lenta y función inmune reducida.",["aminoácidos", "cardiovascular", "cicatrización", "inmunidad"]],
   // ── COENZIMAS ──
   "2.074_3.309":["Nicotinamida (B3/NAD)","Coenzimas","Exceso; puede causar enrojecimiento y problemas hepáticos en dosis altas.","Déficit de B3; pelagra, fatiga, depresión y problemas digestivos.",["vitaminas","energía","metabolismo","sistema nervioso"]],
   "1.833_2.979":["Biotina (B7)","Coenzimas","Exceso de biotina; puede falsear resultados de análisis clínicos.","Déficit de biotina; cabello frágil, piel inflamada y uñas débiles.",["cabello","piel","uñas","metabolismo"]],
-  "1.116_2.101":["Ácido Pantoténico (B5)","Coenzimas","Exceso; raro, no tóxico.","Déficit de B5; fatiga, irritabilidad y problemas digestivos.",["vitaminas","metabolismo","energía","suprarrenales"]],
-  "1.449_2.246":["Ácido Fólico","Coenzimas","Exceso; puede enmascarar déficit de B12.","Déficit de ácido fólico; anemia, fatiga y problemas neurológicos.",["vitaminas","sangre","sistema nervioso"]],
-  "0.831_1.588":["Coenzima Q10","Coenzimas","CoQ10 elevada; generalmente sin riesgo.","Déficit de CoQ10; falta de energía celular. Corazón y músculos más afectados.",["energía","coenzima","corazón","músculo","fatiga"]],
-  "0.726_1.281":["Glutatión","Coenzimas","Glutatión elevado; buen estado antioxidante.","Déficit de glutatión; estrés oxidativo, toxinas acumuladas y envejecimiento acelerado.",["antioxidante","hígado","toxinas","inmunidad","piel","desintoxicación"]],
+  "1.116_2.101":["Ácido Pantoténico (B5)","Coenzimas","El ácido pantoténico está alto — es poco común y generalmente no causa problemas.","¡Te falta vitamina B5! Sin ella puedes sentir fatiga constante, irritabilidad y tu digestión puede verse afectada.",["vitaminas","metabolismo","energía","suprarrenales"]],
+  "1.449_2.246":["Ácido Fólico","Coenzimas","Tu ácido fólico está alto — el exceso puede enmascarar un déficit de vitamina B12, lo que puede llevar a daño neurológico sin síntomas obvios.","Déficit de ácido fólico; anemia, fatiga y problemas neurológicos.",["vitaminas", "sangre", "sistema nervioso"]],
+  "0.831_1.588":["Coenzima Q10","Coenzimas","Tu Coenzima Q10 está alta — generalmente esto es favorable y sin riesgo conocido.","¡Tu Coenzima Q10 está baja! Es el combustible de cada célula — sin ella el corazón, músculos y cerebro trabajan con menos energía.celular. Corazón y músculos más afectados.",["energía","coenzima","corazón","músculo","fatiga"]],
+  "0.726_1.281":["Glutatión","Coenzimas","Tu glutatión está alto — esto es señal de que tu sistema antioxidante está muy activo, generalmente un indicador positivo de defensa celular.","Déficit de glutatión; estrés oxidativo, toxinas acumuladas y envejecimiento acelerado.",["antioxidante", "hígado", "toxinas", "inmunidad", "piel", "desintoxicación"]],
   // ── ÁCIDOS GRASOS ESENCIALES ──
   "0.642_0.985":["Ácido Linoleico (Omega-6)","Ácidos Grasos","Exceso de omega-6; puede favorecer inflamación crónica.","Déficit de omega-6; piel seca, inflamación y problemas hormonales.",["ácidos grasos","omega","piel","inflamación"]],
   "0.814_1.202":["Ácido α-Linolénico (Omega-3)","Ácidos Grasos","Exceso de omega-3; puede reducir coagulación en exceso.","Déficit de omega-3; inflamación, problemas cardiovasculares y cerebrales.",["ácidos grasos","omega","cardiovascular","cerebro","inflamación"]],
   "0.921_1.334":["Ácido γ-Linolénico (GLA)","Ácidos Grasos","Exceso; puede causar inflamación en dosis muy altas.","Déficit de GLA; piel seca, síndrome premenstrual y problemas articulares.",["ácidos grasos","piel","inflamación","hormonas"]],
-  "0.661_0.808":["Ácido Araquidónico","Ácidos Grasos","Exceso; favorece procesos inflamatorios.","Déficit; afecta función cerebral y respuesta inmune.",["ácidos grasos","inflamación","cerebro"]],
+  "0.661_0.808":["Ácido Araquidónico","Ácidos Grasos","Tu ácido araquidónico está alto — en exceso promueve procesos inflamatorios en el cuerpo; asociado a dolor articular, enfermedades cardiovasculares e inflamación crónica.","Déficit; afecta función cerebral y respuesta inmune.",["ácidos grasos", "inflamación", "cerebro"]],
   // ── SISTEMA ENDOCRINO ──
   // NOTA: 2.954_5.543 ya existe para Hiperplasia Ósea Reumatoide — la Glándula Tiroides tiene MISMO rango
   // Se resuelve en PARAM_TABLE por nombre; en RANGE_TABLE priorizamos el óseo (más clínico)
@@ -4504,119 +4626,111 @@ var RANGE_TABLE={
   "4.111_18.741":["Inmunidad de Mucosas","Sistema Inmunológico","Inflamación de mucosas; posible alergia o infección activa.","Mucosas con baja defensa; vulnerabilidad a infecciones.",["inmunidad","mucosas","inflamación"]],
   // ── TIROIDES ──
   "0.103_0.316":["Tiroxina Libre (FT4)","Tiroides","Hipertiroidismo; taquicardia, pérdida de peso y ansiedad.","Hipotiroidismo; metabolismo lento, fatiga y aumento de peso.",["tiroides","metabolismo","hormonas","energía"]],
-  "0.114_0.202":["Tiroglobulina","Tiroides","Puede indicar cáncer o enfermedad tiroidea activa.","Tiroglobulina baja; generalmente normal.",["tiroides","hormonas"]],
-  "0.421_0.734":["Anticuerpos Antitiroglobulina","Tiroides","Posible enfermedad autoinmune tiroidea (Hashimoto).","Sin anticuerpos; tiroides sin proceso autoinmune.",["tiroides","inmunidad","autoinmune"]],
-  "0.161_0.308":["T3 (Triyodotironina)","Tiroides","T3 alta; hipertiroidismo o conversión excesiva de T4.","T3 baja; hipotiroidismo; metabolismo lento.",["tiroides","metabolismo","hormonas","energía"]],
+  "0.114_0.202":["Tiroglobulina","Tiroides","Puede indicar cáncer o enfermedad tiroidea activa.","La tiroglobulina está baja — esto puede ser normal después de tratamiento de tiroides o en ausencia de enfermedad tiroidea activa.",["tiroides","hormonas"]],
+  "0.421_0.734":["Anticuerpos Antitiroglobulina","Tiroides","Posible enfermedad autoinmune tiroidea (Hashimoto).","No se detectan anticuerpos contra la tiroides — la glándula tiroides no está siendo atacada por el sistema inmune; buen estado inmunológico tiroideo.",["tiroides","inmunidad","autoinmune"]],
+  "0.161_0.308":["T3 (Triyodotironina)","Tiroides","T3 alta; hipertiroidismo o conversión excesiva de T4.","Tu T3 está baja — la hormona activa de la tiroides no está en suficiente cantidad; puedes sentir frío, cansancio, aumento de peso y metabolismo lento.",["tiroides","metabolismo","hormonas","energía"]],
   // ── TOXINAS ──
-  "0.209_0.751":["Bebidas Carbonatadas (Toxinas)","Toxinas","Alto impacto de bebidas carbonatadas; acidifica el organismo y desmineraliza huesos.","Bajo impacto; dentro del rango seguro.",["toxinas","huesos","acidez","ph"]],
   "0.046_0.167b":["Radiación Electromagnética","Toxinas","Exposición elevada a radiación; puede afectar sistema nervioso y causar fatiga.","Exposición baja; dentro del rango seguro.",["toxinas","sistema nervioso","fatiga"]],
   "0.124_0.453c":["Radicales Libres","Toxinas","Exceso de radicales libres; envejecimiento acelerado y daño celular oxidativo.","Pocos radicales libres; buen estado antioxidante.",["antioxidante","toxinas","envejecimiento","piel"]],
-  "0.013_0.313":["Residuos de Pesticidas","Toxinas","Pesticidas acumulados; sobrecargan hígado, riñones y sistema nervioso.","Dentro del rango seguro.",["toxinas","hígado","riñón","desintoxicación"]],
+  "0.013_0.313":["Residuos de Pesticidas","Toxinas","Se detectaron pesticidas acumulados — con el tiempo sobrecargan el hígado, los riñones y afectan el sistema nervioso..","No se detectaron pesticidas acumulados en tu organismo — buen nivel de desintoxicación.",["toxinas","hígado","riñón","sistema nervioso"]],
   // ── METALES PESADOS ──
-  "0.052_0.643":["Plomo (Pb)","Metales Pesados","Plomo elevado en sangre; daña el sistema nervioso, riñones y produce anemia.","Dentro del rango seguro.",["metales pesados","riñón","sistema nervioso","toxinas","desintoxicación"]],
-  "0.013_0.336":["Mercurio (Hg)","Metales Pesados","Mercurio elevado; neurotóxico, daña riñones y sistema inmune.","Mercurio dentro del rango seguro.",["metales pesados","sistema nervioso","riñón","toxinas"]],
-  "0.527_1.523":["Cadmio (Cd)","Metales Pesados","Cadmio elevado; daña riñones, huesos y pulmones.","Cadmio dentro del rango seguro.",["metales pesados","riñón","huesos","toxinas"]],
-  "0.176_1.183":["Cromo (Cr)","Metales Pesados","Cromo hexavalente elevado; tóxico y cancerígeno.","Cromo dentro del rango seguro.",["metales pesados","toxinas","riñón"]],
-  "0.153_0.621":["Arsénico (As)","Metales Pesados","Arsénico elevado; tóxico para piel, sistema nervioso e hígado.","Arsénico dentro del rango seguro.",["metales pesados","piel","sistema nervioso","hígado"]],
-  "0.162_0.412":["Antimonio (Sb)","Metales Pesados","Antimonio elevado; tóxico para corazón e hígado.","Antimonio dentro del rango seguro.",["metales pesados","corazón","hígado","toxinas"]],
-  "0.182_0.542":["Talio (Tl)","Metales Pesados","Talio elevado; muy tóxico para sistema nervioso y cabello.","Talio dentro del rango seguro.",["metales pesados","sistema nervioso","cabello","toxinas"]],
+  "0.052_0.643":["Plomo (Pb)","Metales Pesados","El plomo en tu cuerpo está por encima del límite seguro — puede dañar el sistema nervioso, riñones y reducir los glóbulos rojos.ia.","Tu nivel de plomo está dentro del rango seguro — no hay acumulación preocupante de este metal en tu organismo.",["metales pesados","sistema nervioso","riñón","toxinas"]],
+  "0.013_0.336":["Mercurio (Hg)","Metales Pesados","Tu mercurio está elevado — es un metal muy tóxico para el sistema nervioso; puede causar problemas de memoria, temblores, irritabilidad y daño renal crónico.","Tu mercurio está en un nivel seguro — no hay acumulación preocupante de mercurio en tu cuerpo.",["metales pesados","sistema nervioso","riñón","toxinas"]],
+  "0.527_1.523":["Cadmio (Cd)","Metales Pesados","Tu cadmio está elevado — este metal se acumula principalmente en riñones y huesos; daña el filtro renal lentamente y debilita la densidad ósea con el tiempo.","Tu cadmio está en un nivel seguro — no hay acumulación preocupante de este metal.",["metales pesados","riñón","huesos","hígado"]],
+  "0.176_1.183":["Cromo (Cr)","Metales Pesados","Tu cromo está elevado — en su forma hexavalente es tóxico y cancerígeno; en exceso daña riñones, hígado y sistema respiratorio.","Tu cromo está en un nivel seguro — no hay acumulación preocupante de este metal.",["metales pesados","toxinas","riñón"]],
+  "0.153_0.621":["Arsénico (As)","Metales Pesados","Tu arsénico está elevado — este metal es muy tóxico; causa daño neurológico, hepático, renal y aumenta el riesgo de cáncer con exposición prolongada.","Tu arsénico está en un nivel seguro — no hay acumulación preocupante de arsénico.",["metales pesados","piel","sistema nervioso","hígado"]],
+  "0.162_0.412":["Antimonio (Sb)","Metales Pesados","Tu antimonio está elevado — puede ser tóxico para el corazón y el hígado; la exposición crónica causa fatiga, náuseas y problemas cardíacos.","Tu antimonio está en un nivel seguro — no hay acumulación preocupante de este metal.",["metales pesados","corazón","hígado","toxinas"]],
+  "0.182_0.542":["Talio (Tl)","Metales Pesados","Tu talio está elevado — es uno de los metales más tóxicos; afecta gravemente el sistema nervioso, causa caída del cabello y daño renal y hepático.","Tu talio está en un nivel seguro — no hay acumulación preocupante de este metal.",["metales pesados","sistema nervioso","cabello","toxinas"]],
   "0.192_0.412b":["Aluminio (Al)","Metales Pesados","Aluminio elevado; puede afectar el sistema nervioso y contribuir a demencia.","Aluminio dentro del rango seguro.",["metales pesados","sistema nervioso","cerebro","toxinas"]],
   // ── CONDICIÓN FÍSICA ──
   "59.786_65.424":["Capacidad de Respuesta","Condición Física","Respuesta física elevada; posible estado de alerta excesiva o estrés.","Capacidad de respuesta reducida; posible fatiga adrenal.",["energía","suprarrenales","fatiga"]],
   "58.715_63.213":["Capacidad Mental","Condición Física","Actividad mental elevada; ansiedad o estrés crónico.","Capacidad mental reducida; fatiga mental y dificultad de concentración.",["cerebro","sistema nervioso","estrés","concentración"]],
-  "33.967_37.642":["Hidratación Corporal","Condición Física","Deshidratación severa; riesgo para riñones, piel y función celular.","Hidratación adecuada.",["hidratación","riñón","piel","metabolismo"]],
-  "133.642_141.476":["Hipoxia Celular","Condición Física","Hipoxia significativa; oxigenación celular insuficiente, fatiga severa.","Oxigenación celular adecuada.",["oxígeno","pulmón","corazón","energía"]],
-  "3.156_3.694":["pH Sanguíneo","Condición Física","pH alcalino; puede causar calambres y mareos.","pH ácido (acidosis); el cuerpo trabaja con menos oxígeno y más inflamación.",["ph","acidez","metabolismo","riñón"]],
+  "33.967_37.642":["Hidratación Corporal","Condición Física","Tu nivel de agua corporal está alto — puede indicar retención de líquidos, que el riñón no está eliminando bien el exceso de agua o algún desequilibrio electrolítico.","Estás deshidratado/a — tu cuerpo no tiene suficiente agua; esto afecta el funcionamiento de todos los órganos, la piel, la energía y la concentración.",["hidratación","riñón","metabolismo","piel"]],
+  "133.642_141.476":["Hipoxia Celular","Condición Física","Hay señales de hipoxia celular — tus células no están recibiendo suficiente oxígeno; puedes sentir fatiga constante, falta de aire y menor rendimiento físico y mental.","La oxigenación celular está bien — tus células están recibiendo el oxígeno que necesitan.",["oxígeno","pulmón","corazón","energía"]],
+  "3.156_3.694":["pH Sanguíneo","Condición Física","Tu pH está demasiado alcalino — puede causar calambres, mareos y hormigueo; el cuerpo necesita reequilibrarse.","Tu pH está ácido (acidosis) — el cuerpo se inflama más fácilmente, hay menos oxígeno disponible y la recuperación es más lenta.",["ph","acidez","metabolismo","riñón"]],
   // ── ALERGIAS ──
-  "0.431_1.329":["Alergia a Fármacos","Alergias","Alta sensibilidad a medicamentos; riesgo de reacciones adversas.","Sin sensibilidad significativa a fármacos.",["alergias","inmunidad"]],
-  "0.432_1.246":["Alergia al Alcohol","Alergias","Alta sensibilidad al alcohol; reacciones cutáneas y digestivas.","Sin sensibilidad significativa al alcohol.",["alergias","hígado","piel"]],
-  "0.143_1.989":["Alergia al Polen","Alergias","Alta sensibilidad al polen; rinitis alérgica y asma estacional.","Sin sensibilidad significativa al polen.",["alergias","respiración","ojos","inmunidad"]],
-  "0.847_1.045":["Alergia a Inyecciones","Alergias","Alta sensibilidad a inyecciones; riesgo de reacciones locales o sistémicas.","Sin sensibilidad significativa.",["alergias","inmunidad"]],
-  "0.842_1.643":["Alergia a Productos Químicos","Alergias","Alta sensibilidad a químicos; riesgo de dermatitis, asma y reacciones severas.","Sin sensibilidad significativa a químicos.",["alergias","piel","respiración"]],
-  "0.346_1.401":["Alergia a la Pintura","Alergias","Alta sensibilidad a pinturas y disolventes; riesgo respiratorio y cutáneo.","Sin sensibilidad significativa.",["alergias","respiración","piel"]],
-  "0.543_1.023":["Alergia al Polvo","Alergias","Alta sensibilidad al polvo; rinoalergia, asma y ojos irritados.","Sin sensibilidad significativa al polvo.",["alergias","respiración","ojos"]],
-  "0.826_1.013":["Alergia al Humo","Alergias","Alta sensibilidad al humo; irritación respiratoria y de mucosas.","Sin sensibilidad significativa al humo.",["alergias","pulmón","respiración"]],
-  "0.717_1.486":["Alergia a Tintes de Cabello","Alergias","Alta sensibilidad a tintes; riesgo de reacciones cutáneas severas (dermatitis).","Sin sensibilidad significativa a tintes.",["alergias","piel","cabello"]],
-  "0.124_1.192":["Alergia a Piel Animal","Alergias","Sensibilidad a pelo y caspa animal; rinitis y asma alérgica.","Sin sensibilidad significativa.",["alergias","respiración","piel"]],
-  "0.549_1.213":["Alergia a Metales (Joyería)","Alergias","Sensibilidad a metales; dermatitis de contacto con joyería.","Sin sensibilidad significativa.",["alergias","piel"]],
-  "0.449_1.246":["Alergia a Mariscos","Alergias","Alta sensibilidad a mariscos; riesgo de reacciones alérgicas digestivas y cutáneas.","Sin sensibilidad significativa a mariscos.",["alergias","digestión","piel"]],
-  "0.477_1.348":["Alergia a la Leche","Alergias","Alta sensibilidad a lácteos; intolerancias digestivas y reacciones alérgicas.","Sin sensibilidad significativa a la leche.",["alergias","digestión","intestino"]],
+  "0.431_1.329":["Alergia a Fármacos","Alergias","Alta sensibilidad a medicamentos; riesgo de reacciones adversas.","No se detectó sensibilidad a medicamentos en este análisis — puedes tolerar bien los fármacos comunes.",["alergias","inmunidad"]],
+  "0.432_1.246":["Alergia al Alcohol","Alergias","Alta sensibilidad al alcohol; reacciones cutáneas y digestivas.","No se detectó sensibilidad al alcohol en este análisis — sin reacción alérgica conocida al etanol.",["alergias","hígado","piel"]],
+  "0.143_1.989":["Alergia al Polen","Alergias","Alta sensibilidad al polen; rinitis alérgica y asma estacional.","No se detectó sensibilidad al polen en este análisis — sin alergia activa a partículas de plantas.",["alergias","respiración","ojos","inmunidad"]],
+  "0.847_1.045":["Alergia a Inyecciones","Alergias","Alta sensibilidad a inyecciones detectada — hay riesgo de reacciones locales o sistémicas al recibir medicamentos inyectados; se recomienda prueba previa.","No se detectó sensibilidad a inyecciones en este análisis.",["alergias","inmunidad"]],
+  "0.842_1.643":["Alergia a Productos Químicos","Alergias","Alta sensibilidad a químicos; riesgo de dermatitis, asma y reacciones severas.","No se detectó sensibilidad a productos químicos en este análisis — sin reacción alérgica conocida a químicos comunes.",["alergias","piel","respiración"]],
+  "0.346_1.401":["Alergia a la Pintura","Alergias","Alta sensibilidad a pinturas y solventes — la exposición puede causar irritación respiratoria, mareos y reacciones cutáneas; se recomienda usar mascarilla al pintar.","No se detectó sensibilidad a pinturas en este análisis.",["alergias","respiración","piel"]],
+  "0.543_1.023":["Alergia al Polvo","Alergias","Alta sensibilidad al polvo; rinoalergia, asma y ojos irritados.","No se detectó sensibilidad al polvo en este análisis — sin alergia activa a ácaros o partículas de polvo.",["alergias","respiración","ojos"]],
+  "0.826_1.013":["Alergia al Humo","Alergias","Alta sensibilidad al humo — la exposición puede causar tos, irritación ocular y bronquial; evitar ambientes con humo de cigarro o leña.","No se detectó sensibilidad al humo en este análisis.",["alergias","pulmón","respiración"]],
+  "0.124_1.192":["Alergia a Piel Animal","Alergias","Alta sensibilidad a pelo y caspa de animales — puede causar rinitis, estornudos, picazón en ojos y en casos severos asma alérgica.","No se detectó sensibilidad a pelo o caspa de animales en este análisis.",["alergias","respiración","inmunidad"]],
+  "0.549_1.213":["Alergia a Metales (Joyería)","Alergias","Sensibilidad a metales en joyería (níquel, cromo) — puede causar dermatitis de contacto con enrojecimiento, picazón y ampollas donde toca el metal.","No se detectó sensibilidad a metales de joyería en este análisis.",["alergias","piel"]],
+  "0.449_1.246":["Alergia a Mariscos","Alergias","Alta sensibilidad a mariscos; riesgo de reacciones alérgicas digestivas y cutáneas.","No se detectó sensibilidad a mariscos en este análisis — sin alergia conocida a mariscos y crustáceos.",["alergias","digestión","piel"]],
+  "0.477_1.348":["Alergia a la Leche","Alergias","Alta sensibilidad a lácteos; intolerancias digestivas y reacciones alérgicas.","No se detectó sensibilidad a lácteos en este análisis — sin alergia conocida a proteínas de la leche.",["alergias","digestión","intestino"]],
   // ── OBESIDAD ──
-  "1.992_3.713":["Metabolismo Lipídico","Obesidad","Metabolismo de grasas acelerado en exceso.","El cuerpo no procesa bien las grasas; favorece sobrepeso y acumulación.",["obesidad","metabolismo","grasa","triglicéridos"]],
+  "1.992_3.713":["Metabolismo Lipídico","Obesidad","El metabolismo de grasas está acelerado en exceso — el cuerpo está procesando lípidos de forma descontrolada, lo que puede derivar en acumulación de grasa en órganos y sangre.","El cuerpo no procesa bien las grasas; favorece sobrepeso y acumulación.",["obesidad","metabolismo","grasa","hígado"]],
   "2.791_4.202":["Tejido Adiposo Marrón","Obesidad","Exceso de grasa activa; altera el metabolismo energético.","Poca grasa parda activa; metabolismo lento, acumulación de grasa.",["metabolismo","grasa","obesidad","energía"]],
   "0.097_0.215":["Hiperinsulinemia","Obesidad","Nivel de insulina elevado; resistencia a la insulina y riesgo de diabetes tipo 2.","Insulina baja en relación al peso; posible respuesta metabólica insuficiente.",["insulina","glucosa","obesidad","páncreas"]],
-  "0.332_0.626":["Núcleo Hipotalámico","Obesidad","Desequilibrio en centro de saciedad; tendencia a comer en exceso.","Centro de saciedad con baja actividad.",["cerebro","hormonas","obesidad"]],
-  "1.341_1.991":["Triglicéridos (Obesidad)","Obesidad","Triglicéridos muy altos; sobrecarga el corazón e hígado, favorece obesidad.","Triglicéridos bajos; puede indicar malnutrición.",["triglicéridos","corazón","hígado","obesidad"]],
+  "0.332_0.626":["Núcleo Hipotalámico","Obesidad","El centro de saciedad del cerebro está alterado — esto provoca que sea más difícil sentirse satisfecho después de comer, favoreciendo el consumo excesivo de alimentos.","El centro de saciedad del cerebro tiene baja actividad — puede provocar pérdida de apetito o dificultad para sentir hambre cuando el cuerpo la necesita.",["cerebro","apetito","obesidad","hormonas"]],
+  "1.341_1.991":["Triglicéridos (Obesidad)","Obesidad","Triglicéridos muy altos; sobrecarga el corazón e hígado, favorece obesidad.","Tus triglicéridos están bajos en este módulo — aunque suena positivo, niveles muy bajos pueden indicar malnutrición o problemas de absorción de grasas.",["triglicéridos","corazón","hígado","obesidad"]],
   // ── PIEL ──
-  "0.124_3.453":["Radicales Libres Cutáneos","Piel","Alto estrés oxidativo en la piel; envejecimiento acelerado y daño celular.","Buen estado antioxidante cutáneo.",["piel","antioxidante","envejecimiento"]],
-  "4.471_6.079":["Colágeno Cutáneo","Piel","Nivel elevado; generalmente favorable.","Déficit de colágeno en piel; piel sin firmeza, arrugas prematuras.",["colágeno","piel","arrugas","flacidez"]],
-  "14.477_21.348":["Grasa Cutánea","Piel","Exceso de grasa en piel; piel brillosa, poros dilatados y acné.","Poca grasa cutánea; piel seca e irritable.",["piel","grasa","poros"]],
+  "0.124_3.453":["Radicales Libres Cutáneos","Piel","Hay un exceso de radicales libres en tu piel — esto acelera el envejecimiento cutáneo, produce manchas, opacidad y daño celular que debilita la barrera de la piel.","Tus radicales libres cutáneos están en buen nivel — tu piel tiene buena capacidad antioxidante y de protección celular.",["piel","antioxidante","envejecimiento"]],
+  "4.471_6.079":["Colágeno Cutáneo","Piel","Tu colágeno cutáneo está elevado — buena señal para la firmeza de la piel.","Tu colágeno cutáneo está bajo — la piel pierde firmeza, aparecen arrugas y el envejecimiento se acelera. firmeza, arrugas prematuras.",["colágeno","piel","arrugas","flacidez"]],
   "1.035_3.23":["Inmunidad Cutánea","Piel","Sistema inmune cutáneo hiperactivo; posible dermatitis o psoriasis.","Inmunidad cutánea baja; mayor susceptibilidad a infecciones de piel.",["piel","inmunidad","inflamación"]],
   "0.218_0.953":["Humectación Cutánea","Piel","Exceso de humedad en piel; puede favorecer hongos cutáneos.","Piel seca; falta de lípidos e hidratación en la capa cutánea.",["piel","hidratación","colágeno"]],
-  "2.214_4.158":["Pérdida de Humectación Cutánea","Piel","La piel pierde agua rápidamente; piel seca y envejecimiento acelerado.","Hidratación cutánea adecuada.",["piel","colágeno","hidratación","envejecimiento"]],
-  "0.824_1.942":["Dilatación Cutánea (Poros)","Piel","Poros dilatados y exceso de producción de sebo.","Poros finos; piel dentro de rango.",["piel","poros","colágeno"]],
-  "2.717_3.512":["Elasticidad Cutánea","Piel","Piel con exceso de tono; puede indicar deshidratación.","Piel flácida; pérdida de elasticidad y colágeno.",["piel","colágeno","elastina","firmeza"]],
-  "0.346_0.501":["Melanina Cutánea","Piel","Hiperpigmentación; manchas oscuras y exceso de melanina.","Hipopigmentación; piel más clara de lo normal.",["piel","manchas","melanina","sol"]],
-  "0.842_1.858":["Índice de Endurecimiento Cutáneo","Piel","La piel se endurece y pierde elasticidad; envejecimiento acelerado.","Elasticidad cutánea adecuada.",["piel","colágeno","elastina"]],
+  "2.214_4.158":["Pérdida de Humectación Cutánea","Piel","La piel pierde agua rápidamente; piel seca y envejecimiento acelerado.","Tu piel retiene bien la humedad — la barrera cutánea está en buen estado y no pierde agua en exceso.",["piel","colágeno","hidratación","envejecimiento"]],
+  "2.717_3.512":["Elasticidad Cutánea","Piel","Piel con exceso de tono; puede indicar deshidratación.","La elasticidad de tu piel está reducida — ha perdido su capacidad de recuperación; puedes notar flacidez, arrugas más marcadas y piel que no vuelve a su posición fácilmente.",["piel","colágeno","elastina","firmeza"]],
+  "0.346_0.501":["Melanina Cutánea","Piel","Hiperpigmentación; manchas oscuras y exceso de melanina.","Tu melanina está baja — la piel tiene poca pigmentación; puedes notar manchas más claras o piel más pálida de lo normal en algunas zonas.",["piel","manchas","melanina","sol"]],
+  "0.842_1.858":["Índice de Endurecimiento Cutáneo","Piel","La piel se endurece y pierde elasticidad; envejecimiento acelerado.","La elasticidad cutánea está bien — tu piel mantiene buena flexibilidad y tono natural.",["piel","colágeno","elastina","envejecimiento"]],
   // ── OJO ──
-  "0.51_3.109":["Bolsas en los Ojos","Ojo","Bolsas pronunciadas; acumulación de grasa orbital y retención de líquidos.","Sin bolsas en los ojos.",["piel","circulación","linfático"]],
-  "2.031_3.107":["Arrugas de Colágeno (Ojos)","Ojo","Degradación acelerada de colágeno; arrugas periorbitales pronunciadas.","Colágeno dérmico en buen estado.",["piel","colágeno","arrugas","envejecimiento"]],
-  "0.831_3.188":["Círculos Oscuros (Ojeras)","Ojo","Ojeras marcadas; mala circulación, toxinas o falta de sueño.","Sin indicios de ojeras.",["piel","circulación","sueño","toxinas"]],
-  "1.116_4.101":["Obstrucción Linfática (Ojos)","Ojo","Sistema linfático ocular obstruido; hinchazón y toxinas acumuladas.","Sistema linfático sin obstrucción.",["linfático","toxinas","piel","inflamación"]],
-  "0.233_0.559":["Flacidez (Párpados)","Ojo","Pérdida significativa de firmeza en párpados; colágeno y elastina disminuidos.","Piel firme.",["piel","colágeno","elastina","firmeza"]],
-  "0.332_0.726":["Edema (Ojos)","Ojo","Retención de líquidos en área ocular; riñones o sistema linfático comprometidos.","Sin edema; hidratación normal.",["piel","riñón","linfático","circulación"]],
+  "0.51_3.109":["Bolsas en los Ojos","Ojo","Las bolsas en los ojos son pronunciadas — hay acumulación de grasa o líquido bajo los ojos; puede deberse a retención de líquidos, riñones cargados, falta de sueño o envejecimiento.","No se detectan bolsas en los ojos — el área periocular está bien definida y sin acumulación de líquido.",["ojo","visión","riñón","fatiga"]],
+  "2.031_3.107":["Arrugas de Colágeno (Ojos)","Ojo","El colágeno alrededor de los ojos está degradándose activamente — las arrugas periorbitales son más profundas y la piel pierde firmeza en esta área.","El colágeno alrededor de los ojos está en buen estado — piel periocular firme y sin pérdida importante de colágeno.",["ojo","colágeno","envejecimiento","visión"]],
+  "0.831_3.188":["Círculos Oscuros (Ojeras)","Ojo","Las ojeras están marcadas — hay mala circulación en el área periocular, acumulación de toxinas o falta de sueño reparador; también puede indicar carga hepática.","No se detectan ojeras significativas — buena circulación en el área periocular.",["ojo","circulación","fatiga","hígado"]],
+  "1.116_4.101":["Obstrucción Linfática (Ojos)","Ojo","Hay obstrucción en el sistema linfático alrededor de los ojos — esto provoca hinchazón, acumulación de toxinas y puede contribuir a la aparición de bolsas y ojeras.","El drenaje linfático ocular está bien — sin obstrucción en esta área.",["ojo","linfático","inflamación","visión"]],
+  "0.233_0.559":["Flacidez (Párpados)","Ojo","Hay pérdida de firmeza en los párpados — el colágeno y la elastina de esta zona están disminuidos; los párpados se ven caídos o pesados.","Los párpados tienen buen tono — sin pérdida de firmeza significativa.",["ojo","colágeno","envejecimiento","músculos"]],
+  "0.332_0.726":["Edema (Ojos)","Ojo","Hay retención de líquidos en el área ocular — puede deberse a riñones cargados, alergias, mala circulación linfática o exceso de sal en la dieta.","Sin retención de líquidos en el área ocular — hidratación bien regulada en esta zona.",["ojo","retención","inflamación","riñón"]],
   "0.118_0.892":["Actividad Celular del Ojo","Ojo","Actividad celular ocular elevada; posible estrés oxidativo ocular.","Actividad celular ocular baja; riesgo de degeneración.",["ojo","visión","oxidativo"]],
-  "2.017_5.157":["Fatiga Visual","Ojo","Los ojos están bajo mucho estrés; riesgo de deterioro de la visión sin atención.","Fatiga ocular dentro del rango normal.",["ojo","visión","fatiga","pantallas"]],
+  "2.017_5.157":["Fatiga Visual","Ojo","Los ojos están bajo mucho estrés; riesgo de deterioro de la visión sin atención.","Tus ojos muestran buena recuperación visual — sin señales de estrés ocular acumulado.",["ojo", "visión", "fatiga", "pantallas"]],
   // ── COLÁGENO ──
-  "6.352_8.325":["Colágeno — Ojos","Colágeno","Nivel elevado; generalmente favorable.","Déficit de colágeno ocular; ojos secos, cataratas, problemas de córnea.",["colágeno","ojo","visión"]],
-  "7.245_8.562":["Colágeno — Dientes","Colágeno","Nivel elevado; generalmente favorable.","Déficit de colágeno dental; encías débiles y desprendimiento de dientes.",["colágeno","dientes","encías"]],
-  "4.533_6.179":["Colágeno — Cabello y Piel","Colágeno","Nivel elevado; generalmente favorable.","Déficit de colágeno en piel y cabello; piel sin brillo y cabello frágil.",["colágeno","piel","cabello","envejecimiento"]],
-  "6.178_8.651":["Colágeno — Sistema Endocrino","Colágeno","Nivel elevado; generalmente favorable.","Déficit de colágeno en sistema endocrino; desequilibrio hormonal.",["colágeno","hormonas","metabolismo"]],
-  "3.586_4.337":["Colágeno — Sistema Circulatorio","Colágeno","Nivel elevado; favorable.","Déficit de colágeno en vasos sanguíneos; venas várices y presión inestable.",["colágeno","cardiovascular","circulación"]],
-  "3.492_4.723":["Colágeno — Sistema Digestivo","Colágeno","Nivel elevado; favorable.","Déficit de colágeno digestivo; gases, mala absorción y distensión abdominal.",["colágeno","digestión","intestino"]],
-  "3.376_4.582":["Colágeno — Sistema Inmunológico","Colágeno","Nivel elevado; favorable.","Déficit de colágeno inmune; mayor susceptibilidad a infecciones y anemia.",["colágeno","inmunidad","defensas"]],
-  "6.458_8.133":["Colágeno — Sistema Motor","Colágeno","Nivel elevado; favorable.","Déficit de colágeno en articulaciones; dolor, rigidez y pérdida de flexibilidad.",["colágeno","articulaciones","músculo","huesos"]],
-  "6.552_8.268":["Colágeno — Tejido Muscular","Colágeno","Nivel elevado; favorable.","Déficit de colágeno muscular; pérdida de masa y tono muscular.",["colágeno","músculo","fuerza","proteínas"]],
-  "6.338_8.368":["Colágeno — Metabolismo de Grasas","Colágeno","Metabolismo graso acelerado.","Déficit en soporte metabólico del colágeno; favorece acumulación de grasa.",["colágeno","metabolismo","grasa","obesidad"]],
-  "6.187_8.466":["Colágeno — Desintoxicación","Colágeno","Nivel elevado; favorable.","Déficit de colágeno en vías de detox; acumulación de toxinas y piel amarillenta.",["colágeno","hígado","toxinas","desintoxicación"]],
-  "3.778_4.985":["Colágeno — Sistema Reproductivo","Colágeno","Nivel elevado; favorable.","Déficit de colágeno reproductivo; incontinencia, atrofia y problemas de fertilidad.",["colágeno","ginecología","hormonas"]],
-  "3.357_4.239":["Colágeno — Sistema Nervioso","Colágeno","Nivel elevado; favorable.","Déficit de colágeno nervioso; reducción de función nerviosa y reflejos.",["colágeno","sistema nervioso","cerebro"]],
-  "6.256_8.682":["Colágeno — Sistema Respiratorio","Colágeno","Nivel elevado; favorable.","Déficit de colágeno respiratorio; menor fuerza para inhalar y problemas cardiovasculares.",["colágeno","pulmón","respiración"]],
+  "6.352_8.325":["Colágeno — Ojos","Colágeno","El colágeno en tus ojos está en buen nivel — esto es favorable para la salud ocular y la elasticidad de los tejidos perioculares.","Déficit de colágeno ocular; ojos secos, cataratas, problemas de córnea.",["colágeno","ojo","visión","envejecimiento"]],
+  "7.245_8.562":["Colágeno — Dientes","Colágeno","El colágeno dental está en buen nivel — esto es favorable para la salud de encías y tejidos de soporte dental.","Déficit de colágeno dental; encías débiles y desprendimiento de dientes.",["colágeno","dientes","encías","minerales"]],
+  "4.533_6.179":["Colágeno — Cabello y Piel","Colágeno","El colágeno en piel y cabello está en buen nivel — favorece la firmeza, el brillo y la fortaleza del cabello.","Déficit de colágeno en piel y cabello; piel sin brillo y cabello frágil.",["colágeno","piel","cabello","envejecimiento"]],
+  "6.178_8.651":["Colágeno — Sistema Endocrino","Colágeno","El colágeno en el sistema endocrino está en buen nivel — apoya la estructura de las glándulas y favorece el equilibrio hormonal.","Déficit de colágeno en sistema endocrino; desequilibrio hormonal.",["colágeno","hormonas","endocrino","reproducción"]],
+  "3.586_4.337":["Colágeno — Sistema Circulatorio","Colágeno","El colágeno vascular está en buen nivel — favorece la elasticidad y resistencia de los vasos sanguíneos.","Déficit de colágeno en vasos sanguíneos; venas várices y presión inestable.",["colágeno","cardiovascular","vasos","circulación"]],
+  "3.492_4.723":["Colágeno — Sistema Digestivo","Colágeno","El colágeno digestivo está en buen nivel — apoya la integridad de la mucosa intestinal y la absorción de nutrientes.","Déficit de colágeno digestivo; gases, mala absorción y distensión abdominal.",["colágeno","digestión","intestino","absorción"]],
+  "3.376_4.582":["Colágeno — Sistema Inmunológico","Colágeno","El colágeno en el sistema inmune está en buen nivel — apoya la estructura de tejidos y la respuesta defensiva del organismo.","Déficit de colágeno inmune; mayor susceptibilidad a infecciones y anemia.",["colágeno","inmunidad","músculos","defensas"]],
+  "6.458_8.133":["Colágeno — Sistema Motor","Colágeno","El colágeno en articulaciones y tejido motor está en buen nivel — favorece la movilidad, la resistencia articular y reduce el desgaste.","Déficit de colágeno en articulaciones; dolor, rigidez y pérdida de flexibilidad.",["colágeno","articulaciones","músculos","movilidad"]],
+  "6.552_8.268":["Colágeno — Tejido Muscular","Colágeno","El colágeno muscular está en buen nivel — apoya el tono, la fuerza y la recuperación del tejido muscular.","Déficit de colágeno muscular; pérdida de masa y tono muscular.",["colágeno","músculo","fuerza","proteínas"]],
+  "6.338_8.368":["Colágeno — Metabolismo de Grasas","Colágeno","El colágeno metabólico está en buen nivel — favorece la regulación del metabolismo lipídico y la composición corporal saludable.","Déficit en soporte metabólico del colágeno; favorece acumulación de grasa.",["colágeno","metabolismo","grasa","obesidad"]],
+  "6.187_8.466":["Colágeno — Desintoxicación","Colágeno","El colágeno de desintoxicación está en buen nivel — apoya la función hepática y la eliminación de toxinas.","Déficit de colágeno en vías de detox; acumulación de toxinas y piel amarillenta.",["colágeno","hígado","desintoxicación","toxinas"]],
+  "3.778_4.985":["Colágeno — Sistema Reproductivo","Colágeno","El colágeno reproductivo está en buen nivel — apoya la integridad de tejidos pélvicos y la función reproductiva.","Déficit de colágeno reproductivo; incontinencia, atrofia y problemas de fertilidad.",["colágeno","reproducción","hormonal","pélvico"]],
+  "3.357_4.239":["Colágeno — Sistema Nervioso","Colágeno","El colágeno nervioso está en buen nivel — apoya la mielina y la conducción nerviosa.","Déficit de colágeno nervioso; reducción de función nerviosa y reflejos.",["colágeno","sistema nervioso","neurológico"]],
+  "6.256_8.682":["Colágeno — Sistema Respiratorio","Colágeno","El colágeno respiratorio está en buen nivel — apoya la elasticidad pulmonar y la capacidad de intercambio gaseoso.","Déficit de colágeno respiratorio; menor fuerza para inhalar y problemas cardiovasculares.",["colágeno","pulmón","respiración","oxígeno"]],
   // ── PULSO CEREBRO Y CORAZÓN ──
-  "60.735_65.396":["Índice de Stroke","Pulso Cerebro-Corazón","Riesgo elevado de accidente cerebrovascular; urgencia médica.","Índice de stroke dentro del rango normal.",["cerebro","cardiovascular","corazón"]],
+  "60.735_65.396":["Índice de Stroke","Pulso Cerebro-Corazón","Riesgo elevado de accidente cerebrovascular; urgencia médica.","El índice de stroke está dentro del rango normal — sin señales de riesgo elevado de accidente cerebrovascular en este momento.",["cerebro","cardiovascular","accidente cerebrovascular"]],
   "63.012_67.892":["Volumen Sistólico","Pulso Cerebro-Corazón","Volumen sistólico elevado; posible sobrecarga cardíaca.","Volumen sistólico bajo; corazón con bajo rendimiento.",["corazón","cardiovascular","circulación"]],
-  "0.983_1.265":["Resistencia Periférica Total (TPR)","Pulso Cerebro-Corazón","Resistencia periférica alta; mayor esfuerzo cardíaco e hipertensión.","Resistencia periférica baja; posible hipotensión.",["cardiovascular","presión","vasos"]],
-  "0.316_0.401":["Coeficiente de Onda del Pulso (K)","Pulso Cerebro-Corazón","Onda del pulso elevada; posible rigidez arterial.","Onda del pulso baja; posible hipotensión o bajo tono vascular.",["cardiovascular","vasos","presión"]],
-  "0.71_1.109":["Saturación de Oxígeno Cerebrovascular","Pulso Cerebro-Corazón","Saturación elevada; posible hiperventilación.","Saturación baja; riesgo de isquemia cerebral.",["cerebro","oxígeno","cardiovascular"]],
+  "0.983_1.265":["Resistencia Periférica Total (TPR)","Pulso Cerebro-Corazón","Resistencia periférica alta; mayor esfuerzo cardíaco e hipertensión.","La resistencia periférica está baja — los vasos sanguíneos están más relajados de lo normal; puede provocar presión baja e hipotensión.",["cardiovascular","presión","circulación","vasos"]],
+  "0.316_0.401":["Coeficiente de Onda del Pulso (K)","Pulso Cerebro-Corazón","La onda del pulso está alterada — indica rigidez arterial; el corazón tiene que trabajar más para impulsar la sangre a través de arterias menos elásticas.","El coeficiente de onda del pulso está bajo — puede indicar baja elasticidad arterial o hipotensión circulatoria.",["cardiovascular","arterias","pulso","circulación"]],
+  "0.71_1.109":["Saturación de Oxígeno Cerebrovascular","Pulso Cerebro-Corazón","La saturación de oxígeno en los vasos cerebrales está alta — puede deberse a hiperventilación o a una respuesta compensatoria del organismo.","La saturación de oxígeno cerebrovascular está baja — el cerebro no está recibiendo suficiente oxígeno; puede causar mareos, confusión o deterioro cognitivo.",["cerebro","oxígeno","cardiovascular","neurológico"]],
   "7.88_10.09":["Volumen de Oxígeno Cerebrovascular","Pulso Cerebro-Corazón","Volumen de oxígeno cerebral elevado; posible hiperactividad cerebral.","Volumen de oxígeno cerebral bajo; riesgo de déficit cognitivo.",["cerebro","oxígeno","circulación"]],
   "5.017_5.597":["Presión de Oxígeno Cerebrovascular","Pulso Cerebro-Corazón","Presión de oxígeno elevada; posible estrés metabólico cerebral.","Presión de oxígeno cerebral baja; riesgo de isquemia.",["cerebro","oxígeno","cardiovascular"]],
   // ── LÍPIDOS SANGUÍNEOS ──
-  "4.131_4.562":["Viscosidad Sanguínea (Lípidos)","Lípidos Sanguíneos","Sangre espesa por lípidos; mayor riesgo de coágulos y accidente cardiovascular.","Sangre muy fluida; posible riesgo de sangrado.",["sangre","cardiovascular","circulación"]],
-  "1.833_2.979":["Colesterol Total (TC)","Lípidos Sanguíneos","Colesterol total alto; riesgo de placas en arterias e infarto.","Colesterol bajo; puede afectar hormonas y membranas celulares.",["colesterol","corazón","cardiovascular","arterias"]],
-  "1.116_2.101":["Triglicéridos (TG)","Lípidos Sanguíneos","Triglicéridos altos; sobrecarga el hígado y el corazón, favorece obesidad.","Triglicéridos bajos; puede indicar malnutrición.",["triglicéridos","corazón","hígado","obesidad"]],
-  "1.449_2.246":["HDL-C (Colesterol Bueno)","Lípidos Sanguíneos","HDL elevado; generalmente protector del corazón.","HDL bajo; mayor riesgo de enfermedad cardiovascular.",["colesterol","corazón","cardiovascular"]],
-  "0.726_1.281":["LDL-C (Colesterol Malo)","Lípidos Sanguíneos","LDL alto; mayor riesgo de placas arteriales e infarto.","LDL bajo; generalmente favorable.",["colesterol","arterias","corazón","cardiovascular"]],
-  "13.012_17.291":["Complejos Inmunes Circulantes (CIC)","Lípidos Sanguíneos","CIC elevados; inflamación crónica y riesgo autoinmune.","CIC bajos; respuesta inmune dentro del rango.",["inmunidad","inflamación","cardiovascular"]],
+  "4.131_4.562":["Viscosidad Sanguínea (Lípidos)","Lípidos Sanguíneos","Sangre espesa por lípidos; mayor riesgo de coágulos y accidente cardiovascular.","Tu sangre está muy fluida en el perfil lipídico — puede indicar bajos niveles de lípidos en sangre o déficit nutricional.",["sangre","cardiovascular","circulación","lípidos"]],
+  "13.012_17.291":["Complejos Inmunes Circulantes (CIC)","Lípidos Sanguíneos","CIC elevados; inflamación crónica y riesgo autoinmune.","Los complejos inmunes están dentro del rango normal — sin señales de inflamación crónica o respuesta autoinmune activa.",["inmunidad","inflamación","autoinmunidad","lípidos"]],
   // ── PRÓSTATA (solo masculino) ──
-  "1.023_3.23":["Hiperplasia Prostática","Próstata","Agrandamiento de la próstata; dificultad para orinar y riesgo de retención urinaria.","Sin indicios de hiperplasia prostática.",["próstata","riñón","urinario"]],
-  "1.471_6.079":["Calcificación Prostática","Próstata","Calcificación en la próstata; puede alojar bacterias y causar prostatitis recurrente.","Sin calcificación prostática.",["próstata","inflamación","calcio"]],
-  "2.213_2.717":["Prostatitis","Próstata","Síndrome de prostatitis activo; inflamación, dolor perineal y molestias urinarias.","Sin indicios de prostatitis.",["próstata","inflamación","urinario"]],
+  "1.023_3.23":["Hiperplasia Prostática","Próstata","La próstata está agrandada (hiperplasia) — esto puede dificultar la orina, causar urgencia frecuente para ir al baño y aumentar el riesgo de infecciones urinarias.","No se detectan señales de agrandamiento prostático — la próstata tiene un tamaño normal.",["próstata","urinario","masculino","hormonas"]],
+  "1.471_6.079":["Calcificación Prostática","Próstata","Hay calcificaciones en la próstata — pequeños depósitos minerales que pueden alojar bacterias y contribuir a inflamación crónica o dolor pélvico.","No se detectan calcificaciones en la próstata — sin depósitos minerales en esta glándula.",["próstata","calcificación","masculino","inflamación"]],
+  "2.213_2.717":["Prostatitis","Próstata","Hay síndrome de prostatitis activo — la próstata está inflamada; puede causar dolor al orinar, en la zona pélvica y al eyacular; requiere atención médica.","No se detectan señales de prostatitis — la próstata sin inflamación activa.",["próstata","inflamación","urinario","masculino"]],
   // ── FUNCIÓN SEXUAL MASCULINA ──
   "3.342_9.461":["Testosterona","Función Sexual Masculina","Testosterona alta; acné, agresividad y problemas cardiovasculares en exceso.","Testosterona baja; fatiga, pérdida muscular, disfunción eréctil.",["hormonas","testosterona","músculo","sexualidad"]],
   "4.111_18.741b":["Gonadotropina","Función Sexual Masculina","Gonadotropina elevada; posible insuficiencia testicular primaria.","Gonadotropina baja; problema hipofisario o hipotalámico.",["hormonas","testosterona","sexualidad"]],
   "3.241_9.814b":["Transmisor de Erección","Función Sexual Masculina","Nivel elevado; posible hipersensibilidad vascular.","Déficit de transmisor de erección; disfunción eréctil.",["sexualidad","hormonas","cardiovascular"]],
   // ── ESPERMA Y SEMEN ──
-  "1.502_6.028":["Volumen del Semen","Esperma y Semen","Volumen de semen elevado; puede indicar hipersecreción de próstata.","Volumen de semen bajo; puede afectar fertilidad.",["fertilidad","próstata","hormonas"]],
+  "1.502_6.028":["Volumen del Semen","Esperma y Semen","Volumen de semen elevado; puede indicar hipersecreción de próstata.","El volumen de semen está bajo — esto puede afectar la fertilidad; puede deberse a deshidratación, inflamación prostática o desequilibrio hormonal.",["esperma","fertilidad","masculino","reproducción"]],
   "10.283_30.282":["Tiempo de Licuefacción","Esperma y Semen","Licuefacción muy rápida; posible proceso inflamatorio.",["fertilidad","próstata"]],
-  "2.483_3.932":["Número de Espermas","Esperma y Semen","Número elevado; generalmente favorable.","Oligospermia; número bajo de espermas, riesgo de infertilidad.",["fertilidad","hormonas","testosterona"]],
-  "0.637_0.877":["Movilidad de Espermas","Esperma y Semen","Movilidad elevada; generalmente favorable.","Astenospermia; baja movilidad, dificulta la fertilización.",["fertilidad","hormonas"]],
+  "2.483_3.932":["Número de Espermas","Esperma y Semen","El número de espermas está en el rango alto — generalmente esto es favorable para la fertilidad.","Oligospermia; número bajo de espermas, riesgo de infertilidad.",["esperma","fertilidad","masculino","reproducción"]],
+  "0.637_0.877":["Movilidad de Espermas","Esperma y Semen","La movilidad de los espermas está en el rango alto — generalmente esto es un indicador positivo de fertilidad.","Astenospermia; baja movilidad, dificulta la fertilización.",["esperma","fertilidad","masculino","reproducción"]],
   // ── HORMONA MASCULINA ──
   "1.372_1.878":["Andrógeno (Masculino)","Hormona Masculina","Exceso de andrógenos; acné, agresividad y efectos cardiovasculares.","Andrógenos bajos; fatiga, libido baja y pérdida muscular.",["hormonas","testosterona","músculo","sexualidad"]],
   "0.521_1.036":["Estrógeno (Masculino)","Hormona Masculina","Estrógenos altos en hombres; ginecomastia y reducción de testosterona.","Estrógenos bajos; articulaciones más rígidas y menor libido.",["hormonas","sexualidad","cardiovascular"]],
   "0.686_1.432":["Progesterona (Masculino)","Hormona Masculina","Progesterona alta en hombres; síntomas feminizantes y menor testosterona.","Progesterona baja; puede indicar déficit en ciclo hormonal.",["hormonas","sexualidad"]],
-  "0.679_1.324":["LH (Masculino)","Hormona Masculina","LH elevada; posible insuficiencia testicular primaria.","LH baja; hipotálamo o hipófisis poco activos.",["hormonas","testosterona","sexualidad"]],
+  "0.679_1.324":["LH (Masculino)","Hormona Masculina","LH elevada; posible insuficiencia testicular primaria.","La hormona LH está baja en hombres — puede indicar que la hipófisis no está estimulando bien los testículos; puede afectar la producción de testosterona y la fertilidad.",["LH","hormonas","masculino","testículos"]],
   "0.738_1.742":["Prolactina (Masculino)","Hormona Masculina","Hiperprolactinemia; disfunción eréctil, disminución de esperma y osteoporosis.","Prolactina baja; generalmente sin impacto clínico.",["hormonas","sexualidad","huesos"]],
-  "0.387_0.956":["FSH (Masculino)","Hormona Masculina","FSH elevada; posible daño testicular o menopausia masculina.","FSH baja; hipotálamo o hipófisis poco activos.",["hormonas","testosterona","fertilidad"]],
+  "0.387_0.956":["FSH (Masculino)","Hormona Masculina","FSH elevada; posible daño testicular o menopausia masculina.","La FSH está baja en hombres — puede indicar disfunción hipofisaria que afecta la producción de esperma y la función testicular.",["FSH","hormonas","masculino","esperma"]],
   // ── INMUNIDAD HUMANA INTEGRAL ──
   "7.435_8.847":["Barrera Tisular Inmune","Inmunidad Humana Integral","Barrera inmune hiperactiva; posible inflamación crónica o proceso autoinmune.","Barrera tisular inmune débil; mayor vulnerabilidad a infecciones.",["inmunidad","defensas","inflamación"]],
   "7.424_9.052":["Células Inmunes Innatas","Inmunidad Humana Integral","Actividad innata elevada; puede indicar infección activa o inflamación.","Células innatas bajas; primera defensa comprometida.",["inmunidad","defensas","inflamación"]],
@@ -4626,11 +4740,11 @@ var RANGE_TABLE={
   // ── FUNCIÓN RESPIRATORIA ──
   "5.431_7.479":["Volumen Corriente (VT)","Función Respiratoria","Volumen corriente elevado; hiperventilación o esfuerzo respiratorio excesivo.","Volumen corriente bajo; ventilación insuficiente en reposo.",["pulmón","respiración","oxígeno"]],
   "4.126_6.045":["Volumen Inspiratorio (TI)","Función Respiratoria","Volumen inspiratorio elevado; posible compensación de hipoxia.","Volumen inspiratorio bajo; capacidad pulmonar reducida.",["pulmón","respiración","oxígeno"]],
-  "5.147_6.219":["Capacidad Residual Funcional (FRC)","Función Respiratoria","FRC elevada; posible enfisema o hiperinflación pulmonar.","FRC baja; pulmones con poca reserva de aire.",["pulmón","respiración"]],
+  "5.147_6.219":["Capacidad Residual Funcional (FRC)","Función Respiratoria","FRC elevada; posible enfisema o hiperinflación pulmonar.","La capacidad residual funcional de los pulmones está baja — queda poco aire en los pulmones entre respiraciones; reduce la eficiencia del intercambio de gases.",["pulmón","respiración","oxígeno"]],
   "4.363_5.647":["Volumen Residual (RV)","Función Respiratoria","Volumen residual elevado; atrapamiento de aire en los pulmones.","Volumen residual bajo; pulmones con poca reserva de oxígeno.",["pulmón","respiración","oxígeno"]],
   // ── LECITINA ──
   "3.654_4.478":["Fosfolípidos","Lecitina","Nivel elevado; puede alterar el metabolismo de lípidos.","Déficit de fosfolípidos; afecta membranas celulares y función hepática.",["metabolismo","hígado","grasa","cerebro"]],
-  "3.121_3.853":["Esfingolípidos","Lecitina","Exceso de esfingolípidos; puede acumularse en tejido nervioso central.","Déficit; afecta membranas celulares.",["sistema nervioso","cerebro","metabolismo"]],
+  "3.121_3.853":["Esfingolípidos","Lecitina","Los esfingolípidos están elevados — en exceso pueden acumularse en el sistema nervioso y afectar la función neurológica.","Los esfingolípidos están bajos — pueden afectar la integridad de las membranas celulares y la función neurológica.",["sistema nervioso","membranas","cerebro"]],
   "3.341_4.214":["Esfingomielina","Lecitina","Esfingomielina elevada; puede acumularse en células.","Déficit de esfingomielina; membranas celulares comprometidas.",["sistema nervioso","metabolismo"]],
   "4.365_5.142":["Lecitina","Lecitina","Nivel elevado; puede sobrecargar metabolismo lipídico.","Déficit de lecitina; afecta hígado, cerebro y colesterol.",["hígado","cerebro","colesterol","metabolismo"]],
   "4.225_5.713":["Fosfolípidos Cerebrales","Lecitina","Nivel elevado; generalmente favorable para función cerebral.","Déficit de fosfolípidos cerebrales; deterioro cognitivo y de memoria.",["cerebro","memoria","sistema nervioso"]],
@@ -4642,21 +4756,21 @@ var RANGE_TABLE={
   "3.361_4.644":["Índice de Triglicéridos (AG)","Ácidos Grasos","Triglicéridos altos; riesgo cardiovascular y metabólico.","Triglicéridos bajos; puede indicar déficit energético.",["triglicéridos","cardiovascular","metabolismo"]],
   // ── GINECOLOGÍA (solo femenino) ──
   "2.204_2.819c":["Vaginitis","Ginecología","Posible inflamación vaginal activa; infección bacteriana o fúngica.","Sin indicios de vaginitis.",["ginecología","inflamación","inmunidad"]],
-  "1.348_3.529":["Enfermedad Inflamatoria Pélvica","Ginecología","Inflamación pélvica activa; requiere atención médica urgente.","Sin indicios de inflamación pélvica.",["ginecología","inflamación","ovarios"]],
-  "2.301_4.782":["Anexitis (Ovarios/Trompas)","Ginecología","Inflamación de anexos uterinos; posible infección activa.","Sin indicios de anexitis.",["ginecología","ovarios","inflamación"]],
+  "1.348_3.529":["Enfermedad Inflamatoria Pélvica","Ginecología","Hay inflamación pélvica activa — esto afecta trompas, ovarios y útero; puede causar dolor abdominal, fiebre y riesgo de complicaciones reproductivas; requiere atención médica.","No se detectan señales de inflamación pélvica — buena salud en el área reproductiva femenina.",["ginecología","inflamación","pelvis","reproducción"]],
+  "2.301_4.782":["Anexitis (Ovarios/Trompas)","Ginecología","Hay inflamación en los anexos uterinos (trompas y ovarios) — puede causar dolor pélvico, fiebre y en casos crónicos afectar la fertilidad.","No se detectan señales de anexitis — trompas y ovarios sin inflamación.",["ginecología","trompas","ovarios","inflamación"]],
   "2.845_4.017c":["Cervicitis","Ginecología","Inflamación del cuello uterino; posible infección o irritación.","Sin indicios de cervicitis.",["ginecología","inflamación","útero"]],
-  "2.012_4.892":["Quistes Ováricos","Ginecología","Posible presencia de quistes en ovarios; desequilibrio hormonal.","Sin indicios de quistes ováricos.",["ginecología","ovarios","hormonas"]],
+  "2.012_4.892":["Quistes Ováricos","Ginecología","Se detectan señales de posibles quistes en los ovarios — pueden causar dolor pélvico, ciclos irregulares y desequilibrio hormonal; se recomienda seguimiento médico.","No se detectan señales de quistes ováricos — ovarios sin alteraciones quísticas detectadas.",["ginecología","ovarios","quiste","hormonas"]],
   // ── SENOS ──
   "0.202_0.991b":["Hiperplasia de Glándulas Mamarias","Senos","Crecimiento anormal de tejido mamario; posible desequilibrio hormonal.",["ginecología","hormonas","mama"]],
   "0.713_0.992b":["Mastitis Aguda","Senos","Posible infección o inflamación aguda de mama.",["ginecología","inflamación","mama"]],
   "0.432_0.826b":["Mastitis Crónica","Senos","Proceso inflamatorio crónico de mama; requiere evaluación médica.",["ginecología","inflamación","mama"]],
-  "1.684_4.472":["Discrasia Endocrina (Mama)","Senos","Desequilibrio hormonal afectando mama; riesgo de fibroadenoma.","Sin discrasia endocrina mamaria.",["ginecología","hormonas","mama","endocrino"]],
+  "1.684_4.472":["Discrasia Endocrina (Mama)","Senos","Hay un desequilibrio hormonal que está afectando el tejido mamario — puede predisponer a cambios fibroquísticos, sensibilidad y en algunos casos a fibroadenomas.","No se detecta desequilibrio hormonal mamario — tejido de mama sin alteraciones endocrinas.",["senos","hormonas","endocrino","mama"]],
   "0.433_0.796b":["Fibroadenoma de Mama","Senos","Posible nódulo benigno en mama; desequilibrio hormonal subyacente.","Sin indicios de fibroadenoma.",["ginecología","mama","hormonas"]],
   // ── CICLO MENSTRUAL ──
-  "2.942_3.407":["Hormona Beta (HCG)","Ciclo Menstrual","HCG elevada; posible embarazo o tumor productor de HCG.","HCG baja; fuera del embarazo es normal.",["hormonas","ciclo menstrual","ginecología"]],
+  "2.942_3.407":["Hormona Beta (HCG)","Ciclo Menstrual","La hormona HCG está elevada — fuera del embarazo puede indicar un tumor productor de HCG; durante el embarazo es una señal normal.","La HCG está baja — fuera del contexto de embarazo, esto es completamente normal.",["hormonas","ciclo menstrual","ginecología"]],
   "4.713_5.345":["Proteína Reflejada (Ciclo)","Ciclo Menstrual","Indicador elevado; posible desequilibrio en el ciclo.","Indicador bajo; puede señalar ciclo irregular o déficit hormonal.",["ciclo menstrual","hormonas"]],
-  "2.807_3.294":["Fibrinógeno","Ciclo Menstrual","Fibrinógeno alto; mayor riesgo de coágulos y trombosis.","Fibrinógeno bajo; riesgo de sangrado excesivo.",["sangre","coagulación","cardiovascular"]],
-  "6.326_8.018":["Tasa de Sedimentación","Ciclo Menstrual","Sedimentación alta; señal de inflamación sistémica activa.","Sedimentación baja; generalmente normal.",["inflamación","inmunidad","sangre"]]
+  "2.807_3.294":["Fibrinógeno","Ciclo Menstrual","Fibrinógeno alto; mayor riesgo de coágulos y trombosis.","El fibrinógeno está bajo — puede haber riesgo de sangrado excesivo durante el ciclo menstrual o en situaciones de herida; la coagulación puede estar comprometida.",["sangre","coagulación","cardiovascular"]],
+  "6.326_8.018":["Tasa de Sedimentación","Ciclo Menstrual","Sedimentación alta; señal de inflamación sistémica activa.","La tasa de sedimentación está baja — generalmente es un indicador positivo; sin inflamación sistémica activa.",["inflamación","inmunidad","sangre"]]
 };
 
 function lookupByRange(rmin,rmax){
@@ -4855,7 +4969,13 @@ var PARAM_TABLE={
   "progesterona":{d:"Progesterona (P)",s:"Hormona Femenina",a:"Progesterona elevada; posible embarazo o quiste lúteo.",b:"Progesterona baja; ciclo irregular, ansiedad y dificultad para embarazarse.",t:["hormonas", "ciclo menstrual", "ovarios"]},
   "hormona luteinizante":{d:"LH (Hormona Luteinizante)",s:"Hormona Femenina",a:"LH alta; posible menopausia, SOP o insuficiencia ovárica.",b:"LH baja; puede indicar problemas hipofisarios.",t:["hormonas", "ovarios", "ciclo menstrual"]},
   "prolactina":{d:"Prolactina (PRL)",s:"Hormona Femenina",a:"Hiperprolactinemia; ciclo irregular, galactorrea y problemas de fertilidad.",b:"Prolactina baja; generalmente sin impacto clínico fuera del posparto.",t:["hormonas", "ovarios", "ciclo menstrual"]},
-  "hormona estimulante del folículo":{d:"FSH (Hormona Folículo Estimulante)",s:"Hormona Femenina",a:"FSH elevada; posible menopausia o insuficiencia ovárica.",b:"FSH baja; hipotálamo o hipófisis poco activos.",t:["hormonas", "ovarios", "ciclo menstrual"]}
+  "hormona estimulante del folículo":{d:"FSH (Hormona Folículo Estimulante)",s:"Hormona Femenina",a:"FSH elevada; posible menopausia o insuficiencia ovárica.",b:"FSH baja; hipotálamo o hipófisis poco activos.",t:["hormonas", "ovarios", "ciclo menstrual"]},
+  "grasa cutánea":{d:"Grasa Cutánea",s:"Piel",a:"Exceso de grasa en la piel — poros obstruidos, brillos y tendencia al acné.",b:"Piel muy seca, sin protección natural; necesita hidratación y nutrición.",t:["piel","grasa","acné","poros","sebáceo"]},
+  "dilatación cutánea":{d:"Dilatación de Poros",s:"Piel",a:"Los poros están dilatados — exceso de producción de grasa en la piel.",b:"Poros muy finos; piel dentro del rango normal.",t:["piel","poros","colágeno","sebáceo"]},
+  "índice de alergia a tintes de cabello":{d:"Alergia a Tintes de Cabello",s:"Alergias",a:"Alta sensibilidad a tintes — riesgo de reacciones cutáneas severas al teñirse el cabello.",b:"Sin sensibilidad significativa a los tintes.",t:["alergias","piel","cabello","químicos"]},
+  "lipo proteinas de alta dencidad":{d:"HDL-C (Colesterol Bueno)",s:"Lípidos Sanguíneos",a:"HDL elevado — generalmente protector del corazón; raro que sea problemático.",b:"HDL bajo — el colesterol bueno está escaso; el corazón tiene menos protección.",t:["colesterol","corazón","cardiovascular","hdl"]},
+  "la lipoproteína de baja densidad":{d:"LDL-C (Colesterol Malo)",s:"Lípidos Sanguíneos",a:"LDL alto — el colesterol malo está elevado; aumenta el riesgo de placas en las arterias.",b:"LDL bajo — generalmente favorable para el corazón.",t:["colesterol","arterias","corazón","cardiovascular","ldl"]},
+  "densidad mineral ósea":{d:"Densidad Mineral Ósea",s:"Densidad Mineral Ósea",a:"La densidad de tus huesos está por encima del rango — puede haber acumulación mineral atípica.",b:"Tus huesos están perdiendo densidad; esto aumenta el riesgo de fracturas y osteoporosis.",t:["huesos","calcio","densidad ósea","osteoporosis","fracturas"]}
 };
 
 var PRODUCT_TABLE={
@@ -4984,19 +5104,26 @@ function parsearReporteBiocuantico(texto,c){
     if(norm&&!prodsSeen[norm]){prodsSeen[norm]=true;allProds.push(norm);}
   }
 
-  function processParam(rmin,rmax,val){
+  function processParam(rmin,rmax,val,nombreLabel){
     var isOut=val<rmin*0.95||val>rmax*1.05;
     if(!isOut)return;
-    var info=lookupByRange(rmin,rmax);
+    // Buscar primero por nombre para evitar colisiones de rango
+    var info=null;
+    if(nombreLabel){
+      var p=lookupParam(nombreLabel);
+      if(p)info=[p.d,p.s,p.a,p.b,p.t];
+    }
+    if(!info)info=lookupByRange(rmin,rmax);
     if(!info)return;
     var dir=val>rmax?'alto':'bajo';
     var pct=dir==='alto'?(val-rmax)/rmax:(rmin-val)/rmin;
-    var urg=pct>0.35?'alta':'media';
+    // 3 niveles: +++ alta >35%, ++ media 15-35%, + baja <15%
+    var urg=pct>0.35?'alta':pct>0.15?'media':'baja';
     outParams.push({
       display:info[0],section:info[1],
       sig:dir==='alto'?info[2]:info[3],
       val:val,rmin:rmin,rmax:rmax,
-      dir:dir,urgencia:urg,
+      dir:dir,urgencia:urg,pct:pct,
       sistemas:info[4]||[]
     });
   }
@@ -5011,7 +5138,8 @@ function parsearReporteBiocuantico(texto,c){
       var rmin_i=parseFloat(im[2]+'.'+im[3]);
       var rmax_i=parseFloat(im[4]+'.'+im[5]);
       var val_i =parseFloat(im[6]+'.'+im[7]);
-      processParam(rmin_i,rmax_i,val_i);
+      var nombre_i=(im[1]||"").trim();
+      processParam(rmin_i,rmax_i,val_i,nombre_i);
       // also try product names in the label portion (im[1])
       var reProdLine2=/(V-[A-ZÁÉÍÓÚÜ\-]+|TÉ DETOX|TE DETOX|ORGANEX\b|CURCUMAX\b|OMEGA\b|NITRO\b|VITAREN\b|VITALPRO\b|FORTYFLORA\b|GLUTATION\b|VITALIX\b|VITALAGE\b|VITAX\b|KETOCAFÉ\b|KETOCAFE\b|THERMOKAFE\b)/gi;
       reProdLine2.lastIndex=0;
@@ -5050,9 +5178,10 @@ function parsearReporteBiocuantico(texto,c){
   });
   if(hasRenal&&!prodsSeen['V-Itaren']){prodsSeen['V-Itaren']=true;allProds.splice(2,0,'V-Itaren');}
 
-  // Sort: alta first
+  // Sort: alta(+++) > media(++) > baja(+)
+  var urgOrd={alta:3,media:2,baja:1,alto:3,medio:2,bajo:1};
   outParams.sort(function(a,b){
-    return a.urgencia==='alta'&&b.urgencia!=='alta'?-1:b.urgencia==='alta'&&a.urgencia!=='alta'?1:0;
+    return (urgOrd[b.urgencia||'baja']||1)-(urgOrd[a.urgencia||'baja']||1);
   });
   outParams.forEach(function(p,idx){p.num=idx+1;});
 
@@ -5099,7 +5228,7 @@ function parsearReporteBiocuantico(texto,c){
       sistema:p.display,
       detectado:'Valor: '+p.val+' (rango normal: '+p.rmin+' – '+p.rmax+')',
       significado:p.sig,
-      urgencia:p.urgencia,nivel:p.urgencia==='alta'?'alto':'medio',
+      urgencia:p.urgencia,nivel:p.urgencia==='alta'?'alto':p.urgencia==='media'?'medio':'bajo',
       num:p.num,dir:p.dir
     };
   });
