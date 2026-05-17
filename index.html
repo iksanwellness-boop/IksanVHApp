@@ -3106,6 +3106,34 @@ var HEALTH_WEIGHT={
   'Alergia al Polvo':2,'Alergia a Piel Animal':2,'Alergia a Metales (Joyería)':2,
   'Alergia a la Leche':2,
 };
+
+// ═══ SYSTEM_WEIGHT — pesos clínicos por sistema ═══
+// pesoVital(1-5), pesoFuncional(1-5), pesoPreventivo(1-5), esSistemaVital, mulEdad60
+var SYSTEM_WEIGHT={
+  '❤️ Cardiovascular':     {pv:5,pf:5,pp:5,vital:true, mulEdad:1.4},
+  '🧠 Neurológico':        {pv:5,pf:5,pp:4,vital:true, mulEdad:1.4},
+  '🫁 Respiratorio':       {pv:5,pf:4,pp:4,vital:true, mulEdad:1.3},
+  '♂️ Masculino':          {pv:4,pf:4,pp:5,vital:true, mulEdad:1.5},
+  '🩸 Metabólico':         {pv:4,pf:4,pp:5,vital:true, mulEdad:1.3},
+  '☠️ Metales Pesados':    {pv:3,pf:3,pp:4,vital:false,mulEdad:1.2},
+  '🧪 Tóxicos':            {pv:2,pf:2,pp:3,vital:false,mulEdad:1.1},
+  '🫀 Hígado · Vesícula':  {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🫘 Renal':              {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🦴 Óseo · Articular':   {pv:2,pf:4,pp:3,vital:false,mulEdad:1.3},
+  '🫃 Digestivo':          {pv:2,pf:3,pp:3,vital:false,mulEdad:1.0},
+  '🔬 Endocrino':          {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🛡️ Inmunológico':       {pv:2,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '🌺 Femenino':           {pv:2,pf:3,pp:3,vital:false,mulEdad:1.0},
+  '⚡ Alergias':           {pv:1,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '💊 Nutrientes':         {pv:1,pf:3,pp:2,vital:false,mulEdad:1.0},
+  '⚗️ Oligoelementos':     {pv:1,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '🌸 Piel':              {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '👁️ Visual':             {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '🧬 Colágeno Sistémico': {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '⚡ Condición Física':   {pv:2,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '📋 Otros':             {pv:1,pf:1,pp:1,vital:false,mulEdad:1.0}
+};
+
 function getHealthWeight(sistema){
   if(HEALTH_WEIGHT[sistema]!==undefined)return HEALTH_WEIGHT[sistema];
   // Heurística por palabras clave
@@ -3179,8 +3207,42 @@ function getGrupoSistema(nombre){
 // Agrupa, puntúa cada grupo acumulativamente y devuelve lista plana ordenada sin grupos repetidos.
 // Puntuación del grupo = suma de pesos de sus parámetros × factor de urgencia (alta=1.2, media=1, baja=0.8)
 // Esto hace que el hígado con 4 parámetros supere al corazón con 1, aunque el corazón tenga mayor peso unitario.
-function sortByHealthPriority(sistemas){
-  // 1. Agrupar
+
+// ═══ generarRecomendacionGrupo — texto ¿Qué hacer? por sistema ═══
+function generarRecomendacionGrupo(grupo, prioridad){
+  var mapa={
+    '❤️ Cardiovascular':    'Conviene valorar presión arterial, perfil lipídico y función cardíaca con médico general o cardiólogo.',
+    '🧠 Neurológico':       'Puede comentarlo con su médico. Actividad mental, sueño reparador y omega-3 pueden apoyar la función cognitiva.',
+    '🫁 Respiratorio':      'Sería recomendable revisar función respiratoria si hay sensación de falta de aire o cansancio al esfuerzo.',
+    '♂️ Masculino':         'Conviene consultar a urólogo si hay síntomas urinarios o como control preventivo según la edad.',
+    '🩸 Metabólico':        'Revisar glucosa en ayuno, insulina y perfil metabólico con médico. Dieta baja en azúcares refinados es clave.',
+    '☠️ Metales Pesados':   'Si hay antecedentes de exposición laboral o ambiental, conviene confirmar con análisis de sangre específico.',
+    '🧪 Tóxicos':           'Preferir alimentos orgánicos o bien lavados. Aumentar agua y verduras para favorecer desintoxicación natural.',
+    '🫀 Hígado · Vesícula': 'Si hay pesadez post-comida o dificultad con alimentos grasos, puede comentarlo con su médico.',
+    '🫘 Renal':             'Revisar función renal si hay cambios en la orina, hinchazón o cansancio inexplicable.',
+    '🦴 Óseo · Articular':  'Revisar movilidad, dolor articular y riesgo de caídas. Calcio y vitamina D merecen evaluación con médico.',
+    '🫃 Digestivo':         'Apoyar digestión con fibra, hidratación y masticación adecuada. Si hay molestias persistentes, conviene valorarlas.',
+    '🔬 Endocrino':         'Revisar función tiroidea y hormonal con médico si hay fatiga, cambios de peso o temperatura.',
+    '🛡️ Inmunológico':      'Apoyo nutricional con zinc, vitamina C y probióticos puede fortalecer las defensas.',
+    '🌺 Femenino':          'Revisar equilibrio hormonal con ginecólogo o médico de confianza.',
+    '⚡ Alergias':          'Identificar y evitar los desencadenantes. Consultar con médico si las reacciones son frecuentes.',
+    '💊 Nutrientes':        'Considerar suplementación de calidad con guía profesional. La dieta variada y colorida es la base del bienestar.',
+    '⚗️ Oligoelementos':    'Revisar dieta para incluir fuentes naturales de minerales. Suplementación solo si hay déficit confirmado.',
+    '🌸 Piel':             'Hidratación, colágeno hidrolizado y antioxidantes pueden apoyar la piel. Sin necesidad de atención médica inmediata.',
+    '👁️ Visual':            'Revisar carga visual y descanso. Si hay visión borrosa o fatiga persistente, valorar con oftalmólogo.',
+    '🧬 Colágeno Sistémico':'Colágeno hidrolizado de alta calidad puede apoyar múltiples sistemas de forma progresiva.',
+    '⚡ Condición Física':  'Más verduras, frutas, hidratación y actividad física ligera pueden mejorar el equilibrio general.',
+  };
+  return mapa[grupo]||'';
+}
+
+function sortByHealthPriority(sistemas,edadPaciente,sexoPaciente){
+  var edadN=parseInt(edadPaciente)||0;
+  var esMayor=edadN>=60;
+  var urgFactor={alto:1.2,alta:1.2,medio:1.0,media:1.0,bajo:0.8,baja:0.8};
+  var urgOrd={alta:3,alto:3,media:2,medio:2,baja:1,bajo:1};
+
+  // 1. Agrupar por sistema
   var grupos={};
   sistemas.forEach(function(s){
     var g=getGrupoSistema(s.sistema||'');
@@ -3188,38 +3250,60 @@ function sortByHealthPriority(sistemas){
     grupos[g].push(s);
   });
 
-  // 2. Puntuar cada grupo con bonus de volumen (techo ×2)
-  var urgFactor={alto:1.2,alta:1.2,medio:1.0,media:1.0,bajo:0.8,baja:0.8};
+  // 2. Puntuar cada grupo con SYSTEM_WEIGHT + bonus volumen + edad
   var grupoPuntos={};
   Object.keys(grupos).forEach(function(g){
-    var pts=0;
+    var sw=SYSTEM_WEIGHT[g]||{pv:1,pf:1,pp:1,vital:false,mulEdad:1.0};
     var n=grupos[g].length;
-    grupos[g].forEach(function(s){
-      var w=getHealthWeight(s.sistema||'');
-      var u=s.urgencia||s.nivel||'medio';
-      pts+=w*(urgFactor[u]||1.0);
-    });
-    // Bonus: más parámetros afectados = grupo más urgente (techo ×2)
-    var bonus=Math.min(1+0.15*n,2.0);
-    grupoPuntos[g]=pts*bonus;
+
+    // Score base clínico
+    var scoreBase=(sw.pv*3)+(sw.pf*2)+(sw.pp*2);
+
+    // Severidad promedio del grupo
+    var sumPct=0;
+    grupos[g].forEach(function(s){ sumPct+=(s.pct||0); });
+    var avgPct=sumPct/n;
+
+    // Bonus por parámetros (volumen, techo ×2)
+    var bonusVol=Math.min(1+0.15*n,2.0);
+
+    // Multiplicador por edad
+    var mulEdad=(esMayor&&sw.mulEdad)?sw.mulEdad:1.0;
+
+    // Piso mínimo para sistemas vitales — nunca quedan bajo no-vitales
+    var piso=sw.vital?500:0;
+
+    grupoPuntos[g]=piso+(scoreBase*bonusVol*mulEdad)+(avgPct*0.5);
   });
 
-  // 3. Ordenar grupos por puntuación descendente
+  // 3. Asignar prioridad visual al grupo
+  function getPrioridad(g){
+    var sw=SYSTEM_WEIGHT[g]||{pv:1,vital:false};
+    if(sw.vital||(grupoPuntos[g]>=600))return 'alta';
+    if(grupoPuntos[g]>=200)return 'media';
+    return 'soporte';
+  }
+
+  // 4. Ordenar grupos por puntuación
   var gruposOrdenados=Object.keys(grupos).sort(function(a,b){
     return grupoPuntos[b]-grupoPuntos[a];
   });
 
-  // 4. Dentro de cada grupo, ordenar parámetros por peso × urgencia descendente
+  // 5. Dentro de cada grupo: +++ primero, luego ++ luego +
+  //    En empate de urgencia: mayor desviación primero
   var resultado=[];
   var numGlobal=1;
   gruposOrdenados.forEach(function(g){
     var miembros=grupos[g].slice().sort(function(a,b){
-      var wa=getHealthWeight(a.sistema||'')*(urgFactor[a.urgencia||a.nivel||'medio']||1);
-      var wb=getHealthWeight(b.sistema||'')*(urgFactor[b.urgencia||b.nivel||'medio']||1);
-      return wb-wa;
+      var ua=urgOrd[a.urgencia||a.nivel||'baja']||1;
+      var ub=urgOrd[b.urgencia||b.nivel||'baja']||1;
+      if(ub!==ua)return ub-ua;
+      return (b.pct||0)-(a.pct||0); // desempate: mayor desviación primero
     });
+    var pri=getPrioridad(g);
     miembros.forEach(function(s){
       s._grupo=g;
+      s._prioridad=pri;
       s.num=numGlobal++;
       resultado.push(s);
     });
@@ -3247,7 +3331,7 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
   if(cardio&&trigli){
     bloques.push('El corazón y los vasos sanguíneos están trabajando bajo presión: los niveles elevados de triglicéridos combinados con alteraciones en la perfusión cardíaca y la elasticidad vascular forman una carga importante sobre el sistema circulatorio que vale la pena atender con anticipación.');
   } else if(cardio){
-    bloques.push('Se detectaron señales de sobrecarga en el sistema cardiovascular. Atender esto a tiempo es clave para proteger la función del corazón y mantener una circulación sana.');
+    bloques.push('El análisis muestra señales en el sistema cardiovascular que merecen atención preventiva — el corazón y la circulación pueden beneficiarse de seguimiento.');
   } else if(trigli){
     bloques.push('Los triglicéridos elevados sobrecargan tanto el hígado como el corazón y favorecen la acumulación de grasa corporal. Ajustes en la alimentación y suplementación pueden marcar una diferencia notable.');
   }
@@ -3257,19 +3341,19 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
   var pesticidas=tiene('pesticidas');
   var plomo=tiene('plomo');
   if(higado&&(pesticidas||plomo)){
-    bloques.push('El hígado está acumulando grasa y al mismo tiempo enfrentando una carga tóxica '+(plomo?'de plomo en sangre ':' ')+(pesticidas?'y residuos de pesticidas':'')+'que lo sobrecargan. Desintoxicar y apoyar esta función es la base del protocolo.');
+    bloques.push('El hígado podría estar acumulando grasa mientras enfrenta una carga tóxica '+(plomo?'de plomo en sangre ':' ')+(pesticidas?'y residuos de pesticidas':'')+'que pueden sobrecargar su función. Apoyar y desintoxicar el hígado puede marcar una diferencia notable.');
   } else if(higado){
-    bloques.push('El hígado muestra acumulación de grasa y dificultad para procesar lípidos. Esto puede sentirse como cansancio, digestión pesada y dificultad para bajar de peso.');
+    bloques.push('El hígado podría mostrar tendencia a acumular grasa y dificultad para procesar lípidos. Esto puede sentirse como cansancio, digestión pesada y dificultad para bajar de peso.');
   } else if(pesticidas||plomo){
     var tox=[];
     if(plomo)tox.push('plomo');
     if(pesticidas)tox.push('residuos de pesticidas');
-    bloques.push('Se detectó acumulación de '+tox.join(' y ')+' que puede afectar silenciosamente el sistema nervioso, los riñones y la vitalidad general. La desintoxicación es una prioridad.');
+    bloques.push('Se detectaron niveles elevados de '+tox.join(' y ')+' que pueden relacionarse con mayor carga en el sistema nervioso y los riñones a largo plazo. Conviene confirmarlo con estudios específicos.');
   }
 
   // Respiratorio / pulmonar
   if(tiene('paco2')||tiene('oxígeno arterial')){
-    bloques.push('El pulmón no está ventilando del todo bien, lo que se traduce en un aumento de CO₂ en sangre. Esto puede provocar cansancio persistente, sensación de falta de aire o dificultad para concentrarse.');
+    bloques.push('Podría haber una alteración leve en la ventilación pulmonar, lo que puede relacionarse con una posible alteración en el intercambio de gases. Esto puede relacionarse con cansancio al esfuerzo o sensación de falta de aire.');
   }
 
   // Neurológico / cerebro
@@ -3290,7 +3374,7 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
   // Óseo / articular
   var oseo=tieneCualquiera(['hiperplasia ósea','reumatoide','osteoporosis']);
   if(oseo&&edadN>40){
-    bloques.push('Las articulaciones y el tejido óseo muestran señales de inflamación crónica'+(esMujer?' — frecuente en mujeres a partir de los 40 años por cambios hormonales que afectan la densidad ósea':'')+'. Apoyo antiinflamatorio y de colágeno estructural puede aliviar la rigidez y prevenir mayor desgaste.');
+    bloques.push('Las articulaciones y el tejido óseo muestran tendencia inflamatoria'+(esMujer?' — frecuente en mujeres a partir de los 40 años por cambios hormonales que afectan la densidad ósea':'')+'. Apoyo antiinflamatorio y de colágeno estructural puede aliviar la rigidez y prevenir mayor desgaste.');
   } else if(oseo){
     bloques.push('Se detectan señales de inflamación articular. Cuidar el sistema óseo ahora previene problemas mayores de movilidad en el futuro.');
   }
@@ -3323,7 +3407,7 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
   // Intro personalizada
   var nombre1=paciente?paciente.split(' ')[0]:'';
   var introOpts=[
-    nombre1?'Lo que el escáner revela sobre '+nombre1+' va más allá de números aislados — es un mapa de cómo está funcionando tu cuerpo en este momento:':'El escáner revela una imagen completa de cómo está funcionando tu cuerpo en este momento:',
+    nombre1?'Lo que el análisis muestra sobre '+nombre1+' va más allá de números aislados — es un mapa de cómo está funcionando tu cuerpo en este momento:':'El escáner revela una imagen completa de cómo está funcionando tu cuerpo en este momento:',
     nombre1?'Estos son los patrones más importantes que el análisis detectó en '+nombre1+':':'El análisis muestra los siguientes patrones que merecen atención:',
   ];
   var intro=introOpts[Math.floor(Math.random()*introOpts.length)];
@@ -3376,11 +3460,11 @@ function renderResultVH(r){
 
   // ── 2. SISTEMAS FUERA DE RANGO ──
   if(sistemas.length){
-    var sorted=sortByHealthPriority(sistemas); // ya numerados y agrupados sin repetición
+    var sorted=sortByHealthPriority(sistemas,r.edad,r.sexo); // ya numerados y agrupados sin repetición
     h+='<div style="border:1px solid #f5c0c0;border-radius:9px;overflow:hidden;margin-bottom:11px">';
     h+='<div style="background:'+RED_BG+';border-bottom:2px solid '+RED+';padding:6px 13px">';
     h+='<span style="font-size:10px;font-weight:700;color:'+RED+';text-transform:uppercase;letter-spacing:.6px">2. Sistemas Fuera de Rango · Orden de Atención</span></div>';
-    h+='<div style="font-size:9.5px;color:'+GRAY+';padding:5px 13px;background:#fff9f9;border-bottom:1px solid #fde8e8">Ordenados por impacto real en la salud — los grupos con mayor carga acumulada aparecen primero.</div>';
+    h+='<div style="font-size:9.5px;color:'+GRAY+';padding:5px 13px;background:#fff9f9;border-bottom:1px solid #fde8e8">El orden considera edad, impacto funcional y riesgo clínico — no solo la desviación del valor.</div>';
     // ── Resumen personal combinatorio ──
     var resumen=generarResumenPersonal(sorted,r.paciente,r.sexo,r.edad);
     if(resumen&&resumen.bloques&&resumen.bloques.length){
@@ -3395,39 +3479,100 @@ function renderResultVH(r){
       });
       h+='</div>';
     }
-    // ── Tabla: grupos ya vienen continuos sin repetición desde sortByHealthPriority ──
-    var prevGrp='';
+    // ── Tabla con prioridades, degradados y mini-headers por sistema ──
+    var PRI_ALTA={bg:'#fce8e8',border:'#c0392b',desc:'Sistemas que merecen mayor atención preventiva según edad y hallazgos.'};
+    var PRI_MEDIA={bg:'#fdebd0',border:'#ca6f1e',desc:'Funciones corporales que podrían beneficiarse de seguimiento y apoyo.'};
+    var PRI_SOP={bg:'#e8f8f5',border:'#148f77',desc:'Aspectos relacionados con nutrición, equilibrio y bienestar integral.'};
+    // Colores numeral por prioridad y urgencia
+    var NUM_COL={
+      alta:  {3:'#e74c3c',2:'#ec7063',1:'#f1948a'},
+      media: {3:'#e67e22',2:'#eb9744',1:'#f0b060'},
+      soporte:{3:'#148f77',2:'#1abc9c',1:'#48c9b0'}
+    };
+    var BG_PARAM={alta:'#fff5f5',media:'#fff8f0',soporte:'#eafaf9'};
+    var MINI_HDR='<tr><td colspan="4" style="padding:2px 0 2px;background:#f5f5f5;border-bottom:1px solid #e0e0e0"><div style="display:flex;font-size:8px;color:#aaa;font-weight:600;letter-spacing:.3px"><span style="width:5%;text-align:center">#</span><span style="width:22%;text-align:center">Parámetro</span><span style="width:20%;text-align:center">Valor detectado</span><span style="width:53%;text-align:center">¿Qué significa?</span></div></td></tr>';
+
     h+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
-    h+='<tr style="background:'+DARK+';color:#fff">';
-    h+='<th style="padding:6px 7px;width:5%;text-align:center">#</th>';
-    h+='<th style="padding:6px 7px;width:25%">Parámetro</th>';
-    h+='<th style="padding:6px 7px;width:22%">Valor detectado</th>';
-    h+='<th style="padding:6px 7px;width:48%">Qué significa</th></tr>';
+
+    var prevGrp='';
+    var prevPri='';
+    var rowIdx=0;
+
+    // Agrupar nutrientes para sub-niveles (apoyo prioritario vs general)
+    var sistemaVitalNombres=['❤️ Cardiovascular','🧠 Neurológico','🫁 Respiratorio','♂️ Masculino','🩸 Metabólico'];
+    var gruposVistos=Object.keys(sorted.reduce(function(acc,s){acc[s._grupo]=1;return acc;},{}));
+
     sorted.forEach(function(s,i){
-      var urg=s.urgencia||s.nivel||'medio';
+      var urg=s.urgencia||s.nivel||'baja';
       var urgLvl=urg==='alta'||urg==='alto'?3:urg==='media'||urg==='medio'?2:1;
-      var col=urgLvl===3?RED:urgLvl===2?ORANGE:'#e8a020';
-      var urgBadge=urgLvl===3?'+++':urgLvl===2?'++':'+';
+      var pri=s._prioridad||'soporte';
       var grp=s._grupo||'';
+      var numCols=NUM_COL[pri]||NUM_COL.soporte;
+      var numColor=numCols[urgLvl]||numCols[1];
+      var brdColor=numColor;
+      var bgParam=BG_PARAM[pri]||BG_PARAM.soporte;
+      var urgBadge=urgLvl===3?'+++':urgLvl===2?'++':'+';
+
+      // Banner de prioridad — solo cuando cambia
+      if(pri!==prevPri){
+        prevPri=pri;
+        var pconf=pri==='alta'?PRI_ALTA:pri==='media'?PRI_MEDIA:PRI_SOP;
+        var pName=pri==='alta'?'Prioridad Alta':pri==='media'?'Prioridad Media':'Soporte y Optimización';
+        h+='<tr><td colspan="4" style="padding:6px 13px 4px"><div style="border-radius:6px;padding:5px 11px;text-align:center;background:'+pconf.bg+';border:1.5px solid '+pconf.border+'">';
+        h+='<div style="font-size:11px;font-weight:700;color:'+pconf.border+'">'+pName+'</div>';
+        h+='<div style="font-size:9.5px;font-style:italic;color:'+pconf.border+'">'+pconf.desc+'</div>';
+        h+='</div></td></tr>';
+        prevGrp=''; // reset grupo al cambiar prioridad
+      }
+
+      // Subtítulo de sistema + mini-header — solo cuando cambia el grupo
       if(grp&&grp!==prevGrp){
         prevGrp=grp;
-        h+='<tr><td colspan="4" style="padding:4px 8px;background:#f0f0f0;font-size:9px;font-weight:700;color:#555;letter-spacing:.5px;text-transform:uppercase">'+grp+'</td></tr>';
+        rowIdx=0;
+        h+='<tr><td colspan="4" style="padding:5px 12px 0;background:#f5f5f5;border-top:1px solid #e0e0e0">';
+        h+='<span style="font-size:12px;font-weight:700;color:#1a2a3e">'+grp+'</span>';
+        h+='</td></tr>';
+        h+=MINI_HDR;
       }
-      h+='<tr style="background:'+(i%2===0?'#fff':'#fafafa')+';border-left:3px solid '+col+';border-bottom:1px solid #f0f0f0">';
-      h+='<td style="padding:5px 6px;font-weight:800;color:#fff;background:'+col+';text-align:center;font-size:10px;min-width:30px">'+(s.num||i+1)+'<div style="font-size:7px;letter-spacing:1px;opacity:.9">'+urgBadge+'</div></td>';
-      h+='<td style="padding:5px 7px;font-weight:700;color:'+DARK+';font-size:10.5px">'+(s.sistema||'')+'</td>';
+
+      // Fila de datos
+      var rowBg=rowIdx%2===0?'#fff':'#fafafa';
+      rowIdx++;
+      h+='<tr style="background:'+rowBg+';border-left:3px solid '+brdColor+';border-bottom:1px solid #f0f0f0">';
+      h+='<td style="padding:5px 4px;text-align:center;color:#fff;font-weight:800;font-size:10px;min-width:30px;background:'+numColor+';vertical-align:middle">'+(s.num||i+1)+'<div style="font-size:7px;letter-spacing:1px;opacity:.9">'+urgBadge+'</div></td>';
+      h+='<td style="padding:5px 7px;font-weight:700;color:#1a2a3e;font-size:10.5px;background:'+bgParam+';vertical-align:top">'+(s.sistema||'')+'</td>';
+
+      // Valor detectado — centrado, rojo si alto azul si bajo
       var det=s.detectado||s.hallazgo||'';
       var valMatch=det.match(/Valor:\s*([\d.]+)/i);
-      var rangoMatch=det.match(/rango normal:\s*([\d.]+ – [\d.]+)/i);
+      var rangoMatch=det.match(/rango normal:\s*([\d.]+ [–-] [\d.]+)/i);
+      var dirColor=(s.dir==='alto'||s.nivel==='alto')?'#c0392b':'#185fa5';
+      h+='<td style="padding:5px 7px;font-size:10px;vertical-align:top;background:#fff;text-align:center">';
       if(valMatch){
-        h+='<td style="padding:5px 7px;font-size:10px;color:#333">';
-        h+='<div style="font-weight:700;color:'+col+'">'+valMatch[1]+'</div>';
+        h+='<div style="font-weight:700;color:'+dirColor+'">'+valMatch[1]+'</div>';
         if(rangoMatch)h+='<div style="color:#999;font-size:9px">ref: '+rangoMatch[1]+'</div>';
-        h+='</td>';
       }else{
-        h+='<td style="padding:5px 7px;font-size:10px;color:#666">'+det+'</td>';
+        h+='<span style="color:#666">'+det+'</span>';
       }
-      h+='<td style="padding:5px 7px;color:'+DARK+';font-size:10px">'+(s.significado||'—')+'</td></tr>';
+      h+='</td>';
+
+      // ¿Qué significa?
+      h+='<td style="padding:5px 7px;color:#333;font-size:10px;line-height:1.45;vertical-align:top;background:#fff">'+(s.significado||'—')+'</td>';
+      h+='</tr>';
+
+      // Fila ¿Qué hacer? — al final de cada grupo (último elemento)
+      var nextS=sorted[i+1];
+      var esUltimoDelGrupo=!nextS||nextS._grupo!==grp;
+      if(esUltimoDelGrupo){
+        var sw=SYSTEM_WEIGHT[grp]||{};
+        var recTxt=generarRecomendacionGrupo(grp,s._prioridad);
+        if(recTxt){
+          h+='<tr><td colspan="4" style="padding:4px 13px 5px;background:#f3eeff;border-bottom:2px solid #c9a8f5">';
+          h+='<span style="font-size:8px;font-weight:700;color:#7d4fd0;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:1px">¿Qué hacer?</span>';
+          h+='<span style="font-size:10px;color:#5a3d8a;font-style:italic">'+recTxt+'</span>';
+          h+='</td></tr>';
+        }
+      }
     });
     h+='</table></div>';
   }
@@ -3892,7 +4037,7 @@ function downloadReportePDF2(){
       <th style="padding:6px 8px;width:5%;text-align:center">#</th>
       <th style="padding:6px 8px;width:25%">Parámetro</th>
       <th style="padding:6px 8px;width:20%">Valor detectado</th>
-      <th style="padding:6px 8px;width:50%">Qué significa</th>
+      <th style="padding:6px 8px;width:50%">¿Qué significa?</th>
     </tr>${sisRows}</table>
   </div>`:''}
   ${(()=>{
