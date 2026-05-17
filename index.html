@@ -1489,6 +1489,7 @@ function normalizeUser(u){
   if(u.created_at&&!u.createdAt)u.createdAt=u.created_at;
   if(u.parent_id&&!u.parentId)u.parentId=u.parent_id;
   if(u.modulos_asignados&&!u.modulosAsignados)u.modulosAsignados=u.modulos_asignados;
+  if(!Array.isArray(u.modulosAsignados))u.modulosAsignados=u.modulosAsignados?[u.modulosAsignados]:[];
   if(u.days===null||u.days===undefined)u.days=-1;
   u.days=parseInt(u.days);
   if(u.email&&!u.email.includes('@'))u.email=u.email.toLowerCase().trim()+'@iksan.app';
@@ -1915,9 +1916,6 @@ function doLogin(){
         saveInv();
       } else if(isAdminU){
         inventario=[];S.set('ik_inventario',[]);
-        // Admin has no own clients — clear any leaked data
-        clientes=clientes.filter(function(c){return c.consultor_id==='u_admin'||c.consultor_id===cid;});
-        S.set('ik_consultantes',clientes);
       }
 
       renderConList();refreshAllConSelects();
@@ -2037,7 +2035,14 @@ function applyModulosTabs(u){
   if(u.role==='socio'){ u=Object.assign({},u,{role:'paid'}); }
 
   // ── CONSULTOR: gate by modulosAsignados ──
+  // Fallback: si el servidor no devolvio modulosAsignados, derivar desde modulos[].activatedFor local
   var mods=u.modulosAsignados||[];
+  if(!mods.length&&u.id){
+    mods=modulos.filter(function(m){
+      return Array.isArray(m.activatedFor)&&m.activatedFor.indexOf(u.id)>=0;
+    }).map(function(m){return m.id;});
+    if(mods.length)u.modulosAsignados=mods; // cache para no recalcular
+  }
   var hasM1=mods.length>0;
   var hasM2=mods.some(function(m){return m==='m2'||m==='m3'||m==='m4';});
   var hasM3=mods.some(function(m){return m==='m3'||m==='m4';});
