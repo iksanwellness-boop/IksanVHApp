@@ -1489,7 +1489,6 @@ function normalizeUser(u){
   if(u.created_at&&!u.createdAt)u.createdAt=u.created_at;
   if(u.parent_id&&!u.parentId)u.parentId=u.parent_id;
   if(u.modulos_asignados&&!u.modulosAsignados)u.modulosAsignados=u.modulos_asignados;
-  if(!Array.isArray(u.modulosAsignados))u.modulosAsignados=u.modulosAsignados?[u.modulosAsignados]:[];
   if(u.days===null||u.days===undefined)u.days=-1;
   u.days=parseInt(u.days);
   if(u.email&&!u.email.includes('@'))u.email=u.email.toLowerCase().trim()+'@iksan.app';
@@ -1916,6 +1915,9 @@ function doLogin(){
         saveInv();
       } else if(isAdminU){
         inventario=[];S.set('ik_inventario',[]);
+        // Admin has no own clients — clear any leaked data
+        clientes=clientes.filter(function(c){return c.consultor_id==='u_admin'||c.consultor_id===cid;});
+        S.set('ik_consultantes',clientes);
       }
 
       renderConList();refreshAllConSelects();
@@ -2035,14 +2037,7 @@ function applyModulosTabs(u){
   if(u.role==='socio'){ u=Object.assign({},u,{role:'paid'}); }
 
   // ── CONSULTOR: gate by modulosAsignados ──
-  // Fallback: si el servidor no devolvio modulosAsignados, derivar desde modulos[].activatedFor local
   var mods=u.modulosAsignados||[];
-  if(!mods.length&&u.id){
-    mods=modulos.filter(function(m){
-      return Array.isArray(m.activatedFor)&&m.activatedFor.indexOf(u.id)>=0;
-    }).map(function(m){return m.id;});
-    if(mods.length)u.modulosAsignados=mods; // cache para no recalcular
-  }
   var hasM1=mods.length>0;
   var hasM2=mods.some(function(m){return m==='m2'||m==='m3'||m==='m4';});
   var hasM3=mods.some(function(m){return m==='m3'||m==='m4';});
@@ -3098,6 +3093,60 @@ var HEALTH_WEIGHT={
   'Alergia a la Leche':2,
 };
 
+// ═══ SYSTEM_WEIGHT — pesos clínicos por sistema ═══
+var SYSTEM_WEIGHT={
+  '❤️ Cardiovascular':     {pv:5,pf:5,pp:5,vital:true, mulEdad:1.4},
+  '🧠 Neurológico':        {pv:5,pf:5,pp:4,vital:true, mulEdad:1.4},
+  '🫁 Respiratorio':       {pv:5,pf:4,pp:4,vital:true, mulEdad:1.3},
+  '♂️ Masculino':          {pv:4,pf:4,pp:5,vital:true, mulEdad:1.5},
+  '🩸 Metabólico':         {pv:4,pf:4,pp:5,vital:true, mulEdad:1.3},
+  '☠️ Metales Pesados':    {pv:3,pf:3,pp:4,vital:false,mulEdad:1.2},
+  '🧪 Tóxicos':            {pv:2,pf:2,pp:3,vital:false,mulEdad:1.1},
+  '🫀 Hígado · Vesícula':  {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🫘 Renal':              {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🦴 Óseo · Articular':  {pv:2,pf:4,pp:3,vital:false,mulEdad:1.3},
+  '🫃 Digestivo':          {pv:2,pf:3,pp:3,vital:false,mulEdad:1.0},
+  '🔬 Endocrino':          {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🛡️ Inmunológico':       {pv:2,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '🌺 Femenino':           {pv:2,pf:3,pp:3,vital:false,mulEdad:1.0},
+  '⚡ Alergias':           {pv:1,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '💊 Nutrientes':         {pv:1,pf:3,pp:2,vital:false,mulEdad:1.0},
+  '⚗️ Oligoelementos':     {pv:1,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '🌸 Piel':               {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '👁️ Visual':             {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '🧬 Colágeno Sistémico': {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '⚡ Condición Física':   {pv:2,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '📋 Otros':              {pv:1,pf:1,pp:1,vital:false,mulEdad:1.0}
+};
+
+function generarRecomendacionGrupo(grupo){
+  var mapa={
+    '❤️ Cardiovascular':    'Conviene valorar presión arterial, perfil lipídico y función cardíaca con médico general o cardiólogo.',
+    '🧠 Neurológico':       'Puede comentarlo con su médico. Actividad mental, sueño reparador y omega-3 pueden apoyar la función cognitiva.',
+    '🫁 Respiratorio':      'Sería recomendable revisar función respiratoria si hay sensación de falta de aire o cansancio al esfuerzo.',
+    '♂️ Masculino':         'Conviene consultar a urólogo si hay síntomas urinarios o como control preventivo según la edad.',
+    '🩸 Metabólico':        'Revisar glucosa en ayuno y perfil metabólico con médico. Dieta baja en azúcares refinados es clave.',
+    '☠️ Metales Pesados':   'Si hay antecedentes de exposición laboral o ambiental, conviene confirmar con análisis específico.',
+    '🧪 Tóxicos':           'Preferir alimentos orgánicos o bien lavados. Agua y verduras favorecen la desintoxicación natural.',
+    '🫀 Hígado · Vesícula': 'Si hay pesadez post-comida o dificultad con alimentos grasos, puede comentarlo con su médico.',
+    '🫘 Renal':             'Revisar función renal si hay cambios en la orina, hinchazón o cansancio inexplicable.',
+    '🦴 Óseo · Articular':  'Revisar movilidad, dolor articular y riesgo de caídas. Calcio y vitamina D merecen evaluación con médico.',
+    '🫃 Digestivo':         'Apoyar digestión con fibra, hidratación y masticación adecuada. Si hay molestias persistentes, conviene valorarlas.',
+    '🔬 Endocrino':         'Revisar función tiroidea y hormonal si hay fatiga, cambios de peso o temperatura.',
+    '🛡️ Inmunológico':      'Apoyo nutricional con zinc, vitamina C y probióticos puede fortalecer las defensas.',
+    '🌺 Femenino':          'Revisar equilibrio hormonal con ginecólogo o médico de confianza.',
+    '⚡ Alergias':          'Identificar y evitar los desencadenantes. Consultar con médico si las reacciones son frecuentes.',
+    '💊 Nutrientes':        'Considerar suplementación de calidad con guía profesional. La dieta variada y colorida es la base del bienestar.',
+    '⚗️ Oligoelementos':    'Revisar dieta para incluir fuentes naturales de minerales.',
+    '🌸 Piel':              'Hidratación, colágeno hidrolizado y antioxidantes pueden apoyar la piel.',
+    '👁️ Visual':            'Revisar carga visual y descanso. Si hay visión borrosa persistente, valorar con oftalmólogo.',
+    '🧬 Colágeno Sistémico':'Colágeno hidrolizado de alta calidad puede apoyar múltiples sistemas de forma progresiva.',
+    '⚡ Condición Física':  'Más verduras, frutas, hidratación y actividad física ligera pueden mejorar el equilibrio general.'
+  };
+  return mapa[grupo]||'';
+}
+
+
 var RANGE_TABLE={
   // ── CARDIOVASCULAR ──
   "48.264_65.371":["Viscosidad Sanguínea","Cardiovascular","Sangre espesa; mayor riesgo de coágulos, trombosis y accidente cardiovascular.","Tu sangre está demasiado fluida — aunque suena bien, puede dificultar el transporte de nutrientes y aumentar el riesgo de sangrado.",["sangre","cardiovascular","circulación","trombosis"]],
@@ -3174,7 +3223,7 @@ var RANGE_TABLE={
   "4.023_11.627":["Coeficiente de Reumatismo","Hueso Reumatoide","Hay inflamación activa en las articulaciones — puede sentirse como rigidez matutina, hinchazón y dolor que empeora con el clima.","No hay señales de inflamación articular reumatoide activa — tus articulaciones están bien.",["articulaciones","inflamación","reumatismo"]],
   // ── GLUCOSA ──
   "2.967_3.528":["Secreción de Insulina","Glucosa","El páncreas produce demasiada insulina; riesgo de hipoglucemia reactiva.","El páncreas produce poca insulina; riesgo de diabetes.",["glucosa","insulina","páncreas","metabolismo"]],
-  "2.163_7.321":["Glucosa en Sangre","Glucosa","Tu nivel de azúcar está alto — señal de alerta temprana de diabetes; el cuerpo no está procesando bien la glucosa.","Tu azúcar está baja (hipoglucemia) — puedes sentir mareos, temblores, hambre repentina, sudoración o dificultad para concentrarte; requiere atención inmediata.",["glucosa","azúcar","metabolismo","diabetes","insulina"]],
+  "2.163_7.321":["Glucosa en Sangre","Glucosa","Tu nivel de azúcar está alto — señal de alerta temprana de diabetes; el cuerpo no está procesando bien la glucosa.","Tu azúcar está baja (hipoglucemia) — puedes sentir mareos, temblores, hambre repentina, sudoración o dificultad para concentrarte; conviene comer algo de inmediato.",["glucosa","azúcar","metabolismo","diabetes","insulina"]],
   "2.204_2.819":["Glucosa en Orina","Glucosa","Se detecta azúcar en la orina — normalmente no debería aparecer; puede indicar que el nivel de glucosa en el organismo está elevado o que el riñón no filtra bien.","No hay azúcar en la orina — los riñones están filtrando bien la glucosa.",["glucosa","riñón","diabetes"]],
   // ── OLIGOELEMENTOS ──
   "1.219_3.021":["Calcio","Oligoelementos","Exceso de calcio; puede calcificar tejidos y formar cálculos renales.","Déficit de calcio; debilita huesos, dientes y aumenta riesgo de osteoporosis.",["calcio","huesos","dientes","músculos"]],
@@ -3237,14 +3286,14 @@ var RANGE_TABLE={
   "2.412_2.974b":["Glándulas Suprarrenales","Sistema Endocrino","Suprarrenales hiperactivas; exceso de cortisol, estrés crónico.","Suprarrenales agotadas; fatiga severa, presión baja y poca resistencia al estrés.",["suprarrenales","hormonas","estrés","energía"]],
   "2.163_7.34":["Glándula Pituitaria","Sistema Endocrino","Hipófisis hiperactiva; exceso de hormonas trópicas.","Hipófisis poco activa; deficiencia de múltiples hormonas.",["hormonas","metabolismo","tiroides"]],
   "3.21_6.854b":["Glándula Pineal (Melatonina)","Sistema Endocrino","Exceso de melatonina; somnolencia excesiva y ritmo circadiano alterado.","Déficit de melatonina; insomnio y desajuste del ciclo sueño-vigilia.",["sueño","hormonas","sistema nervioso"]],
-  "2.967_3.528b":["Timo (Endocrino)","Sistema Endocrino","El timo podría estar muy activo — puede relacionarse con respuesta inmune elevada o sensibilidad autoinmune.","El timo podría estar poco activo — puede relacionarse con menor inmunidad celular y defensas más vulnerables.",["inmunidad","hormonas","defensas"]],
+  "2.967_3.528b":["Timo (Endocrino)","Sistema Endocrino","El timo podría estar muy elevado — puede relacionarse con respuesta inmune elevada o sensibilidad autoinmune.","El timo podría estar poco activo — puede relacionarse con menor inmunidad celular y defensas más vulnerables.",["inmunidad","hormonas","defensas"]],
   "2.204_2.819b":["Secreción Glandular General","Sistema Endocrino","Secreción glandular excesiva; desequilibrio hormonal.","Secreción glandular insuficiente; fatiga y metabolismo lento.",["hormonas","metabolismo","tiroides"]],
   // ── SISTEMA INMUNOLÓGICO ──
   "133.437_140.47":["Ganglios Linfáticos","Sistema Inmunológico","Inflamación de ganglios; posible infección o proceso autoinmune.","Actividad ganglionar baja; respuesta inmune disminuida.",["inmunidad","linfático","inflamación"]],
   "0.124_0.453b":["Amígdalas (Inmunidad)","Sistema Inmunológico","Amígdalas inflamadas; infección recurrente del tracto respiratorio.","Amígdalas con baja actividad inmune.",["inmunidad","respiración","inflamación"]],
   "0.146_3.218":["Médula Ósea","Sistema Inmunológico","Médula hiperactiva; puede indicar inflamación o anemia compensatoria.","Médula poco activa; producción reducida de células sanguíneas.",["inmunidad","sangre","médula"]],
   "34.367_35.642b":["Bazo (Inmunidad)","Sistema Inmunológico","Bazo inflamado; posible infección o enfermedad autoinmune.","Actividad esplénica reducida; menor filtración de sangre.",["inmunidad","sangre","hígado"]],
-  "58.425_61.213b":["Timo (Sistema Inmunológico)","Sistema Inmunológico","El timo podría estar muy activo — puede relacionarse con respuesta inmune elevada o sensibilidad autoinmune.","El timo podría estar con baja actividad — puede relacionarse con menor inmunidad celular reducida.",["inmunidad","hormonas","defensas"]],
+  "58.425_61.213b":["Timo (Sistema Inmunológico)","Sistema Inmunológico","El timo podría estar muy elevado — puede relacionarse con respuesta inmune elevada o sensibilidad autoinmune.","El timo podría estar con baja actividad — puede relacionarse con menor inmunidad celular reducida.",["inmunidad","hormonas","defensas"]],
   "3.712_6.981":["Inmunoglobulinas","Sistema Inmunológico","Anticuerpos elevados; respuesta inmune activa o inflamación crónica.","Anticuerpos bajos; mayor susceptibilidad a infecciones.",["inmunidad","defensas","inflamación"]],
   "3.241_9.814":["Inmunidad Respiratoria","Sistema Inmunológico","El sistema inmune respiratorio podría estar muy elevado — puede relacionarse con sensibilidad respiratoria o tendencia alérgica.","Defensas respiratorias bajas; mayor riesgo de infecciones pulmonares.",["inmunidad","respiración","pulmón"]],
   "0.638_1.712":["Inmunidad Gastrointestinal","Sistema Inmunológico","Inflamación intestinal activa; colitis o intestino irritable.","Defensas intestinales bajas; mayor riesgo de infecciones digestivas.",["inmunidad","intestino","digestión","inflamación"]],
@@ -3256,7 +3305,7 @@ var RANGE_TABLE={
   "0.161_0.308":["T3 (Triyodotironina)","Tiroides","T3 alta; hipertiroidismo o conversión excesiva de T4.","Tu T3 está baja — la hormona activa de la tiroides no está en suficiente cantidad; puedes sentir frío, cansancio, aumento de peso y metabolismo lento.",["tiroides","metabolismo","hormonas","energía"]],
   // ── TOXINAS ──
   "0.046_0.167b":["Radiación Electromagnética","Toxinas","Exposición elevada a radiación; puede afectar sistema nervioso y causar fatiga.","Exposición baja; dentro del rango seguro.",["toxinas","sistema nervioso","fatiga"]],
-  "0.124_0.453c":["Radicales Libres","Toxinas","Exceso de radicales libres; envejecimiento acelerado y daño celular oxidativo.","Pocos radicales libres; buen estado antioxidante.",["antioxidante","toxinas","envejecimiento","piel"]],
+  "0.124_0.453c":["Radicales Libres","Toxinas","Exceso de radicales libres; envejecimiento acelerado y menor protección celular antioxidante.","Pocos radicales libres; buen estado antioxidante.",["antioxidante","toxinas","envejecimiento","piel"]],
   "0.013_0.313":["Residuos de Pesticidas","Toxinas","Se detectaron pesticidas acumulados — con el tiempo sobrecargan el hígado, los riñones y afectan el sistema nervioso..","No se detectaron pesticidas acumulados en tu organismo — buen nivel de desintoxicación.",["toxinas","hígado","riñón","sistema nervioso"]],
   // ── METALES PESADOS ──
   "0.052_0.643":["Plomo (Pb)","Metales Pesados","El plomo en tu cuerpo está por encima del límite seguro — puede dañar el sistema nervioso, riñones y reducir los glóbulos rojos.ia.","Tu nivel de plomo está dentro del rango seguro — no hay acumulación preocupante de este metal en tu organismo.",["metales pesados","sistema nervioso","riñón","toxinas"]],
@@ -3811,7 +3860,6 @@ function generarRecomendacionGrupo(grupo, prioridad){
 function sortByHealthPriority(sistemas,edadPaciente,sexoPaciente){
   var edadN=parseInt(edadPaciente)||0;
   var esMayor=edadN>=60;
-  var urgFactor={alto:1.2,alta:1.2,medio:1.0,media:1.0,bajo:0.8,baja:0.8};
   var urgOrd={alta:3,alto:3,media:2,medio:2,baja:1,bajo:1};
 
   // 1. Agrupar por sistema
@@ -3822,33 +3870,22 @@ function sortByHealthPriority(sistemas,edadPaciente,sexoPaciente){
     grupos[g].push(s);
   });
 
-  // 2. Puntuar cada grupo con SYSTEM_WEIGHT + bonus volumen + edad
+  // 2. Puntuar con SYSTEM_WEIGHT + bonus volumen + edad
   var grupoPuntos={};
   Object.keys(grupos).forEach(function(g){
     var sw=SYSTEM_WEIGHT[g]||{pv:1,pf:1,pp:1,vital:false,mulEdad:1.0};
     var n=grupos[g].length;
-
-    // Score base clínico
     var scoreBase=(sw.pv*3)+(sw.pf*2)+(sw.pp*2);
-
-    // Severidad promedio del grupo
     var sumPct=0;
-    grupos[g].forEach(function(s){ sumPct+=(s.pct||0); });
-    var avgPct=sumPct/n;
-
-    // Bonus por parámetros (volumen, techo ×2)
+    grupos[g].forEach(function(s){sumPct+=(s.pct||0);});
+    var avgPct=n>0?sumPct/n:0;
     var bonusVol=Math.min(1+0.15*n,2.0);
-
-    // Multiplicador por edad
     var mulEdad=(esMayor&&sw.mulEdad)?sw.mulEdad:1.0;
-
-    // Piso mínimo para sistemas vitales — nunca quedan bajo no-vitales
     var piso=sw.vital?500:0;
-
     grupoPuntos[g]=piso+(scoreBase*bonusVol*mulEdad)+(avgPct*0.5);
   });
 
-  // 3. Asignar prioridad visual al grupo
+  // 3. Asignar prioridad visual
   function getPrioridad(g){
     var sw=SYSTEM_WEIGHT[g]||{pv:1,vital:false};
     if(sw.vital||(grupoPuntos[g]>=600))return 'alta';
@@ -3861,8 +3898,7 @@ function sortByHealthPriority(sistemas,edadPaciente,sexoPaciente){
     return grupoPuntos[b]-grupoPuntos[a];
   });
 
-  // 5. Dentro de cada grupo: +++ primero, luego ++ luego +
-  //    En empate de urgencia: mayor desviación primero
+  // 5. Dentro de cada grupo: +++ → ++ → +, empate por mayor desviación
   var resultado=[];
   var numGlobal=1;
   gruposOrdenados.forEach(function(g){
@@ -3870,7 +3906,7 @@ function sortByHealthPriority(sistemas,edadPaciente,sexoPaciente){
       var ua=urgOrd[a.urgencia||a.nivel||'baja']||1;
       var ub=urgOrd[b.urgencia||b.nivel||'baja']||1;
       if(ub!==ua)return ub-ua;
-      return (b.pct||0)-(a.pct||0); // desempate: mayor desviación primero
+      return (b.pct||0)-(a.pct||0);
     });
     var pri=getPrioridad(g);
     miembros.forEach(function(s){
@@ -3883,42 +3919,36 @@ function sortByHealthPriority(sistemas,edadPaciente,sexoPaciente){
   return resultado;
 }
 
-// ═══ RESUMEN PERSONAL combinatorio ═══
-// Detecta combinaciones de sistemas y arma un párrafo personalizado por patrones clínicos.
 function generarResumenPersonal(sistemas, paciente, sexo, edad){
   var edadN=parseInt(edad)||0;
-  var esMujer=/femenino|mujer|f\b/i.test(sexo||'');
   var nombres=sistemas.map(function(s){return(s.sistema||'').toLowerCase();});
   function tiene(kw){return nombres.some(function(n){return n.indexOf(kw)>=0;});}
   function tieneCualquiera(arr){return arr.some(function(k){return tiene(k);});}
 
-  // ── Detecciones por área ──
   var cardio=tieneCualquiera(['impedancia','perfusión sanguínea','elasticidad vascular','cristal de colesterol','presión de perfusión','volumen de latido','índice de stroke']);
   var pulmon=tiene('paco2')||tiene('oxígeno arterial')||tiene('intercambio de gases');
   var neuro=tiene('memoria')||tiene('nervio craneal')||tiene('arterioesclerosis cerebral');
-  var prostata=tiene('prostatitis')||tiene('hiperplasia prostática')||tiene('calcificación prostática')||tiene('testosterona')||tiene('gonadotropina');
-  var metabolico=tiene('glucosa')||tiene('insulina')||tiene('triglicéridos')&&tiene('obesidad');
-
+  var prostata=tiene('prostatitis')||tiene('hiperplasia prostática')||tiene('calcificación prostática')||tiene('testosterona');
+  var metabolico=tiene('glucosa')||tiene('insulina');
   var metales=tieneCualquiera(['plomo','mercurio','cadmio','arsénico','talio','antimonio']);
-  var toxinas=tiene('pesticidas')||tiene('radicales libres')&&tiene('tóxicos');
+  var toxinas=tiene('pesticidas')||tiene('radicales libres');
   var oseo=tieneCualquiera(['hiperplasia ósea','reumatismo','osteoporosis','densidad mineral ósea','osteocalcina']);
   var digestivo=tieneCualquiera(['absorción gástrica','absorción del intestino','peristalsis','absorción colónica']);
   var higado=tieneCualquiera(['grasa en el hígado','bilirrubina','fosfatasa alcalina (alp)','ácidos biliares']);
   var gineco=tieneCualquiera(['vaginitis','annexitis','cervicitis','quiste','mastitis','ciclo menstrual']);
-
   var nutrientes=tieneCualquiera(['coenzima','triptófano','ácido pantoténico','vitamina','silicio','zinc','selenio','magnesio']);
   var piel=tieneCualquiera(['colágeno cutáneo','grasa cutánea','humectación cutánea','radicales libres cutáneos']);
   var ojo=tieneCualquiera(['fatiga visual','bolsas en los ojos','círculos oscuros']);
   var equilibrio=tiene('equilibrio ácido')||tiene('ph');
 
-  // ── BLOQUE 1: Sistemas vitales ──
+  // BLOQUE 1: Sistemas vitales
   var b1='';
   var vitales=[];
   if(cardio) vitales.push('el sistema cardiovascular muestra señales que merecen atención preventiva'+(edadN>=70?' — especialmente relevante a los '+edadN+' años':''));
   if(pulmon) vitales.push('la función pulmonar podría estar ligeramente alterada en el intercambio de gases');
   if(neuro) vitales.push('la memoria y concentración podrían estar por debajo del rango');
   if(prostata) vitales.push('el sistema prostático y hormonal masculino muestra alteraciones que conviene revisar');
-  if(metabolico) vitales.push('el metabolismo de glucosa e insulina merece seguimiento');
+  if(metabolico) vitales.push('el metabolismo de glucosa merece seguimiento');
   if(vitales.length){
     b1=vitales.length===1
       ? vitales[0].charAt(0).toUpperCase()+vitales[0].slice(1)+'.'
@@ -3927,21 +3957,21 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
     b1='Los sistemas vitales principales están dentro de rangos aceptables en este análisis.';
   }
 
-  // ── BLOQUE 2: Sistemas de seguimiento ──
+  // BLOQUE 2: Sistemas de seguimiento
   var b2='';
   var seguimiento=[];
   if(oseo) seguimiento.push('el sistema óseo y articular muestra varios parámetros alterados relacionados con densidad ósea e inflamación articular');
   if(digestivo) seguimiento.push('la absorción digestiva podría estar reducida, lo que puede afectar el aprovechamiento de nutrientes');
-  if(metales||toxinas) seguimiento.push((metales?'plomo o metales pesados':'pesticidas y tóxicos')+' detectados por encima del rango');
+  if(metales||toxinas) seguimiento.push((metales?'plomo o metales pesados':'tóxicos y pesticidas')+' detectados por encima del rango');
   if(higado) seguimiento.push('la función hepática y biliar muestra indicadores que conviene vigilar');
   if(gineco) seguimiento.push('el área ginecológica muestra señales que merecen seguimiento preventivo');
   if(seguimiento.length){
-    b2='En cuanto a seguimiento recomendado: '+seguimiento.slice(0,-1).join('; ')+(seguimiento.length>1?' y ':'')+seguimiento[seguimiento.length-1]+'.';
+    b2='En cuanto a seguimiento: '+seguimiento.slice(0,-1).join('; ')+(seguimiento.length>1?' y ':'')+seguimiento[seguimiento.length-1]+'.';
   } else {
     b2='Los sistemas digestivo, hepático y óseo no presentan alteraciones significativas en este análisis.';
   }
 
-  // ── BLOQUE 3: Nutrición y suplementos ──
+  // BLOQUE 3: Nutrición
   var b3='';
   if(nutrientes){
     var noms=[];
@@ -3951,10 +3981,8 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
     if(tiene('vitamina c')) noms.push('vitamina C');
     if(tiene('vitamina a')) noms.push('vitamina A');
     if(tiene('silicio')) noms.push('silicio');
-    if(tiene('vitamina b12')) noms.push('vitamina B12');
-    if(tiene('vitamina d')) noms.push('vitamina D');
     if(noms.length>=3){
-      b3='Se detectaron déficits nutricionales en '+noms.slice(0,3).join(', ')+(noms.length>3?' y otros nutrientes esenciales':'')+' — apoyarlos con alimentación y suplementación adecuada puede marcar una diferencia notable en la energía y vitalidad diaria.';
+      b3='Se detectaron déficits en '+noms.slice(0,3).join(', ')+(noms.length>3?' y otros nutrientes esenciales':'')+' — apoyarlos con alimentación y suplementación adecuada puede marcar una diferencia notable en la energía y vitalidad diaria.';
     } else if(noms.length>0){
       b3='Se detectó déficit en '+noms.join(' y ')+' — nutrientes clave para la energía y el bienestar general.';
     } else {
@@ -3964,7 +3992,7 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
     b3='El perfil nutricional no muestra déficits significativos en este análisis.';
   }
 
-  // ── BLOQUE 4: Bienestar general ──
+  // BLOQUE 4: Bienestar general
   var b4parts=[];
   if(piel) b4parts.push('la piel muestra pérdida de colágeno y necesita hidratación y antioxidantes');
   if(ojo) b4parts.push('los ojos muestran fatiga visual que merece descanso y apoyo nutricional');
@@ -3972,11 +4000,8 @@ function generarResumenPersonal(sistemas, paciente, sexo, edad){
   if(!b4parts.length) b4parts.push('el resto de los sistemas analizados se encuentran dentro de rangos aceptables');
   var b4='En cuanto al bienestar general: '+b4parts.join('; ')+'. Con los ajustes adecuados en alimentación y hábitos, todos estos aspectos pueden mejorar progresivamente.';
 
-  // ── Intro personalizada ──
   var nombre1=paciente?paciente.split(' ')[0]:'';
-  var intro=nombre1
-    ? 'Lo que el análisis muestra sobre '+nombre1+':'
-    : 'Estos son los hallazgos más relevantes del análisis:';
+  var intro=nombre1?'Lo que el análisis muestra sobre '+nombre1+':':'Estos son los hallazgos más relevantes del análisis:';
 
   return {intro:intro, bloques:[b1,b2,b3,b4]};
 }
