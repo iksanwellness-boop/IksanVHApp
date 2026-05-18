@@ -1151,6 +1151,69 @@ let modulos=(function(){
 })();
 let subPayments=S.get('ik_subPayments',[]);
 
+function downloadReportePDF(tipo,extra){
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8">';
+  html+='<title>Iksan '+tipo+'</title>';
+  html+='<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:11px;margin:20px;color:#222}';
+  html+='table{border-collapse:collapse;width:100%}td,th{padding:5px 8px;border:1px solid #ddd}';
+  html+='@media print{body{margin:0}}</style></head><body>';
+  var el=document.getElementById(tipo+'List')||document.getElementById(tipo+'sBody')||document.getElementById(tipo+'s')||null;
+  if(el){html+=el.innerHTML;}else{html+='<p>Contenido no disponible</p>';}
+  html+='</body></html>';
+  var w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();setTimeout(function(){w.focus();w.print();},600);}
+  else{showT('Activa ventanas emergentes para generar PDF');}
+}
+
+function exportarInventarioPDF(){
+  var el=document.getElementById('inventarioTable')||document.getElementById('invTable')||null;
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Inventario Iksan</title>';
+  html+='<style>body{font-family:-apple-system,sans-serif;font-size:11px;margin:20px}table{width:100%;border-collapse:collapse}td,th{padding:4px 8px;border:1px solid #ddd}@media print{body{margin:0}}</style></head><body>';
+  html+='<h2>Inventario Iksan Wellness</h2>';
+  if(el){html+=el.innerHTML;}else{html+='<p>Sin datos</p>';}
+  html+='</body></html>';
+  var w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();setTimeout(function(){w.focus();w.print();},600);}
+  else{showT('Activa ventanas emergentes para generar PDF');}
+}
+
+function downloadCatalogoPadecimientos(){
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Catálogo Iksan</title>';
+  html+='<style>body{font-family:-apple-system,sans-serif;font-size:11px;margin:20px}h3{color:#0d7a6b}.prod{margin-bottom:12px;border-bottom:1px solid #eee;padding-bottom:8px}@media print{body{margin:0}}</style></head><body>';
+  html+='<h2>Catálogo por Padecimiento · Iksan Wellness</h2>';
+  var grouped={};
+  PP.forEach(function(p){(p.pa||[]).forEach(function(pa){if(!grouped[pa])grouped[pa]=[];grouped[pa].push(p);});});
+  Object.keys(grouped).sort().forEach(function(pa){
+    html+='<h3>'+pa+'</h3>';
+    grouped[pa].forEach(function(p){html+='<div class="prod"><strong>'+p.e+' '+p.n+'</strong> — '+p.d+'<br><em>'+p.b.slice(0,2).join(' · ')+'</em></div>';});
+  });
+  html+='</body></html>';
+  var w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();setTimeout(function(){w.focus();w.print();},600);}
+  else{showT('Activa ventanas emergentes para generar PDF');}
+}
+
+function downloadCatalogoCategoria(){
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Catálogo Iksan</title>';
+  html+='<style>body{font-family:-apple-system,sans-serif;font-size:11px;margin:20px}h3{color:#0d7a6b}.prod{margin-bottom:10px}@media print{body{margin:0}}</style></head><body>';
+  html+='<h2>Catálogo por Categoría · Iksan Wellness</h2>';
+  var grouped={};
+  PP.forEach(function(p){var c=p.cat||'General';if(!grouped[c])grouped[c]=[];grouped[c].push(p);});
+  Object.keys(grouped).sort().forEach(function(cat){
+    html+='<h3>'+cat+'</h3>';
+    grouped[cat].forEach(function(p){html+='<div class="prod">'+p.e+' <strong>'+p.n+'</strong> $'+p.p+' · '+p.d+'</div>';});
+  });
+  html+='</body></html>';
+  var w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();setTimeout(function(){w.focus();w.print();},600);}
+  else{showT('Activa ventanas emergentes para generar PDF');}
+}
+
+function initCat(){
+  if(typeof renderCatalogo==="function")renderCatalogo();
+  if(typeof renderInventario==="function")renderInventario();
+}
+
 function saveAll(){
   // Always save config/settings to localStorage (device-specific)
   S.set('ik_cfg',APP_CFG);
@@ -1762,7 +1825,7 @@ function doLogin(){
     else renderConList();
 
     refreshAllConSelects();
-    initCat();
+    safeCall(initCat);
     if(u.role==='admin')safeCall(initPriceTable);
     safeCall(applyModulosTabs,[u]);
     const boCfg=S.get('ik_boconfig_'+u.id,null);
@@ -2384,6 +2447,97 @@ function renderConHistory(c){
       </div>
     </div>`;
   }).join('');
+}
+
+function renderResultVH(r){
+  if(!r)return '<div style="padding:20px;color:#999">Sin datos</div>';
+  var sistemas=r.sistemas||[];
+  var sorted=sortByHealthPriority(sistemas,r.edad,r.sexo);
+  var resumenObj=generarResumenPersonal(sistemas,r.paciente,r.sexo,r.edad);
+  var NUM_COL={alta:{'3':'#e74c3c','2':'#ec7063','1':'#f1948a'},media:{'3':'#e67e22','2':'#eb9744','1':'#f0b060'},soporte:{'3':'#148f77','2':'#1abc9c','1':'#48c9b0'}};
+  var BG_PARAM={alta:'#fff5f5',media:'#fff8f0',soporte:'#eafaf9'};
+  var PRI_CFG={
+    alta:{bg:'#fce8e8',border:'#c0392b',name:'Prioridad Alta',desc:'Sistemas que merecen mayor atenci\u00f3n preventiva seg\u00fan edad y hallazgos.'},
+    media:{bg:'#fdebd0',border:'#ca6f1e',name:'Prioridad Media',desc:'Funciones corporales que podr\u00edan beneficiarse de seguimiento y apoyo.'},
+    soporte:{bg:'#e8f8f5',border:'#148f77',name:'Soporte y Optimizaci\u00f3n',desc:'Aspectos relacionados con nutrici\u00f3n, equilibrio y bienestar integral.'}
+  };
+  var MINI='<tr><td colspan="4" style="padding:2px 0;background:#f5f5f5;border-bottom:1px solid #e0e0e0"><div style="display:flex;font-size:8px;color:#aaa;font-weight:600"><span style="width:5%;text-align:center">#</span><span style="width:22%;text-align:center">Par\u00e1metro</span><span style="width:20%;text-align:center">Valor detectado</span><span style="width:53%;text-align:center">\u00bfQu\u00e9 significa?</span></div></td></tr>';
+  var h='';
+  h+='<div style="background:#0d7a6b;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-radius:9px 9px 0 0">';
+  h+='<div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px">Iksan Wellness</div>';
+  h+='<div style="text-align:right"><div style="font-size:9px;color:rgba(255,255,255,.7)">Fecha del an\u00e1lisis</div><div style="font-size:12px;font-weight:700;color:#fff">'+(r.fecha||'--')+'</div></div>';
+  h+='</div><div style="height:3px;background:linear-gradient(90deg,#c0392b,#e67e22)"></div>';
+  h+='<div style="border:1px solid #e8e8e8;border-radius:9px;margin:10px;overflow:hidden">';
+  h+='<div style="padding:6px 13px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:#e1f5ee;border-bottom:2px solid #0d7a6b;color:#0d7a6b">1. Informaci\u00f3n del Paciente</div>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  [['Nombre',r.paciente||'--'],['Sexo',r.sexo||'--'],['Edad',(r.edad||'--')+' a\u00f1os'],['Complexi\u00f3n',r.complexion||'--'],['Fecha del an\u00e1lisis',r.fecha||'--'],['Tipo de an\u00e1lisis','An\u00e1lisis BioCu\u00e1ntico VitalHealth']].forEach(function(row,i){
+    h+='<tr style="background:'+(i%2===0?'#fff':'#f6fbfc')+'"><td style="padding:6px 13px;color:#0d7a6b;font-weight:700;width:36%">'+row[0]+'</td><td style="padding:6px 13px;color:#222">'+row[1]+'</td></tr>';
+  });
+  h+='</table></div>';
+  h+='<div style="border:1px solid #e8e8e8;border-radius:9px;margin:10px;overflow:hidden">';
+  h+='<div style="padding:6px 13px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;background:#fef0f0;border-bottom:2px solid #c0392b;color:#c0392b">2. Sistemas Fuera de Rango \u00b7 Orden de Atenci\u00f3n</div>';
+  h+='<div style="font-size:9.5px;color:#666;padding:5px 13px;background:#fff9f9;border-bottom:1px solid #fde8e8">El orden considera edad, impacto funcional y riesgo cl\u00ednico.</div>';
+  if(resumenObj&&resumenObj.bloques){
+    h+='<div style="background:#fffaf0;border-bottom:2px solid #f0d080;padding:10px 13px">';
+    h+='<div style="font-size:9px;font-weight:700;color:#b8690c;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">'+(resumenObj.intro||'Lo que muestran tus resultados')+'</div>';
+    var nc=['#e74c3c','#7b5ea7','#e67e22','#148f77'];
+    resumenObj.bloques.forEach(function(bloque,bi){
+      h+='<div style="display:flex;gap:9px;margin-bottom:7px;align-items:flex-start">';
+      h+='<div style="width:20px;height:20px;border-radius:50%;background:'+nc[bi]+';color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">'+(bi+1)+'</div>';
+      h+='<div style="font-size:11px;line-height:1.55;color:#3a2808">'+bloque+'</div></div>';
+    });
+    h+='</div>';
+  }
+  h+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  var prevGrp='',prevPri='',rowIdx=0;
+  sorted.forEach(function(s,i){
+    var urg=s.urgencia||s.nivel||'baja';
+    var urgLvl=urg==='alta'||urg==='alto'?3:urg==='media'||urg==='medio'?2:1;
+    var pri=s._prioridad||'soporte';
+    var grp=s._grupo||'';
+    var nc2=NUM_COL[pri]||NUM_COL.soporte;
+    var numColor=nc2[String(urgLvl)]||nc2['1'];
+    var bgP=BG_PARAM[pri]||BG_PARAM.soporte;
+    var badge=urgLvl===3?'+++':urgLvl===2?'++':'+';
+    if(pri!==prevPri){
+      prevPri=pri;prevGrp='';
+      var pc=PRI_CFG[pri]||PRI_CFG.soporte;
+      h+='<tr><td colspan="4" style="padding:6px 13px 4px"><div style="border-radius:6px;padding:5px 11px;text-align:center;background:'+pc.bg+';border:1.5px solid '+pc.border+'">';
+      h+='<div style="font-size:11px;font-weight:700;color:'+pc.border+'">'+pc.name+'</div>';
+      h+='<div style="font-size:9.5px;font-style:italic;color:'+pc.border+'">'+pc.desc+'</div>';
+      h+='</div></td></tr>';
+    }
+    if(grp&&grp!==prevGrp){
+      prevGrp=grp;rowIdx=0;
+      h+='<tr><td colspan="4" style="padding:5px 12px 0;background:#f5f5f5;border-top:1px solid #e0e0e0"><span style="font-size:12px;font-weight:700;color:#1a2a3e">'+grp+'</span></td></tr>';
+      h+=MINI;
+    }
+    var rb=rowIdx%2===0?'#fff':'#fafafa';rowIdx++;
+    h+='<tr style="background:'+rb+';border-left:3px solid '+numColor+';border-bottom:1px solid #f0f0f0">';
+    h+='<td style="padding:5px 4px;text-align:center;color:#fff;font-weight:800;font-size:10px;min-width:30px;background:'+numColor+';vertical-align:middle">'+(s.num||i+1)+'<div style="font-size:7px;letter-spacing:1px;opacity:.9">'+badge+'</div></td>';
+    h+='<td style="padding:5px 7px;font-weight:700;color:#1a2a3e;font-size:10.5px;background:'+bgP+';vertical-align:top">'+(s.sistema||'')+'</td>';
+    var det=s.detectado||s.hallazgo||'';
+    var vm=det.match(/Valor:\s*([\d.]+)/i);
+    var rm=det.match(/rango normal:\s*([\d.]+ [^\",]+)/i);
+    var dc=(s.dir==='alto'||s.nivel==='alto')?'#c0392b':'#185fa5';
+    h+='<td style="padding:5px 7px;font-size:10px;vertical-align:top;background:#fff;text-align:center">';
+    if(vm){h+='<div style="font-weight:700;color:'+dc+'">'+vm[1]+'</div>';if(rm)h+='<div style="color:#999;font-size:9px">ref: '+rm[1]+'</div>';}
+    else h+='<span style="color:#666">'+det+'</span>';
+    h+='</td>';
+    h+='<td style="padding:5px 7px;color:#333;font-size:10px;line-height:1.45;vertical-align:top;background:#fff">'+(s.significado||'--')+'</td></tr>';
+    var ns=sorted[i+1];
+    if(!ns||ns._grupo!==grp){
+      var rt=generarRecomendacionGrupo(grp);
+      if(rt){
+        h+='<tr><td colspan="4" style="padding:4px 13px 5px;background:#f3eeff;border-bottom:2px solid #c9a8f5">';
+        h+='<span style="font-size:8px;font-weight:700;color:#7d4fd0;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:1px">\u00bfQu\u00e9 hacer?</span>';
+        h+='<span style="font-size:10px;color:#5a3d8a;font-style:italic">'+rt+'</span></td></tr>';
+      }
+    }
+  });
+  h+='</table></div>';
+  h+='<div style="font-size:9px;color:#999;text-align:center;padding:8px 13px;border-top:1px solid #f0f0f0">Este reporte es orientativo y no sustituye diagn\u00f3stico ni tratamiento m\u00e9dico profesional.</div>';
+  return h;
 }
 
 function openHistoryDetail(idx){
@@ -3119,6 +3273,44 @@ var SYSTEM_WEIGHT={
   '📋 Otros':              {pv:1,pf:1,pp:1,vital:false,mulEdad:1.0}
 };
 
+function generarPlanAlimentacionTabla(sistemas,habitosTexto,pacienteInfo){
+  var edadN=parseInt(pacienteInfo&&pacienteInfo.edad)||40;
+  var esMayor=edadN>=60;
+  var nombres=sistemas.map(function(s){return(s.sistema||'').toLowerCase();});
+  function tiene(kw){return nombres.some(function(n){return n.indexOf(kw)>=0;});}
+  var ALIM={
+    'colesterol':    {s:'Colesterol',    a:['Avena','Nueces','Aceite de oliva','Salmón','Aguacate'],e:['Embutidos','Frituras','Mantequilla','Sal en exceso']},
+    'corazon':       {s:'Corazón',       a:['Salmón','Sardinas','Espinacas','Arándanos','Ajo'],    e:['Sal en exceso','Grasas trans','Bebidas energéticas']},
+    'higado':        {s:'Hígado',        a:['Alcachofa','Remolacha','Cúrcuma','Té verde','Ajo'],   e:['Alcohol','Frituras','Azúcar','Refrescos']},
+    'huesos':        {s:'Huesos',        a:['Lácteos','Sardinas','Espinacas','Almendras','Brócoli'],e:['Refrescos de cola','Exceso café','Alcohol']},
+    'digestivo':     {s:'Digestivo',     a:['Yogur natural','Papaya','Jengibre','Avena','Kefir'],  e:['Comida muy grasa','Alcohol','Azúcar','Trigo refinado']},
+    'nervioso':      {s:'Cerebro',       a:['Aguacate','Nueces','Arándanos','Huevo','Salmón'],     e:['Azúcar','Alcohol','Comida ultraprocesada']},
+    'metales':       {s:'Detox Metales', a:['Cilantro','Ajo','Espirulina','Cúrcuma','Agua 2L+'],   e:['Atún en exceso','Mariscos','Tabaco']},
+    'toxinas':       {s:'Detox',         a:['Agua con limón','Verduras verdes','Té verde','Ajo'],  e:['Alcohol','Comida procesada','Azúcar']},
+    'vitaminas':     {s:'Vitaminas',     a:['Frutas de colores','Verduras crudas','Huevo','Nueces'],e:['Alcohol','Cocción excesiva','Azúcar']},
+  };
+  var categoriasSeen={};
+  var tablaParamAlim=[];
+  sistemas.forEach(function(s){
+    var sn=(s.sistema||'').toLowerCase();
+    var cat=null;
+    if(sn.indexOf('colesterol')>=0||sn.indexOf('cardio')>=0||sn.indexOf('cardiovascular')>=0)cat='colesterol';
+    else if(sn.indexOf('coraz')>=0||sn.indexOf('impedancia')>=0||sn.indexOf('perfusi')>=0)cat='corazon';
+    else if(sn.indexOf('h\u00edgado')>=0||sn.indexOf('biliar')>=0||sn.indexOf('bilirrubina')>=0)cat='higado';
+    else if(sn.indexOf('\u00f3seo')>=0||sn.indexOf('osteo')>=0||sn.indexOf('reumat')>=0||sn.indexOf('densidad')>=0)cat='huesos';
+    else if(sn.indexOf('digest')>=0||sn.indexOf('absorci')>=0||sn.indexOf('perist')>=0)cat='digestivo';
+    else if(sn.indexOf('memoria')>=0||sn.indexOf('neural')>=0||sn.indexOf('nervio')>=0||sn.indexOf('neuro')>=0)cat='nervioso';
+    else if(sn.indexOf('plomo')>=0||sn.indexOf('mercurio')>=0||sn.indexOf('met')>=0)cat='metales';
+    else if(sn.indexOf('pesticidas')>=0||sn.indexOf('t\u00f3xicos')>=0)cat='toxinas';
+    else if(sn.indexOf('vitamina')>=0||sn.indexOf('nutrientes')>=0||sn.indexOf('coenzima')>=0)cat='vitaminas';
+    if(cat&&ALIM[cat]&&!categoriasSeen[cat]){
+      categoriasSeen[cat]=true;
+      tablaParamAlim.push({categoria:ALIM[cat].s,alimentos:ALIM[cat].a,evitar:ALIM[cat].e,param:s.sistema});
+    }
+  });
+  return {tablaParamAlim:tablaParamAlim,esMayor:esMayor};
+}
+
 function generarRecomendacionGrupo(grupo){
   var mapa={
     '❤️ Cardiovascular':    'Conviene valorar presión arterial, perfil lipídico y función cardíaca con médico general o cardiólogo.',
@@ -3286,7 +3478,7 @@ var RANGE_TABLE={
   "2.412_2.974b":["Glándulas Suprarrenales","Sistema Endocrino","Suprarrenales hiperactivas; exceso de cortisol, estrés crónico.","Suprarrenales agotadas; fatiga severa, presión baja y poca resistencia al estrés.",["suprarrenales","hormonas","estrés","energía"]],
   "2.163_7.34":["Glándula Pituitaria","Sistema Endocrino","Hipófisis hiperactiva; exceso de hormonas trópicas.","Hipófisis poco activa; deficiencia de múltiples hormonas.",["hormonas","metabolismo","tiroides"]],
   "3.21_6.854b":["Glándula Pineal (Melatonina)","Sistema Endocrino","Exceso de melatonina; somnolencia excesiva y ritmo circadiano alterado.","Déficit de melatonina; insomnio y desajuste del ciclo sueño-vigilia.",["sueño","hormonas","sistema nervioso"]],
-  "2.967_3.528b":["Timo (Endocrino)","Sistema Endocrino","El timo podría estar muy elevado — puede relacionarse con respuesta inmune elevada o sensibilidad autoinmune.","El timo podría estar poco activo — puede relacionarse con menor inmunidad celular y defensas más vulnerables.",["inmunidad","hormonas","defensas"]],
+  "2.967_3.528b":["Timo (Endocrino)","Sistema Endocrino","El timo podría estar muy elevado — puede relacionarse con respuesta inmune elevada o sensibilidad autoinmune.","El timo podría estar con actividad reducida — puede relacionarse con menor inmunidad celular y defensas más vulnerables.",["inmunidad","hormonas","defensas"]],
   "2.204_2.819b":["Secreción Glandular General","Sistema Endocrino","Secreción glandular excesiva; desequilibrio hormonal.","Secreción glandular insuficiente; fatiga y metabolismo lento.",["hormonas","metabolismo","tiroides"]],
   // ── SISTEMA INMUNOLÓGICO ──
   "133.437_140.47":["Ganglios Linfáticos","Sistema Inmunológico","Inflamación de ganglios; posible infección o proceso autoinmune.","Actividad ganglionar baja; respuesta inmune disminuida.",["inmunidad","linfático","inflamación"]],
