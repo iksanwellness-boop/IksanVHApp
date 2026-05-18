@@ -236,7 +236,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 /* MODALS */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
 .overlay.on{display:flex}
-.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;padding:18px 16px 30px;position:relative}
+.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;padding:18px 16px 60px;position:relative}
 .m-handle{width:34px;height:3px;background:var(--border);border-radius:2px;margin:0 auto 13px}
 .m-close{position:absolute;top:13px;right:13px;background:var(--warm);border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:13px;color:var(--muted);z-index:10}
 .m-title{font-family:Georgia,serif;font-size:20px;font-weight:300;color:var(--deep);margin-bottom:4px;padding-right:30px}
@@ -392,7 +392,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 
 <!-- HEADER -->
 <div class="app-header">
-  <div id="versionBanner" style="position:fixed;bottom:0;left:0;right:0;background:#1a2a3e;color:#fff;font-size:9px;text-align:center;padding:2px;z-index:9999;opacity:.7">IKSAN v20260512_214928</div>
+  <div id="versionBanner" style="position:fixed;bottom:0;left:0;right:0;background:#1a2a3e;color:#fff;font-size:9px;text-align:center;padding:2px;z-index:200;opacity:.7;pointer-events:none">IKSAN v20260512_214928</div>
   <div class="logo-area" onclick="goView('clientes')">
     <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <defs><radialGradient id="ig" cx="30%" cy="30%" r="75%"><stop offset="0%" stop-color="#fce870"/><stop offset="35%" stop-color="#fddde8"/><stop offset="75%" stop-color="#f0a0d8"/><stop offset="100%" stop-color="#e880d0"/></radialGradient><path id="ta" d="M 15,50 A 35,35 0 0,1 85,50"/></defs>
