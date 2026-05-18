@@ -1223,9 +1223,10 @@ const API={
 };
 
 let APP_CFG=S.get('ik_cfg',{appName:'IKSAN',appSub:'Wellness · VitalHealth',lang:'es'});
+var _selProductos=[];
 let clientes=S.get('ik_consultantes',[]);// UI says 'clientes' but key stays 'consultantes'
 let prices=S.get('ik_prices',{});
-const ADMIN_DEFAULT={id:'u_admin',name:'Admin Iksan',email:'admin',pass:'iksan2024',role:'admin',active:true,days:-1,activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()};
+const ADMIN_DEFAULT={id:'u_admin',name:'Admin Iksan',email:'admin',pass:'79ac6694bc7d761a6400e689a155f59357e036326532aaa0db6b4487909d4e95',role:'admin',active:true,days:-1,activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()};
 let users=(function(){
   try{
     const saved=S.get('ik_users',[]);
@@ -1233,7 +1234,7 @@ let users=(function(){
     // Remove duplicate admin-role users
     const cleaned=arr.filter(u=>u.role!=='admin'||u.id==='u_admin');
     const idx=cleaned.findIndex(u=>u.id==='u_admin');
-    if(idx>=0){cleaned[idx]={...cleaned[idx],pass:'iksan2024',role:'admin',active:true,days:-1};}
+    if(idx>=0){cleaned[idx]={...cleaned[idx],pass:'79ac6694bc7d761a6400e689a155f59357e036326532aaa0db6b4487909d4e95',role:'admin',active:true,days:-1};}
     else{cleaned.unshift({...ADMIN_DEFAULT});}
     S.set('ik_users',cleaned);
     return cleaned;
@@ -2158,7 +2159,7 @@ function applyModulosTabs(u){
 
   // ── CONSULTOR: gate by modulosAsignados ──
   var mods=u.modulosAsignados||[];
-  var hasM1=mods.length>0;
+  var hasM1=mods.length>0||u.role==='paid'||u.role==='socio';
   var hasM2=mods.some(function(m){return m==='m2'||m==='m3'||m==='m4';});
   var hasM3=mods.some(function(m){return m==='m3'||m==='m4';});
   var hasM4=mods.indexOf('m4')>=0;
@@ -10980,12 +10981,12 @@ window.addEventListener('load',function(){
       if(adminIdx>=0){
         cleaned[adminIdx].name='Admin Iksan';
         cleaned[adminIdx].email='admin';
-        cleaned[adminIdx].pass='iksan2024';
+        cleaned[adminIdx].pass='79ac6694bc7d761a6400e689a155f59357e036326532aaa0db6b4487909d4e95';
         cleaned[adminIdx].role='admin';
         cleaned[adminIdx].active=true;
         cleaned[adminIdx].days=-1;
       } else {
-        cleaned.unshift({id:'u_admin',name:'Admin Iksan',email:'admin',pass:'iksan2024',
+        cleaned.unshift({id:'u_admin',name:'Admin Iksan',email:'admin',pass:'79ac6694bc7d761a6400e689a155f59357e036326532aaa0db6b4487909d4e95',
           role:'admin',active:true,days:-1,
           activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()});
       }
@@ -11003,7 +11004,7 @@ window.addEventListener('load',function(){
         var arr=Array.isArray(saved)?saved:[];
         var cleaned=arr.filter(function(u){return u.role!=='admin'||u.id==='u_admin';});
         var idx=cleaned.findIndex(function(u){return u.id==='u_admin';});
-        if(idx>=0){cleaned[idx].pass='iksan2024';cleaned[idx].role='admin';cleaned[idx].active=true;cleaned[idx].days=-1;}
+        if(idx>=0){cleaned[idx].pass='79ac6694bc7d761a6400e689a155f59357e036326532aaa0db6b4487909d4e95';cleaned[idx].role='admin';cleaned[idx].active=true;cleaned[idx].days=-1;}
         else{cleaned.unshift(Object.assign({},ADMIN_DEFAULT));}
         localStorage.setItem('ik_users',JSON.stringify(cleaned));
         return cleaned;
