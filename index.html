@@ -1224,6 +1224,7 @@ const API={
 
 let APP_CFG=S.get('ik_cfg',{appName:'IKSAN',appSub:'Wellness · VitalHealth',lang:'es'});
 var _selProductos=[];
+var SYSTEM_WEIGHT={'❤️ Cardiovascular':{pv:10,vital:true},'🧠 Neurológico':{pv:9,vital:true},'🫁 Respiratorio':{pv:8,vital:true},'🧫 Hematológico':{pv:7,vital:false},'🦷 Sistema Óseo':{pv:6,vital:false},'🫀 Hígado':{pv:6,vital:false},'🫘 Riñones':{pv:6,vital:false},'🧪 Metales Pesados':{pv:5,vital:false},'🦠 Digestivo':{pv:5,vital:false},'💊 Nutrientes':{pv:4,vital:false},'🧬 Piel':{pv:3,vital:false}};
 let clientes=S.get('ik_consultantes',[]);// UI says 'clientes' but key stays 'consultantes'
 let prices=S.get('ik_prices',{});
 const ADMIN_DEFAULT={id:'u_admin',name:'Admin Iksan',email:'admin',pass:'79ac6694bc7d761a6400e689a155f59357e036326532aaa0db6b4487909d4e95',role:'admin',active:true,days:-1,activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()};
@@ -3478,7 +3479,7 @@ function renderResultVH(r){
     grupoPuntos[g]=(grupoPuntos[g]||0)+(s.puntuacion||s.score||100);
   });
 
-  var SYSTEM_WEIGHT={'❤️ Cardiovascular':{pv:10,vital:true},'🧠 Neurológico':{pv:9,vital:true},'🫁 Respiratorio':{pv:8,vital:true},'🩸 Hematológico':{pv:7,vital:false},'🦷 Sistema Óseo':{pv:6,vital:false},'🫀 Hígado':{pv:6,vital:false},'🫘 Riñones':{pv:6,vital:false},'🧪 Metales Pesados':{pv:5,vital:false},'🦠 Digestivo':{pv:5,vital:false},'💊 Nutrientes':{pv:4,vital:false},'🧬 Piel':{pv:3,vital:false}};
+  // SYSTEM_WEIGHT definida globalmente
 
   function getPrioLocal(g){
     var sw=SYSTEM_WEIGHT[g]||{pv:1,vital:false};
