@@ -234,7 +234,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 .empty-icon{font-size:38px;margin-bottom:8px;opacity:.5}
 
 /* MODALS */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1100;align-items:flex-end;justify-content:center}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
 .overlay.on{display:flex}
 .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;padding:18px 16px 60px;position:relative}
 .m-handle{width:34px;height:3px;background:var(--border);border-radius:2px;margin:0 auto 13px}
@@ -1224,30 +1224,6 @@ const API={
 
 let APP_CFG=S.get('ik_cfg',{appName:'IKSAN',appSub:'Wellness · VitalHealth',lang:'es'});
 var _selProductos=[];
-var SYSTEM_WEIGHT={
-  '❤️ Cardiovascular':    {pv:5,pf:5,pp:5,vital:true, mulEdad:1.4},
-  '🧠 Neurológico':       {pv:5,pf:5,pp:4,vital:true, mulEdad:1.4},
-  '🫁 Respiratorio':      {pv:5,pf:4,pp:4,vital:true, mulEdad:1.3},
-  '♂️ Masculino':           {pv:4,pf:4,pp:5,vital:true, mulEdad:1.5},
-  '🦸 Metabólico':        {pv:4,pf:4,pp:5,vital:true, mulEdad:1.3},
-  '☠️ Metales Pesados':    {pv:3,pf:3,pp:4,vital:false,mulEdad:1.2},
-  '🧪 Tóxicos':           {pv:2,pf:2,pp:3,vital:false,mulEdad:1.1},
-  '🫀 Hígado · Vesícula': {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
-  '🫘 Renal':             {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
-  '🦴 Óseo · Articular':  {pv:2,pf:4,pp:3,vital:false,mulEdad:1.3},
-  '🫃 Digestivo':         {pv:2,pf:3,pp:3,vital:false,mulEdad:1.0},
-  '🔬 Endocrino':         {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
-  '🛡️ Inmunológico':    {pv:2,pf:2,pp:2,vital:false,mulEdad:1.0},
-  '🌺 Femenino':          {pv:2,pf:3,pp:3,vital:false,mulEdad:1.0},
-  '⚡ Alergias':             {pv:1,pf:2,pp:2,vital:false,mulEdad:1.0},
-  '💊 Nutrientes':        {pv:1,pf:3,pp:2,vital:false,mulEdad:1.0},
-  '⚗️ Oligoelementos':    {pv:1,pf:2,pp:2,vital:false,mulEdad:1.0},
-  '🌸 Piel':              {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
-  '👁️ Visual':          {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
-  '🧬 Colágeno Sistémico':{pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
-  '⚡ Condición Física':    {pv:2,pf:2,pp:2,vital:false,mulEdad:1.0},
-  '📋 Otros':             {pv:1,pf:1,pp:1,vital:false,mulEdad:1.0}
-};
 let clientes=S.get('ik_consultantes',[]);// UI says 'clientes' but key stays 'consultantes'
 let prices=S.get('ik_prices',{});
 const ADMIN_DEFAULT={id:'u_admin',name:'Admin Iksan',email:'admin',pass:'79ac6694bc7d761a6400e689a155f59357e036326532aaa0db6b4487909d4e95',role:'admin',active:true,days:-1,activatedAt:new Date().toISOString(),createdAt:new Date().toISOString()};
@@ -1378,7 +1354,7 @@ async function sbSaveGasto(g){
   });
 }
 
-async function sbSaveCita(cita,tipo){
+async async function sbSaveCita(cita,tipo){
   if(!cita||!cita.id)return;
   const cid=getConsultorId();if(!cid)return;
   const payload={
@@ -1390,8 +1366,10 @@ async function sbSaveCita(cita,tipo){
     notas:cita.notas||cita.notes||null,
     status:cita.status||'pendiente'
   };
-  if(tipo==='bio')await API.createCitaBio(payload);
-  else await API.createCitaDr(payload);
+  try{
+    if(tipo==='bio')await API.createCitaBio(payload);
+    else await API.createCitaDr(payload);
+  }catch(e){console.error('sbSaveCita error:',e);}
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2270,14 +2248,18 @@ function goBoView(v){
   if(v==='agenda'){
     var agCid=getConsultorId();
     Promise.all([API.getCitasBio(agCid),API.getCitasDr(agCid)]).then(function(r){
-      if(r[0]&&Array.isArray(r[0])&&r[0].length){
+      if(r[0]&&Array.isArray(r[0])){
         var bMap={};r[0].forEach(function(c){bMap[c.id]=c;});
+        // Merge con citas locales que no estén en Supabase aún
+        citasBio.forEach(function(c){if(!bMap[c.id])bMap[c.id]=c;});
         citasBio=Object.values(bMap);
         S.set('ik_citasBio',citasBio);
       }
-      if(r[1]&&Array.isArray(r[1])&&r[1].length){
+      if(r[1]&&Array.isArray(r[1])){
         var deletedDr=S.get('ik_deleted_citas_dr',[]);
         var dMap={};r[1].forEach(function(c){if(deletedDr.indexOf(c.id)<0)dMap[c.id]=c;});
+        // Merge con citas locales
+        citasDr.forEach(function(c){if(!dMap[c.id]&&deletedDr.indexOf(c.id)<0)dMap[c.id]=c;});
         citasDr=Object.values(dMap);
         S.set('ik_citasDr',citasDr);
       }
@@ -2532,7 +2514,6 @@ function renderConHistory(c){
 }
 
 function openHistoryDetail(idx){
-  try{
   const c=getActiveCon();if(!c)return;
   const h=c.history[idx];if(!h)return;
   let body='';
@@ -2567,8 +2548,6 @@ function openHistoryDetail(idx){
     body=`<pre style="background:#fafafa;padding:11px;border-radius:8px;font-size:11px;white-space:pre-wrap">${JSON.stringify(h.data,null,2)}</pre>`;
   }
   openMo(2,`<div class="m-title">${h.summary||h.type}</div><div class="m-sub">${new Date(h.date).toLocaleString('es-MX')}</div>${body}`);
-
-  }catch(e){console.error("openHistoryDetail error:",e);showT("Error al abrir: "+e.message);}
 }
 
 function addToHistory(type,summary,data){
@@ -3377,96 +3356,106 @@ function sortByHealthPriority(sistemas,edadPaciente,sexoPaciente){
 
 // ═══ RESUMEN PERSONAL combinatorio ═══
 // Detecta combinaciones de sistemas y arma un párrafo personalizado por patrones clínicos.
-function generarResumenPersonal(sistemas,paciente,sexo,edad){
-  if(!sistemas||!sistemas.length)return null;
-  var nombres=sistemas.map(function(s){return(s.sistema||s.grupo||'').toLowerCase();});
-  var esMayor=(parseInt(edad)||0)>=60;
+function generarResumenPersonal(sistemas, paciente, sexo, edad){
+  var nombres=sistemas.map(function(s){return(s.sistema||'').toLowerCase();});
+  var edadN=parseInt(edad)||0;
+  var esMujer=/femenino|mujer|f\b/i.test(sexo||'');
+
+  // helpers de detección
+  function tiene(kw){return nombres.some(function(n){return n.indexOf(kw)>=0;});}
+  function tieneCualquiera(arr){return arr.some(function(k){return tiene(k);});}
+
+  // ── Bloques temáticos: cada uno puede activarse independientemente ──
   var bloques=[];
 
-  // BLOQUE 1 — Sistemas Vitales
-  var vitales=[];
-  if(nombres.some(function(n){return/cardiovascular|cardía|ventricular|coronar|lipídico|colesterol|ldl|hdl|triglicér|viscosidad|perfusión/.test(n);}))
-    vitales.push('cardiovascular');
-  if(nombres.some(function(n){return/neurológ|memoria|cerebr|craneal|arterioescler/.test(n);}))
-    vitales.push('neurológico');
-  if(nombres.some(function(n){return/pulmon|respirator|paco2|intercambio de gases|oxígeno arterial|capacidad pulmon/.test(n);}))
-    vitales.push('respiratorio/pulmonar');
-  if(nombres.some(function(n){return/prostat|testoster|gonadotrop|masculin/.test(n);}))
-    vitales.push('prostático');
-  if(nombres.some(function(n){return/glucosa|insulina|glucagón|metabólico|glucem/.test(n);}))
-    vitales.push('metabólico');
-  if(vitales.length)
-    bloques.push('Los sistemas '+vitales.join(', ')+' muestran parámetros que merecen seguimiento preventivo'+(esMayor?' — especialmente relevante en esta etapa de vida':'')+'. Conviene valorar con un profesional de salud.');
-  else
-    bloques.push('Los sistemas vitales principales están dentro de rangos aceptables en este análisis.');
+  // Cardiovascular
+  var cardio=tieneCualquiera(['miocardial','perfusión sanguínea','elasticidad vascular','cristal de colesterol']);
+  var trigli=tiene('triglicéridos');
+  if(cardio&&trigli){
+    bloques.push('El corazón y los vasos sanguíneos están trabajando bajo presión: los niveles elevados de triglicéridos combinados con alteraciones en la perfusión cardíaca y la elasticidad vascular forman una carga importante sobre el sistema circulatorio que vale la pena atender con anticipación.');
+  } else if(cardio){
+    bloques.push('Se detectaron señales de sobrecarga en el sistema cardiovascular. Atender esto a tiempo es clave para proteger la función del corazón y mantener una circulación sana.');
+  } else if(trigli){
+    bloques.push('Los triglicéridos elevados sobrecargan tanto el hígado como el corazón y favorecen la acumulación de grasa corporal. Ajustes en la alimentación y suplementación pueden marcar una diferencia notable.');
+  }
 
-  // BLOQUE 2 — Sistemas de Seguimiento
-  var seguimiento=[];
-  if(nombres.some(function(n){return/óseo|articular|osteoporos|hiperplasia ósea|densidad mineral|reumat|osteocalcin/.test(n);}))
-    seguimiento.push('óseo/articular');
-  if(nombres.some(function(n){return/digestivo|gástric|colón|intestin|peristal|absorción/.test(n);}))
-    seguimiento.push('digestivo');
-  if(nombres.some(function(n){return/plomo|mercurio|arsénico|cadmio|talio|cromo|metal pesado/.test(n);}))
-    seguimiento.push('metales pesados');
-  if(nombres.some(function(n){return/pesticida|tóxico|radical libre/.test(n);}))
-    seguimiento.push('tóxicos');
-  if(nombres.some(function(n){return/hígado|vesícula|bilirrub|fosfatasa|ácidos biliares|grasa en el híg/.test(n);}))
-    seguimiento.push('hígado/vesícula');
-  if(nombres.some(function(n){return/vaginitis|quiste|mastitis|estrógeno|progesteron|femenino|menstrual/.test(n);}))
-    seguimiento.push('ginecológico');
-  if(seguimiento.length)
-    bloques.push('En los sistemas '+seguimiento.join(', ')+' se detectaron parámetros que podrían beneficiarse de seguimiento y ajustes en hábitos.');
-  else
-    bloques.push('Los sistemas digestivo, hepático y óseo no presentan alteraciones significativas en este análisis.');
+  // Hígado / vesícula
+  var higado=tieneCualquiera(['grasa en el hígado','metabolismo lipídico','ácidos biliares']);
+  var pesticidas=tiene('pesticidas');
+  var plomo=tiene('plomo');
+  if(higado&&(pesticidas||plomo)){
+    bloques.push('El hígado está acumulando grasa y al mismo tiempo enfrentando una carga tóxica '+(plomo?'de plomo en sangre ':' ')+(pesticidas?'y residuos de pesticidas':'')+'que lo sobrecargan. Desintoxicar y apoyar esta función es la base del protocolo.');
+  } else if(higado){
+    bloques.push('El hígado muestra acumulación de grasa y dificultad para procesar lípidos. Esto puede sentirse como cansancio, digestión pesada y dificultad para bajar de peso.');
+  } else if(pesticidas||plomo){
+    var tox=[];
+    if(plomo)tox.push('plomo');
+    if(pesticidas)tox.push('residuos de pesticidas');
+    bloques.push('Se detectó acumulación de '+tox.join(' y ')+' que puede afectar silenciosamente el sistema nervioso, los riñones y la vitalidad general. La desintoxicación es una prioridad.');
+  }
 
-  // BLOQUE 3 — Nutrición y Soporte
-  var nutrientes=[];
-  var nutMap=[
-    [/coenzima q10|coq10/,'CoQ10'],
-    [/triptófano/,'triptófano'],
-    [/ácido pantoténico|vitamina b5/,'vitamina B5'],
-    [/vitamina c/,'vitamina C'],
-    [/vitamina a\b/,'vitamina A'],
-    [/vitamina d\b/,'vitamina D'],
-    [/vitamina e\b/,'vitamina E'],
-    [/vitamina k\b/,'vitamina K'],
-    [/vitamina b6/,'vitamina B6'],
-    [/vitamina b12/,'vitamina B12'],
-    [/silicio/,'silicio'],
-    [/lisina/,'lisina'],
-    [/zinc/,'zinc'],
-    [/magnesio/,'magnesio'],
-    [/selenio/,'selenio'],
-    [/hierro\b/,'hierro'],
-    [/calcio\b/,'calcio'],
-    [/omega.?3/,'omega-3']
+  // Respiratorio / pulmonar
+  if(tiene('paco2')||tiene('oxígeno arterial')){
+    bloques.push('El pulmón no está ventilando del todo bien, lo que se traduce en un aumento de CO₂ en sangre. Esto puede provocar cansancio persistente, sensación de falta de aire o dificultad para concentrarse.');
+  }
+
+  // Neurológico / cerebro
+  var memoria=tiene('memoria');
+  if(memoria&&edadN>45){
+    bloques.push('La memoria y concentración muestran una ligera disminución '+(esMujer?', algo muy común en la transición hormonal femenina.':'. Nutrición cerebral y reducción del estrés oxidativo pueden ayudar significativamente.')+' Esto no significa deterioro permanente — el cerebro responde muy bien al apoyo nutricional adecuado.');
+  } else if(memoria){
+    bloques.push('El índice de memoria refleja una carga cognitiva elevada que puede traducirse en niebla mental, dificultad para concentrarse o sensación de agotamiento mental.');
+  }
+
+  // Metabolismo / peso
+  var metabLipid=tiene('metabolismo lipídico');
+  var adiposoMarron=tiene('adiposo marrón');
+  if(metabLipid&&adiposoMarron){
+    bloques.push('El metabolismo de grasas está reducido y la grasa parda (la que quema calorías) está inactiva — una combinación que dificulta bajar de peso aunque se haga dieta. El cuerpo necesita apoyo metabólico para activarse.');
+  }
+
+  // Óseo / articular
+  var oseo=tieneCualquiera(['hiperplasia ósea','reumatoide','osteoporosis']);
+  if(oseo&&edadN>40){
+    bloques.push('Las articulaciones y el tejido óseo muestran señales de inflamación crónica'+(esMujer?' — frecuente en mujeres a partir de los 40 años por cambios hormonales que afectan la densidad ósea':'')+'. Apoyo antiinflamatorio y de colágeno estructural puede aliviar la rigidez y prevenir mayor desgaste.');
+  } else if(oseo){
+    bloques.push('Se detectan señales de inflamación articular. Cuidar el sistema óseo ahora previene problemas mayores de movilidad en el futuro.');
+  }
+
+  // Piel / colágeno (bloque estético — aparece al final, ligero)
+  var piel=tieneCualquiera(['humectación cutánea','endurecimiento cutáneo','colágeno — cabello','colágeno — piel (dermis)','colágeno — tejido muscular']);
+  var nColPiel=nombres.filter(function(n){return n.indexOf('colágeno')>=0||n.indexOf('humectación')>=0||n.indexOf('cutáneo')>=0;}).length;
+  if(nColPiel>=3){
+    bloques.push('La piel, el cabello y los músculos muestran un déficit de colágeno en varios frentes simultáneamente. Esto suele reflejar un proceso de envejecimiento acelerado que responde muy bien a suplementación específica.');
+  } else if(piel){
+    bloques.push('Hay señales de pérdida de colágeno y humectación en la piel, lo que puede notarse como opacidad, rigidez cutánea o cabello más frágil.');
+  }
+
+  // Digestivo
+  var digest=tieneCualquiera(['absorción gástrica','absorción del intestino']);
+  if(digest&&higado){
+    bloques.push('La combinación de mala absorción intestinal con hígado sobrecargado crea un círculo difícil: el cuerpo no aprovecha bien los nutrientes que ingiere, lo que agrava la fatiga y la acumulación de toxinas.');
+  } else if(digest){
+    bloques.push('El sistema digestivo no está absorbiendo los nutrientes con eficiencia, lo que puede causar deficiencias aunque la alimentación sea correcta.');
+  }
+
+  // Alergia tintes — solo mencionarla si hay pocos hallazgos graves
+  var tieneGraves=sistemas.filter(function(s){return getHealthWeight(s.sistema||'')>=7;}).length;
+  if(tiene('alergia a tintes')&&tieneGraves<3){
+    bloques.push('Se detectó sensibilidad a tintes de cabello — algo útil de saber para evitar reacciones cutáneas en el futuro.');
+  }
+
+  if(!bloques.length)return '';
+
+  // Intro personalizada
+  var nombre1=paciente?paciente.split(' ')[0]:'';
+  var introOpts=[
+    nombre1?'Lo que el escáner revela sobre '+nombre1+' va más allá de números aislados — es un mapa de cómo está funcionando tu cuerpo en este momento:':'El escáner revela una imagen completa de cómo está funcionando tu cuerpo en este momento:',
+    nombre1?'Estos son los patrones más importantes que el análisis detectó en '+nombre1+':':'El análisis muestra los siguientes patrones que merecen atención:',
   ];
-  nombres.forEach(function(n){
-    nutMap.forEach(function(pair){
-      if(pair[0].test(n)&&nutrientes.indexOf(pair[1])===-1) nutrientes.push(pair[1]);
-    });
-  });
-  if(nutrientes.length)
-    bloques.push('Se detectaron déficits en '+nutrientes.slice(0,3).join(', ')+(nutrientes.length>3?' y otros micronutrientes':'')+'. La suplementación de calidad y una dieta variada pueden apoyar la recuperación progresiva.');
-  else
-    bloques.push('El perfil nutricional no muestra déficits significativos en este análisis.');
+  var intro=introOpts[Math.floor(Math.random()*introOpts.length)];
 
-  // BLOQUE 4 — Bienestar General
-  var bienArr=[];
-  if(nombres.some(function(n){return/piel|colágeno cut|melanina|elasticidad cut|grasa cut|humectación/.test(n);}))
-    bienArr.push('piel');
-  if(nombres.some(function(n){return/visual|fatiga visual|bolsas|círculos oscuros/.test(n);}))
-    bienArr.push('ojos');
-  if(nombres.some(function(n){return/ph|equilibrio ácido|intercambio de gases/.test(n);}))
-    bienArr.push('equilibrio ácido-base');
-  var bienTxt=bienArr.length?'Aspectos de '+bienArr.join(', ')+' también merecen atención.':'';
-  bloques.push((bienTxt?bienTxt+' ':'')+'Con los ajustes adecuados en alimentación y hábitos, todos estos aspectos pueden mejorar progresivamente.');
-
-  // Construir objetos para el render
-  var colors=['#c0392b','#e67e22','#1a7f3c','#1a56db'];
-  return bloques.map(function(txt,i){
-    return{sistema:'',desc:txt,color:colors[i]||'#555'};
-  });
+  return{intro:intro,bloques:bloques};
 }
 
 function renderResultVH(r){
@@ -3477,26 +3466,28 @@ function renderResultVH(r){
   var logoHtml=boCfg&&boCfg.logo?'<img src="'+boCfg.logo+'" style="height:32px;border-radius:50%;margin-right:8px;vertical-align:middle">':'<div class="mbr-logo">IW</div>';
 
   var sistemas=r.sistemas_afectados||r.sistemas||r.hallazgos_criticos||[];
-  var resumenBloques=typeof generarResumenPersonal==='function'?generarResumenPersonal(sistemas,r.paciente,r.sexo,r.edad):null;
+  var sorted=sistemas.length&&typeof sortByHealthPriority==='function'?sortByHealthPriority(sistemas,r.edad,r.sexo):sistemas;
+  var resumen=typeof generarResumenPersonal==='function'?generarResumenPersonal(sistemas,r.paciente,r.sexo,r.edad):null;
 
-  // Agrupar por grupo
+  // Agrupar por _grupo (asignado por sortByHealthPriority) o grupo directo
   var grupos={};
   var grupoPuntos={};
-  sistemas.forEach(function(s){
-    var g=s.grupo||s.sistema||'General';
+  sorted.forEach(function(s){
+    var g=s._grupo||s.grupo||getGrupoSistema(s.sistema||s.parametro||'')||'Otros';
+    s._grupo=g;
     if(!grupos[g])grupos[g]=[];
     grupos[g].push(s);
-    var urg=s.urgencia||s.nivel||'soporte';
-    var pts=urg==='alta'||urg==='alto'?700:urg==='media'||urg==='medio'?300:100;
+    var urg=s.urgencia||s.nivel||'baja';
+    var pts={alta:700,alto:700,media:300,medio:300}[urg]||100;
     grupoPuntos[g]=(grupoPuntos[g]||0)+pts;
   });
 
-  function getPrioLocal(g){
+  function getPrioGrupo(g){
     var sw=SYSTEM_WEIGHT[g]||{pv:1,pf:1,pp:1,vital:false,mulEdad:1.0};
+    var n=grupos[g]?grupos[g].length:1;
     var edad=parseInt(r.edad)||0;
     var mul=edad>=60?sw.mulEdad:1.0;
     var scoreBase=(sw.pv*3)+(sw.pf*2)+(sw.pp*2);
-    var n=grupos[g]?grupos[g].length:0;
     var bonusVol=Math.min(1+0.15*n,2.0);
     var piso=sw.vital?500:0;
     var score=piso+(scoreBase*bonusVol*mul)+(grupoPuntos[g]||0)*0.1;
@@ -3505,21 +3496,27 @@ function renderResultVH(r){
     return 'soporte';
   }
 
-  var gruposAlta=[],gruposMedia=[],gruposSoporte=[];
-  Object.keys(grupos).forEach(function(g){
-    var p=getPrioLocal(g);
-    if(p==='alta')gruposAlta.push(g);
-    else if(p==='media')gruposMedia.push(g);
-    else gruposSoporte.push(g);
+  // Ordenar grupos por score
+  var gruposOrdenados=Object.keys(grupos).sort(function(a,b){
+    var swA=SYSTEM_WEIGHT[a]||{pv:1,pf:1,pp:1,vital:false,mulEdad:1.0};
+    var swB=SYSTEM_WEIGHT[b]||{pv:1,pf:1,pp:1,vital:false,mulEdad:1.0};
+    var nA=grupos[a].length; var nB=grupos[b].length;
+    var edad=parseInt(r.edad)||0;
+    var mulA=edad>=60?swA.mulEdad:1.0; var mulB=edad>=60?swB.mulEdad:1.0;
+    var sA=(swA.vital?500:0)+((swA.pv*3+swA.pf*2+swA.pp*2)*Math.min(1+.15*nA,2)*mulA)+(grupoPuntos[a]||0)*.1;
+    var sB=(swB.vital?500:0)+((swB.pv*3+swB.pf*2+swB.pp*2)*Math.min(1+.15*nB,2)*mulB)+(grupoPuntos[b]||0)*.1;
+    return sB-sA;
   });
+  var gruposAlta=gruposOrdenados.filter(function(g){return getPrioGrupo(g)==='alta';});
+  var gruposMedia=gruposOrdenados.filter(function(g){return getPrioGrupo(g)==='media';});
+  var gruposSoporte=gruposOrdenados.filter(function(g){return getPrioGrupo(g)==='soporte';});
 
   var h='<div class="rpt">';
 
   // MEMBRETE
-  h+='<div class="membrete">';
-  h+='<div class="mbr-left">'+logoHtml+'<div><div class="mbr-title">'+negocio+'</div><div class="mbr-sub">Reporte de Salud Personalizado</div></div></div>';
-  h+='<div class="mbr-right"><div class="mbr-dl">Fecha del análisis</div><div class="mbr-date">'+(r.fecha||new Date().toLocaleDateString('es-MX'))+'</div><div class="mbr-dl" style="margin-top:2px">Confidencial</div></div>';
-  h+='</div><div class="grad-bar"></div>';
+  h+='<div class="membrete"><div class="mbr-left">'+logoHtml+'<div><div class="mbr-title">'+negocio+'</div><div class="mbr-sub">Reporte de Salud Personalizado</div></div></div>';
+  h+='<div class="mbr-right"><div class="mbr-dl">Fecha del análisis</div><div class="mbr-date">'+(r.fecha||new Date().toLocaleDateString('es-MX'))+'</div><div class="mbr-dl" style="margin-top:2px">Confidencial</div></div></div>';
+  h+='<div class="grad-bar"></div>';
 
   // 1. INFO PACIENTE
   h+='<div class="sec sec-teal"><div class="sec-hdr">1. Información del Paciente</div><table class="pt">';
@@ -3533,76 +3530,88 @@ function renderResultVH(r){
     h+='<div class="sec sec-red"><div class="sec-hdr">2. Sistemas Fuera de Rango · Orden de Atención</div>';
     h+='<div class="info-sub">El orden considera edad, impacto funcional y hallazgos combinados — no solo la desviación del valor.</div>';
 
-    // Resumen personal - 4 bloques
-    if(resumenBloques&&resumenBloques.length){
-      var nombrePac=r.paciente?(r.paciente.split(' ')[0]):'usted';
-      h+='<div class="resbox"><div class="res-title">Lo que el análisis muestra sobre '+nombrePac+':</div>';
-      resumenBloques.forEach(function(b,i){
-        h+='<div class="rb"><div class="rbn" style="background:'+(b.color||'#555')+'">'+(i+1)+'</div>';
-        h+='<div class="rbt"><span style="font-size:11px;color:#333;line-height:1.6">'+b.desc+'</span></div></div>';
+    // Resumen personal — usa {intro, bloques} de generarResumenPersonal
+    if(resumen&&resumen.bloques&&resumen.bloques.length){
+      var bColors=['#c0392b','#7b5ea7','#e67e22','#148f77'];
+      h+='<div class="resbox"><div class="res-title">'+(resumen.intro||'Lo que el análisis muestra:')+'</div>';
+      resumen.bloques.forEach(function(bloque,i){
+        var col=bColors[i%bColors.length];
+        // Buscar el sistema principal mencionado para el sys-label
+        var sysLabel='';
+        var sysKws=[['cardiovascular','corazón','circulación'],['hígado','hepático','tóxico','pesticida'],
+                    ['pulmonar','respiratorio','paco2'],['neurológico','memoria','cerebro'],
+                    ['óseo','articular','osteo'],['digestivo','intestinal'],['piel','colágeno']];
+        var sysNames=['❤️ Cardiovascular','🫀 Hígado','🫁 Respiratorio','🧠 Neurológico','🦴 Óseo · Articular','🫃 Digestivo','🌸 Piel'];
+        sysKws.forEach(function(kws,ki){
+          if(!sysLabel&&kws.some(function(kw){return bloque.toLowerCase().indexOf(kw)>=0;}))
+            sysLabel=sysNames[ki];
+        });
+        h+='<div class="rb"><div class="rbn" style="background:'+col+'">'+(i+1)+'</div>';
+        h+='<div class="rbt">';
+        if(sysLabel)h+='<span class="sys-label" style="color:'+col+';font-size:11px;font-weight:700;display:block;margin-bottom:2px">'+sysLabel+'</span>';
+        h+='<span style="font-size:11px;color:#333;line-height:1.55">'+bloque+'</span>';
+        // Badge de prioridad si corresponde
+        var isVital=sysLabel&&(sysLabel.indexOf('Cardiovascular')>=0||sysLabel.indexOf('Respiratorio')>=0||sysLabel.indexOf('Neurológico')>=0);
+        if(isVital)h+='<span style="font-size:9px;background:#fdecea;color:#a32d2d;border-radius:4px;padding:1px 7px;margin-left:6px;vertical-align:middle">Prioritario</span>';
+        h+='</div></div>';
       });
       h+='</div>';
     }
 
+    // Tabla principal
     h+='<table class="main"><tr><th style="text-align:center;width:44px">#</th><th>Parámetro</th><th style="text-align:center">Valor detectado</th><th>¿Qué significa?</th></tr>';
     var counter=1;
+    var numColors={
+      alta: {3:'#e74c3c',2:'#ec7063',1:'#f1948a'},
+      media:{3:'#e67e22',2:'#eb9744',1:'#f0b060'},
+      soporte:{3:'#148f77',2:'#1abc9c',1:'#48c9b0'}
+    };
+    var bgPastel={alta:'#fff5f5',media:'#fff8f0',soporte:'#eafaf9'};
 
     function renderGrupo(g,prio){
       var items=grupos[g]||[];
       if(!items.length)return;
-      var bgMap={alta:'#fff5f5',media:'#fff8f0',soporte:'#eafaf9'};
-      var numColors={
-        alta:  {3:'#e74c3c',2:'#ec7063',1:'#f1948a'},
-        media: {3:'#e67e22',2:'#eb9744',1:'#f0b060'},
-        soporte:{3:'#148f77',2:'#1abc9c',1:'#48c9b0'}
-      };
-      var bgCell=bgMap[prio]||'#f9f9f9';
-
       h+='<tr class="sys-title-row"><td colspan="4"><span class="sys-title">'+g+'</span></td></tr>';
-      h+='<tr class="col-mini-row"><td colspan="4"><div class="col-mini" style="display:grid;grid-template-columns:44px 1fr 1fr 1fr;font-size:8px;color:#aaa;text-align:center;padding:2px 0"><span>#</span><span>Parámetro</span><span>Valor detectado</span><span>¿Qué significa?</span></div></td></tr>';
-
+      h+='<tr class="col-mini-row"><td colspan="4"><div class="col-mini" style="display:grid;grid-template-columns:44px 1fr 1fr 1fr;font-size:8px;color:#aaa;text-align:center;padding:2px 4px"><span>#</span><span>Parámetro</span><span>Valor detectado</span><span>¿Qué significa?</span></div></td></tr>';
       items.forEach(function(s,idx){
-        var urg=s.urgencia||s.nivel||'soporte';
-        var urgNorm=urg==='alta'||urg==='alto'?'alta':urg==='media'||urg==='medio'?'media':'soporte';
-        var pct=s.pct||0;
+        var urg=s.urgencia||s.nivel||'baja';
+        var pct=parseFloat(s.pct)||0;
         var urgNum=pct>35?3:pct>15?2:1;
-        var numCol=(numColors[prio]||numColors.soporte)[urgNum]||'#888';
-        var urg_badge='+'.repeat(urgNum);
-        var altColor=idx%2===0?'':'background:#fafafa';
-
+        var nCols=numColors[prio]||numColors.soporte;
+        var numCol=nCols[urgNum]||'#888';
+        var bg=bgPastel[prio]||'#f9f9f9';
+        var rowBg=idx%2===0?'':'background:#fafafa';
         var val=s.valor!=null?s.valor:(s.val!=null?s.val:'—');
         var rmin=s.ref_min!=null?s.ref_min:(s.rmin!=null?s.rmin:null);
         var rmax=s.ref_max!=null?s.ref_max:(s.rmax!=null?s.rmax:null);
         var dir=s.dir||'';
-        var valColor=dir==='alto'||dir==='high'?'#c0392b':dir==='bajo'||dir==='low'?'#185fa5':'#555';
+        var valColor=dir==='alto'?'#c0392b':dir==='bajo'?'#185fa5':'#555';
         var refStr=rmin!=null&&rmax!=null?'ref: '+rmin+' – '+rmax:'';
         var sig=s.significado||s.descripcion||s.sig||s.hallazgo||'—';
         var param=s.parametro||s.display||s.sistema||s.nombre||'—';
-
-        h+='<tr style="'+altColor+'">';
-        h+='<td style="text-align:center;padding:5px 4px;background:'+numCol+';color:#fff;font-size:11px;font-weight:700;border-radius:4px 0 0 4px">'+counter+'<div style="font-size:8px;font-weight:400">'+urg_badge+'</div></td>';
-        h+='<td style="padding:5px 7px;font-size:11px;font-weight:600;color:#1a2a3e;background:'+bgCell+'">'+param+'</td>';
-        h+='<td style="padding:5px 7px;text-align:center"><span style="font-size:13px;font-weight:700;color:'+valColor+'">'+val+'</span>'+(refStr?'<div style="font-size:8px;color:#aaa">'+refStr+'</div>':'')+'</td>';
-        h+='<td style="padding:5px 7px;font-size:10px;color:#555;line-height:1.4">'+sig+'</td></tr>';
+        h+='<tr style="'+rowBg+'">';
+        h+='<td style="text-align:center;padding:5px 3px;background:'+numCol+';color:#fff;font-size:11px;font-weight:700;border-radius:4px 0 0 4px;vertical-align:middle">'+counter+'<div style="font-size:7px">'+'+'.repeat(urgNum)+'</div></td>';
+        h+='<td style="padding:5px 7px;font-size:11px;font-weight:600;color:#1a2a3e;background:'+bg+'">'+param+'</td>';
+        h+='<td style="padding:5px 7px;text-align:center;vertical-align:middle"><span style="font-size:13px;font-weight:700;color:'+valColor+'">'+val+'</span>'+(refStr?'<div style="font-size:8px;color:#aaa;margin-top:1px">'+refStr+'</div>':'')+'</td>';
+        h+='<td style="padding:5px 7px;font-size:10px;color:#555;line-height:1.45">'+sig+'</td></tr>';
         counter++;
       });
-
-      // Fila ¿Qué hacer?
+      // ¿Qué hacer? — viene de generarRecomendacionGrupo (de tablas)
       var rec=typeof generarRecomendacionGrupo==='function'?generarRecomendacionGrupo(g):'Consulta con un profesional de salud.';
-      h+='<tr style="background:#f3eeff;border-bottom:1px solid #c9a8f5"><td colspan="4" style="padding:6px 10px">';
+      h+='<tr style="background:#f3eeff;border-bottom:2px solid #c9a8f5"><td colspan="4" style="padding:6px 10px">';
       h+='<span style="font-size:8px;font-weight:700;color:#7d4fd0;letter-spacing:.5px;text-transform:uppercase">¿Qué hacer?</span> ';
       h+='<span style="font-size:10px;font-style:italic;color:#5a3d8a">'+rec+'</span></td></tr>';
     }
 
-    var priTpl=[
-      {g:gruposAlta,   cls:'pri-alta-block',   nm:'Prioridad Alta',         desc:'Sistemas que merecen mayor atención preventiva según edad y hallazgos.'},
-      {g:gruposMedia,  cls:'pri-media-block',  nm:'Prioridad Media',        desc:'Funciones corporales que podrían beneficiarse de seguimiento y apoyo.'},
-      {g:gruposSoporte,cls:'pri-soporte-block',nm:'Soporte y Optimización', desc:'Aspectos relacionados con nutrición, equilibrio y bienestar integral.'}
+    var priDef=[
+      {arr:gruposAlta,   prio:'alta',    cls:'pri-alta-block',   nm:'Prioridad Alta',         desc:'Sistemas que merecen mayor atención preventiva según edad y hallazgos.'},
+      {arr:gruposMedia,  prio:'media',   cls:'pri-media-block',  nm:'Prioridad Media',        desc:'Funciones corporales que podrían beneficiarse de seguimiento y apoyo.'},
+      {arr:gruposSoporte,prio:'soporte', cls:'pri-soporte-block',nm:'Soporte y Optimización', desc:'Aspectos relacionados con nutrición, equilibrio y bienestar integral.'}
     ];
-    priTpl.forEach(function(pt){
-      if(!pt.g.length)return;
-      h+='<tr class="pri-title-row"><td colspan="4"><div class="pri-block '+pt.cls+'"><div class="pri-name">'+pt.nm+'</div><div class="pri-desc">'+pt.desc+'</div></div></td></tr>';
-      pt.g.forEach(function(g){renderGrupo(g,pt.cls.replace('pri-','').replace('-block',''));});
+    priDef.forEach(function(pd){
+      if(!pd.arr.length)return;
+      h+='<tr class="pri-title-row"><td colspan="4"><div class="pri-block '+pd.cls+'"><div class="pri-name">'+pd.nm+'</div><div class="pri-desc">'+pd.desc+'</div></div></td></tr>';
+      pd.arr.forEach(function(g){renderGrupo(g,pd.prio);});
     });
     h+='</table></div>';
   }
@@ -3622,47 +3631,41 @@ function renderResultVH(r){
     h+='</table></div>';
   }
 
-  // 4. PAQUETES — carrito listo por paquete con botón agregar
+  // 4. PAQUETES — carritos listos con botón agregar
   var pks=r.paquetes||{};
   var pkDef=[
-    {key:'basico',   label:'Básico',   color:'#1a56db', desc:'Primer paso esencial'},
-    {key:'esencial', label:'Esencial', color:'#1a7f3c', desc:'Protocolo completo'},
-    {key:'completo', label:'Completo', color:'#8b1a5a', desc:'Máximo apoyo'}
+    {key:'basico',   label:'Básico',   color:'#1a56db',desc:'Primer paso esencial'},
+    {key:'esencial', label:'Esencial', color:'#1a7f3c',desc:'Protocolo completo'},
+    {key:'completo', label:'Completo', color:'#8b1a5a',desc:'Máximo apoyo'}
   ];
-  var hayPaquetes=pkDef.some(function(pk){return pks[pk.key]&&pks[pk.key].productos&&pks[pk.key].productos.length;});
-  if(hayPaquetes){
+  var hayPks=pkDef.some(function(pk){return pks[pk.key]&&pks[pk.key].productos&&pks[pk.key].productos.length;});
+  if(hayPks){
     h+='<div class="sec" style="border-color:#d5e8ff"><div class="sec-hdr" style="background:#eaf2ff;border-color:#1a56db;color:#1a56db">4. Protocolos de Suplementación Sugeridos</div>';
     pkDef.forEach(function(pk){
       var p=pks[pk.key];
       if(!p||!p.productos||!p.productos.length)return;
-      var prods=p.productos;
-      h+='<div style="padding:10px 13px;border-bottom:2px solid '+pk.color+'20;margin-bottom:4px">';
+      h+='<div style="padding:10px 13px;border-bottom:2px solid '+pk.color+'30;margin-bottom:2px">';
       h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
       h+='<div><span style="font-size:12px;font-weight:700;color:'+pk.color+'">'+pk.label+'</span>';
-      h+='<span style="font-size:10px;color:#777;margin-left:8px">'+pk.desc+'</span></div>';
-      // Botón agregar todo el paquete al carrito
-      var itemsJson=JSON.stringify(prods.map(function(item){
-        var nombre=typeof item==='string'?item:(item.nombre||item.n||'');
-        var ppItem=typeof PP!=='undefined'?PP.find(function(p){return p.n===nombre;}):null;
-        return{n:nombre,q:1,p:ppItem?ppItem.p:0,e:ppItem?ppItem.e:''};
-      })).replace(/'/g,"\\'");
-      h+='<button onclick="agregarPaqueteCarrito(\''+pk.key+'\',\''+pk.label+'\')" style="background:'+pk.color+';color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:10px;cursor:pointer;font-weight:600">🛒 Agregar paquete al carrito</button>';
+      if(p.justificacion)h+='<span style="font-size:10px;color:#777;margin-left:8px;font-style:italic">'+p.justificacion+'</span>';
       h+='</div>';
-      // Tabla de productos
+      h+='<button onclick="agregarPaqueteCarrito(\''+pk.key+'\',\''+pk.label+'\')" style="background:'+pk.color+';color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:10px;cursor:pointer;font-weight:600">🛒 Agregar al carrito</button>';
+      h+='</div>';
       h+='<table style="width:100%;border-collapse:collapse;font-size:10px">';
-      h+='<tr style="background:#f8f8f8"><th style="text-align:left;padding:4px 7px;color:#555">Producto</th><th style="text-align:left;padding:4px 7px;color:#555">Para qué sirve</th><th style="text-align:left;padding:4px 7px;color:#555">Ingredientes</th><th style="text-align:left;padding:4px 7px;color:#555">Dosis</th></tr>';
-      prods.forEach(function(item,idx){
+      h+='<tr style="background:#f8f8f8"><th style="text-align:left;padding:4px 6px;color:#555">Producto</th><th style="text-align:left;padding:4px 6px;color:#555">Para qué sirve</th><th style="text-align:left;padding:4px 6px;color:#555;font-size:9px">Ingredientes</th><th style="text-align:left;padding:4px 6px;color:#555">Dosis</th></tr>';
+      p.productos.forEach(function(item,idx){
         var nombre=typeof item==='string'?item:(item.nombre||item.n||'—');
         var razon=typeof item==='object'?(item.razon_clinica||item.resultado_esperado||''):'';
         var dosis=typeof item==='object'?(item.dosis||item.d||''):'';
-        var ppItem=typeof PP!=='undefined'?PP.find(function(p){return p.n===nombre;}):null;
+        var ppItem=typeof PP!=='undefined'?PP.find(function(x){return x.n===nombre;}):null;
         var ing=ppItem&&ppItem.ing?ppItem.ing:'';
+        var emoji=ppItem&&ppItem.e?ppItem.e+' ':'';
         var bg=idx%2===0?'#fff':'#f9f9f9';
         h+='<tr style="background:'+bg+'">';
-        h+='<td style="padding:5px 7px;font-weight:600;color:#1a2a3e">'+(ppItem&&ppItem.e?ppItem.e+' ':'')+nombre+'</td>';
-        h+='<td style="padding:5px 7px;color:#555;font-size:9.5px">'+razon+'</td>';
-        h+='<td style="padding:5px 7px;color:#777;font-size:9px">'+ing+'</td>';
-        h+='<td style="padding:5px 7px;color:#777;white-space:nowrap">'+dosis+'</td></tr>';
+        h+='<td style="padding:5px 6px;font-weight:600;color:#1a2a3e">'+emoji+nombre+'</td>';
+        h+='<td style="padding:5px 6px;color:#555;font-size:9.5px">'+razon+'</td>';
+        h+='<td style="padding:5px 6px;color:#888;font-size:8.5px">'+ing+'</td>';
+        h+='<td style="padding:5px 6px;color:#777;white-space:nowrap;font-size:9.5px">'+dosis+'</td></tr>';
       });
       h+='</table></div>';
     });
@@ -3670,13 +3673,9 @@ function renderResultVH(r){
   }
 
   h+='<div class="disclaimer">Este reporte es orientativo y no sustituye diagnóstico ni tratamiento médico profesional.</div>';
-
-  // Botón PDF al final del reporte
-  h+='<div style="text-align:center;padding:14px 0 6px">';
+  h+='<div style="text-align:center;padding:14px 0 4px">';
   h+='<button onclick="downloadReportePDF()" style="background:#1a2a3e;color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)">📄 Descargar PDF del reporte completo</button>';
-  h+='</div>';
-
-  h+='</div>';
+  h+='</div></div>';
   return h;
 }
 
@@ -4437,7 +4436,6 @@ function generarPlanAlimentacionTabla(sistemasDetectados, habitosTexto, paciente
 
 
 function runVHTextAnalysis(){
-  try{
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
   const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
@@ -4457,11 +4455,11 @@ function runVHTextAnalysis(){
     return;
   }
 
-    // ── Plan de alimentación: siempre se genera con tablaParamAlim por parámetros fuera de rango ──
+  // ── Plan de alimentación desde Tablas (gratis) — siempre genera si está marcado ──
   var incluirAliment=document.getElementById('chkAlimentVH')?.checked;
   var habitosText=(document.getElementById('alimentHabitosVH')?.value||'').trim();
   var sisParaPlan=(result.sistemas_afectados||[]).length>0?result.sistemas_afectados:[{sistema:'Metabolismo Lipídico'},{sistema:'Contenido de Grasa en el Hígado'}];
-  // Siempre generar tablaParamAlim basada en parámetros encontrados
+  // Siempre generar tablaParamAlim automaticamente
   result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
   if(incluirAliment){
   }
@@ -4494,8 +4492,6 @@ function runVHTextAnalysis(){
 
   addToHistory('vh','🔬 Análisis BioCuántico — '+sisLen+' hallazgos',result);
   showT('✓ Reporte generado — '+sisLen+' sistemas detectados');
-
-  }catch(e){console.error("runVHTextAnalysis error:",e);var resEl=document.getElementById("anaRes");var spinEl=document.getElementById("anaSpin");if(spinEl)spinEl.style.display="none";if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error:</b> '+e.message+'</div>';}
 }
 
 // ── API VERSION: Tabla Maestra para sistemas/paquetes + mini-llamada API solo para plan alimenticio ──
@@ -5328,18 +5324,9 @@ function parsearReporteBiocuantico(texto,c){
   var sistemas=outParams.map(function(p){
     return{
       sistema:p.display,
-      parametro:p.display,
-      grupo:p.section||'General',
-      valor:p.val,
-      ref_min:p.rmin,
-      ref_max:p.rmax,
       detectado:'Valor: '+p.val+' (rango normal: '+p.rmin+' – '+p.rmax+')',
       significado:p.sig,
-      descripcion:p.sig,
-      urgencia:p.urgencia,
-      nivel:p.urgencia==='alta'?'alto':p.urgencia==='media'?'medio':'bajo',
-      puntuacion:p.urgencia==='alta'?700:p.urgencia==='media'?300:100,
-      score:p.urgencia==='alta'?700:p.urgencia==='media'?300:100,
+      urgencia:p.urgencia,nivel:p.urgencia==='alta'?'alto':p.urgencia==='media'?'medio':'bajo',
       num:p.num,dir:p.dir
     };
   });
@@ -9370,34 +9357,28 @@ function resetPrices(){
 
 
 function agregarPaqueteCarrito(pkKey,pkLabel){
-  var r=_lastResult;
-  if(!r||!r.paquetes||!r.paquetes[pkKey])return;
+  if(!_lastResult||!_lastResult.paquetes||!_lastResult.paquetes[pkKey])return;
   var con=getActiveCon();
   if(!con){showT('Selecciona un cliente primero');return;}
-  var prods=r.paquetes[pkKey].productos||[];
+  var prods=_lastResult.paquetes[pkKey].productos||[];
   var agregados=0;
   prods.forEach(function(item){
     var nombre=typeof item==='string'?item:(item.nombre||item.n||'');
     if(!nombre)return;
     var ppItem=typeof PP!=='undefined'?PP.find(function(p){return p.n===nombre;}):null;
-    var precio=ppItem?ppItem.p:0;
-    var emoji=ppItem?ppItem.e:'';
-    // Agregar al carrito del consultante
     if(!con.items)con.items=[];
     var existing=con.items.find(function(i){return i.n===nombre;});
     if(existing){existing.q++;}
-    else{con.items.push({n:nombre,q:1,p:precio,e:emoji});}
+    else{con.items.push({n:nombre,q:1,p:ppItem?ppItem.p:0,e:ppItem?ppItem.e:''});}
     agregados++;
   });
   saveCon(con);
-  showT('✓ Paquete '+pkLabel+' agregado al carrito ('+agregados+' productos)');
-  // Actualizar badge del carrito
   var badge=document.getElementById('conCartBadge');
   if(badge){
     var qty=(con.items||[]).reduce(function(s,i){return s+i.q;},0);
-    badge.textContent=qty;
-    badge.style.display=qty>0?'inline-block':'none';
+    badge.textContent=qty;badge.style.display=qty>0?'inline-block':'none';
   }
+  showT('✓ Paquete '+pkLabel+' agregado ('+agregados+' productos)');
 }
 function filterPrices(){
   const q=(document.getElementById('priceSearch')?.value||'').toLowerCase();
