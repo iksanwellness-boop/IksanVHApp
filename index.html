@@ -1354,22 +1354,20 @@ async function sbSaveGasto(g){
   });
 }
 
-async async function sbSaveCita(cita,tipo){
-  if(!cita||!cita.id)return;
-  const cid=getConsultorId();if(!cid)return;
-  const payload={
-    id:cita.id, consultor_id:cid,
+function sbSaveCita(cita,tipo){
+  if(!cita||!cita.id)return Promise.resolve();
+  var cid=getConsultorId();if(!cid)return Promise.resolve();
+  var payload={
+    id:cita.id,consultor_id:cid,
     consultante_id:cita.cliId||null,
     consultante_nombre:cita.cliName||null,
     fecha:cita.date||cita.fecha||null,
     hora:cita.time||cita.hora||null,
-    notas:cita.notas||cita.notes||null,
+    notas:cita.notas||cita.notes||cita.nota||null,
     status:cita.status||'pendiente'
   };
-  try{
-    if(tipo==='bio')await API.createCitaBio(payload);
-    else await API.createCitaDr(payload);
-  }catch(e){console.error('sbSaveCita error:',e);}
+  var apiFn=tipo==='bio'?API.createCitaBio:API.createCitaDr;
+  return apiFn(payload).catch(function(e){console.error('sbSaveCita:',e);});
 }
 
 /* ═══════════════════════════════════════════════════
@@ -3292,6 +3290,32 @@ function getGrupoSistema(nombre){
 // Agrupa, puntúa cada grupo acumulativamente y devuelve lista plana ordenada sin grupos repetidos.
 // Puntuación del grupo = suma de pesos de sus parámetros × factor de urgencia (alta=1.2, media=1, baja=0.8)
 // Esto hace que el hígado con 4 parámetros supere al corazón con 1, aunque el corazón tenga mayor peso unitario.
+// ══ SYSTEM_WEIGHT — pesos clínicos por sistema (debe coincidir con getGrupoSistema) ══
+var SYSTEM_WEIGHT={
+  '❤️ Cardiovascular':           {pv:5,pf:5,pp:5,vital:true, mulEdad:1.4},
+  '🧠 Neurológico':              {pv:5,pf:5,pp:4,vital:true, mulEdad:1.4},
+  '🫁 Respiratorio':             {pv:5,pf:4,pp:4,vital:true, mulEdad:1.3},
+  '♂️ Masculino':                  {pv:4,pf:4,pp:5,vital:true, mulEdad:1.5},
+  '🩸 Metabólico · Glucosa':    {pv:4,pf:4,pp:5,vital:true, mulEdad:1.3},
+  '☠️ Metales Pesados':            {pv:3,pf:3,pp:4,vital:false,mulEdad:1.2},
+  '🧪 Tóxicos · Pesticidas':    {pv:2,pf:2,pp:3,vital:false,mulEdad:1.1},
+  '🫀 Hígado · Vesícula':       {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🫘 Renal':                    {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🦴 Óseo · Articular':        {pv:2,pf:4,pp:3,vital:false,mulEdad:1.3},
+  '🫃 Digestivo':                {pv:2,pf:3,pp:3,vital:false,mulEdad:1.0},
+  '🔬 Endocrino · Tiroides':    {pv:3,pf:3,pp:3,vital:false,mulEdad:1.1},
+  '🛡️ Inmunológico':            {pv:2,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '🌺 Femenino · Ginecología':  {pv:2,pf:3,pp:3,vital:false,mulEdad:1.0},
+  '⚡ Alergias':                    {pv:1,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '💊 Nutrientes · Suplementos':{pv:1,pf:3,pp:2,vital:false,mulEdad:1.0},
+  '⚗️ Oligoelementos':            {pv:1,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '🌸 Piel · Colágeno':         {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '👁️ Visual':                 {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '🧬 Colágeno Sistémico':       {pv:1,pf:2,pp:1,vital:false,mulEdad:1.0},
+  '⚡ Condición Física':            {pv:2,pf:2,pp:2,vital:false,mulEdad:1.0},
+  '📋 Otros':                    {pv:1,pf:1,pp:1,vital:false,mulEdad:1.0}
+};
+
 function sortByHealthPriority(sistemas,edadPaciente,sexoPaciente){
   var edadN=parseInt(edadPaciente)||0;
   var esMayor=edadN>=60;
@@ -3568,11 +3592,67 @@ function renderResultVH(r){
     };
     var bgPastel={alta:'#fff5f5',media:'#fff8f0',soporte:'#eafaf9'};
 
+    // Nombres visuales combinados por grupo (igual que preview v8)
+    var GRUPO_LABEL={
+      '❤️ Cardiovascular':          'Cardiovascular / Cerebrovascular',
+      '🧠 Neurológico':             'Neurológico / Memoria',
+      '🫁 Respiratorio':            'Función Pulmonar',
+      '☠️ Metales Pesados':           'Metales Pesados · Tóxicos',
+      '🧪 Tóxicos · Pesticidas':    'Metales Pesados · Tóxicos',
+      '🦴 Óseo · Articular':         'Sistema Óseo y Articular',
+      '🫃 Digestivo':               'Sistema Digestivo',
+      '🫀 Hígado · Vesícula':        'Hígado / Vesícula Biliar',
+      '💊 Nutrientes · Suplementos': 'Nutrientes · Vitaminas · Aminoácidos · Coenzimas',
+      '⚗️ Oligoelementos':           'Nutrientes · Vitaminas · Aminoácidos · Coenzimas',
+      '🌸 Piel · Colágeno':          'Condición Física · Piel · Equilibrio Ácido-Base',
+      '👁️ Visual':                'Condición Física · Piel · Equilibrio Ácido-Base',
+      '⚡ Condición Física':           'Condición Física · Piel · Equilibrio Ácido-Base',
+      '🧬 Colágeno Sistémico':      'Condición Física · Piel · Equilibrio Ácido-Base'
+    };
+    // Grupos ya renderizados (para no repetir el sys-title de grupos combinados)
+    var gruposYaRenderizados={};
+
     function renderGrupo(g,prio){
       var items=grupos[g]||[];
       if(!items.length)return;
-      h+='<tr class="sys-title-row"><td colspan="4"><span class="sys-title">'+g+'</span></td></tr>';
-      h+='<tr class="col-mini-row"><td colspan="4"><div class="col-mini" style="display:grid;grid-template-columns:44px 1fr 1fr 1fr;font-size:8px;color:#aaa;text-align:center;padding:2px 4px"><span>#</span><span>Parámetro</span><span>Valor detectado</span><span>¿Qué significa?</span></div></td></tr>';
+      var label=GRUPO_LABEL[g]||g;
+      // Mostrar sys-title solo la primera vez que aparece este label visual
+      if(!gruposYaRenderizados[label]){
+        gruposYaRenderizados[label]=true;
+        h+='<tr class="sys-title-row"><td colspan="4"><span class="sys-title">'+label+'</span></td></tr>';
+      }
+      // Sub-sección especial para Nutrientes/Oligoelementos
+      var isNut=(g==='💊 Nutrientes · Suplementos'||g==='⚗️ Oligoelementos');
+      if(isNut){
+        // Dividir en "Apoyo prioritario" vs "Apoyo general"
+        var sysAfectados=Object.keys(grupos).filter(function(gx){
+          var sw=SYSTEM_WEIGHT[gx]||{};return sw.vital||sw.pv>=3;
+        });
+        var prioritarios=items.filter(function(s){return s.pct>=15;});
+        var generales=items.filter(function(s){return s.pct<15;});
+        if(prioritarios.length){
+          h+='<tr class="nut-sub-row"><td colspan="4"><span class="nut-sub">APOYO PRIORITARIO — RELACIONADO CON SISTEMAS AFECTADOS EN ESTE REPORTE</span></td></tr>';
+          h+='<tr class="col-mini-row"><td colspan="4"><div class="col-mini" style="display:grid;grid-template-columns:44px 1fr 1fr 1fr;font-size:8px;color:#aaa;text-align:center;padding:2px 4px"><span>#</span><span>Parámetro</span><span>Valor detectado</span><span>¿Qué significa?</span></div></td></tr>';
+          renderItems(prioritarios,prio);
+        }
+        if(generales.length){
+          h+='<tr class="nut-sub-row"><td colspan="4"><span class="nut-sub">APOYO GENERAL — DÉFICITS QUE CONVIENE ATENDER PARA EL BIENESTAR INTEGRAL</span></td></tr>';
+          h+='<tr class="col-mini-row"><td colspan="4"><div class="col-mini" style="display:grid;grid-template-columns:44px 1fr 1fr 1fr;font-size:8px;color:#aaa;text-align:center;padding:2px 4px"><span>#</span><span>Parámetro</span><span>Valor detectado</span><span>¿Qué significa?</span></div></td></tr>';
+          renderItems(generales,prio);
+        }
+        if(!prioritarios.length&&!generales.length)renderItems(items,prio);
+      } else {
+        h+='<tr class="col-mini-row"><td colspan="4"><div class="col-mini" style="display:grid;grid-template-columns:44px 1fr 1fr 1fr;font-size:8px;color:#aaa;text-align:center;padding:2px 4px"><span>#</span><span>Parámetro</span><span>Valor detectado</span><span>¿Qué significa?</span></div></td></tr>';
+        renderItems(items,prio);
+      }
+      // ¿Qué hacer? al final del grupo
+      var rec=typeof generarRecomendacionGrupo==='function'?generarRecomendacionGrupo(g):'Consulta con un profesional de salud.';
+      h+='<tr style="background:#f3eeff;border-bottom:2px solid #c9a8f5"><td colspan="4" style="padding:6px 10px">';
+      h+='<span style="font-size:8px;font-weight:700;color:#7d4fd0;letter-spacing:.5px;text-transform:uppercase">¿Qué hacer?</span> ';
+      h+='<span style="font-size:10px;font-style:italic;color:#5a3d8a">'+rec+'</span></td></tr>';
+    }
+
+    function renderItems(items,prio){
       items.forEach(function(s,idx){
         var urg=s.urgencia||s.nivel||'baja';
         var pct=parseFloat(s.pct)||0;
@@ -3596,11 +3676,6 @@ function renderResultVH(r){
         h+='<td style="padding:5px 7px;font-size:10px;color:#555;line-height:1.45">'+sig+'</td></tr>';
         counter++;
       });
-      // ¿Qué hacer? — viene de generarRecomendacionGrupo (de tablas)
-      var rec=typeof generarRecomendacionGrupo==='function'?generarRecomendacionGrupo(g):'Consulta con un profesional de salud.';
-      h+='<tr style="background:#f3eeff;border-bottom:2px solid #c9a8f5"><td colspan="4" style="padding:6px 10px">';
-      h+='<span style="font-size:8px;font-weight:700;color:#7d4fd0;letter-spacing:.5px;text-transform:uppercase">¿Qué hacer?</span> ';
-      h+='<span style="font-size:10px;font-style:italic;color:#5a3d8a">'+rec+'</span></td></tr>';
     }
 
     var priDef=[
@@ -5324,10 +5399,17 @@ function parsearReporteBiocuantico(texto,c){
   var sistemas=outParams.map(function(p){
     return{
       sistema:p.display,
+      parametro:p.display,
+      grupo:getGrupoSistema(p.display),
       detectado:'Valor: '+p.val+' (rango normal: '+p.rmin+' – '+p.rmax+')',
       significado:p.sig,
-      urgencia:p.urgencia,nivel:p.urgencia==='alta'?'alto':p.urgencia==='media'?'medio':'bajo',
-      num:p.num,dir:p.dir
+      urgencia:p.urgencia,
+      nivel:p.urgencia==='alta'?'alto':p.urgencia==='media'?'medio':'bajo',
+      pct:Math.round((p.pct||0)*100),
+      val:p.val,valor:p.val,
+      ref_min:p.rmin,ref_max:p.rmax,
+      rmin:p.rmin,rmax:p.rmax,
+      dir:p.dir,num:p.num
     };
   });
 
