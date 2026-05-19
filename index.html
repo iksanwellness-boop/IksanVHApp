@@ -3596,47 +3596,68 @@ function renderResultVH(r){
   }
 
   // 3. ALIMENTACIÓN
-  if(comida.length){
+  // Usar tablaParamAlim si viene del plan_alimenticio, sino recsAlim
+  var planAlim=r.plan_alimenticio||null;
+  var tablaAlim=planAlim&&planAlim.tablaParamAlim&&planAlim.tablaParamAlim.length?planAlim.tablaParamAlim:null;
+
+  if(tablaAlim){
+    h+='<div class="sec sec-green"><div class="sec-hdr">3. Recomendaciones Alimenticias por Sistemas Detectados</div>';
+    h+='<div style="padding:6px 13px 2px"><div style="font-size:9.5px;color:#555;font-style:italic">Basadas en los sistemas más afectados · No sustituyen indicación profesional.</div></div>';
+    h+='<table class="ali-table"><tr><th>Sistema</th><th style="color:#1a7f3c">Incluir</th><th style="color:#a32d2d">Reducir</th></tr>';
+    tablaAlim.forEach(function(row){
+      var alims=Array.isArray(row.alimentos)?row.alimentos.join(' · '):row.alimentos||'—';
+      var evits=Array.isArray(row.evitar)?row.evitar.join(' · '):row.evitar||'—';
+      h+='<tr><td style="font-weight:700;white-space:nowrap">'+(row.categoria||row.param||'—')+'</td><td>'+alims+'</td><td>'+evits+'</td></tr>';
+    });
+    h+='</table>';
+    if(planAlim.esMayor)h+='<div style="padding:4px 13px 8px;font-size:9px;color:#1a7f3c;font-style:italic">Para mayores de 60: priorizar proteínas de fácil digestión, vitamina D y calcio diario.</div>';
+    h+='</div>';
+  } else if(comida.length){
     h+='<div class="sec sec-green"><div class="sec-hdr">3. Recomendaciones Alimenticias</div>';
     h+='<div style="padding:6px 13px 2px"><div style="font-size:9.5px;color:#555;font-style:italic">No sustituyen indicación profesional.</div></div>';
-    // comida puede ser array de strings o array de {sistema,comer,evitar}
-    if(typeof comida[0]==='string'){
-      h+='<ul style="padding:8px 13px 8px 28px;margin:0">';
-      comida.forEach(function(c){h+='<li style="font-size:11px;color:#333;margin-bottom:4px">'+c+'</li>';});
-      h+='</ul>';
-    } else {
-      h+='<table class="ali-table"><tr><th>Sistema</th><th style="color:#1a7f3c">Incluir</th><th style="color:#a32d2d">Reducir</th></tr>';
-      comida.forEach(function(c){
-        h+='<tr><td style="font-weight:700;white-space:nowrap">'+(c.sistema||c.grupo||'—')+'</td>';
-        h+='<td>'+(Array.isArray(c.comer)?c.comer.join(' · '):c.comer||c.incluir||'—')+'</td>';
-        h+='<td>'+(Array.isArray(c.evitar)?c.evitar.join(' · '):c.evitar||c.reducir||'—')+'</td></tr>';
-      });
-      h+='</table>';
-    }
-    h+='</div>';
+    h+='<ul style="padding:8px 13px 8px 28px;margin:0">';
+    comida.forEach(function(c){
+      var txt=typeof c==='string'?c:(c.sistema||c.categoria||'—');
+      h+='<li style="font-size:11px;color:#333;margin-bottom:4px">'+txt+'</li>';
+    });
+    h+='</ul></div>';
   }
 
   // 4. PROTOCOLOS
   var pks=r.paquetes||{};
+  var pkLabels={basico:'Básico — Primer paso',esencial:'Esencial — Protocolo completo',completo:'Completo — Máximo apoyo'};
+  var pkColors={basico:'#1a56db',esencial:'#1a7f3c',completo:'#8b1a5a'};
   var pkKeys=Object.keys(pks).filter(function(k){
-    var p=pks[k];return p&&((p.productos&&p.productos.length)||(Array.isArray(p)&&p.length));
+    var p=pks[k];
+    return p&&p.productos&&p.productos.length>0;
   });
   if(pkKeys.length){
     h+='<div class="sec" style="border-color:#d5e8ff"><div class="sec-hdr" style="background:#eaf2ff;border-color:#1a56db;color:#1a56db">4. Protocolos de Suplementación Sugeridos</div>';
-    var pkLabels={basico:'Básico',esencial:'Esencial',completo:'Completo'};
     pkKeys.forEach(function(pk){
       var p=pks[pk];
-      var prods=p.productos||p||[];
-      if(!prods.length)return;
-      h+='<div style="padding:8px 13px;border-bottom:1px solid #f0f0f0">';
-      h+='<div style="font-size:11px;font-weight:700;color:#1a2a3e;margin-bottom:4px">'+(pkLabels[pk]||pk)+(p.justificacion?' — <span style="font-weight:400;font-size:10px;color:#555">'+p.justificacion+'</span>':'')+'</div>';
-      if(Array.isArray(prods)){
-        prods.forEach(function(item){
-          var name=typeof item==='string'?item:(item.nombre||item.n||item);
-          h+='<div style="font-size:10px;color:#555;margin-bottom:2px">• '+name+'</div>';
-        });
-      }
-      h+='</div>';
+      var prods=p.productos||[];
+      var col=pkColors[pk]||'#1a2a3e';
+      var lbl=pkLabels[pk]||pk;
+      h+='<div style="padding:10px 13px;border-bottom:1px solid #f0f0f0">';
+      h+='<div style="font-size:12px;font-weight:700;color:'+col+';margin-bottom:4px">'+lbl+'</div>';
+      if(p.justificacion)h+='<div style="font-size:10px;color:#666;font-style:italic;margin-bottom:6px">'+p.justificacion+'</div>';
+      h+='<table style="width:100%;border-collapse:collapse;font-size:10px">';
+      h+='<tr style="background:#f8f8f8"><th style="text-align:left;padding:4px 7px;color:#555">Producto</th><th style="text-align:left;padding:4px 7px;color:#555">Para qué sirve</th><th style="text-align:left;padding:4px 7px;color:#555">Ingredientes principales</th><th style="text-align:left;padding:4px 7px;color:#555">Dosis</th></tr>';
+      prods.forEach(function(item,idx){
+        var nombre=typeof item==='string'?item:(item.nombre||item.n||'—');
+        var razon=typeof item==='object'?(item.razon_clinica||item.resultado_esperado||''):'';
+        var dosis=typeof item==='object'?(item.dosis||''):'';
+        // Buscar ingredientes en PP
+        var ppItem=typeof PP!=='undefined'?PP.find(function(p){return p.n===nombre;}):null;
+        var ingredientes=ppItem&&ppItem.ing?ppItem.ing:'';
+        var bg=idx%2===0?'#fff':'#f9f9f9';
+        h+='<tr style="background:'+bg+'">';
+        h+='<td style="padding:5px 7px;font-weight:600;color:#1a2a3e">'+nombre+'</td>';
+        h+='<td style="padding:5px 7px;color:#555">'+razon+'</td>';
+        h+='<td style="padding:5px 7px;color:#777;font-size:9px">'+ingredientes+'</td>';
+        h+='<td style="padding:5px 7px;color:#777">'+dosis+'</td></tr>';
+      });
+      h+='</table></div>';
     });
     h+='</div>';
   }
@@ -4423,12 +4444,13 @@ function runVHTextAnalysis(){
     return;
   }
 
-  // ── Plan de alimentación desde Tablas (gratis) — siempre genera si está marcado ──
+    // ── Plan de alimentación: siempre se genera con tablaParamAlim por parámetros fuera de rango ──
   var incluirAliment=document.getElementById('chkAlimentVH')?.checked;
-  var habitosText=incluirAliment?(document.getElementById('alimentHabitosVH')?.value||'').trim():'';
+  var habitosText=(document.getElementById('alimentHabitosVH')?.value||'').trim();
+  var sisParaPlan=(result.sistemas_afectados||[]).length>0?result.sistemas_afectados:[{sistema:'Metabolismo Lipídico'},{sistema:'Contenido de Grasa en el Hígado'}];
+  // Siempre generar tablaParamAlim basada en parámetros encontrados
+  result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
   if(incluirAliment){
-    var sisParaPlan=(result.sistemas_afectados||[]).length>0?result.sistemas_afectados:[{sistema:'Metabolismo Lipídico'},{sistema:'Contenido de Grasa en el Hígado'}];
-    result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
   }
 
   if(spinEl)spinEl.style.display='none';
