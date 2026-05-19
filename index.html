@@ -3461,25 +3461,21 @@ function renderResultVH(r){
   _lastResult=r;
   var boCfg=currentUser?S.get('ik_boconfig_'+currentUser.id,null):null;
   var negocio=boCfg&&boCfg.appName?boCfg.appName:(APP_CFG.appName||'Iksan Wellness');
-  var logo=boCfg&&boCfg.logo?'<img src="'+boCfg.logo+'" style="height:32px;border-radius:50%;margin-right:8px;vertical-align:middle">':'<div class="mbr-logo">IW</div>';
+  var logoHtml=boCfg&&boCfg.logo?'<img src="'+boCfg.logo+'" style="height:32px;border-radius:50%;margin-right:8px;vertical-align:middle">':'<div class="mbr-logo">IW</div>';
+
   var sistemas=r.sistemas_afectados||r.sistemas||r.hallazgos_criticos||[];
   var comida=r.recomendaciones_alimentacion||[];
-  var resumenPersonal=generarResumenPersonal?generarResumenPersonal(sistemas,r.paciente,r.sexo,r.edad):'';
+  var resumenPersonal=typeof generarResumenPersonal==='function'?generarResumenPersonal(sistemas,r.paciente,r.sexo,r.edad):'';
 
-  // Agrupar sistemas por grupo/prioridad usando sortByHealthPriority
-  var sorted=sistemas.length?sortByHealthPriority(sistemas,r.edad,r.sexo):[];
-
-  // Calcular prioridades por grupo
+  // Agrupar por grupo
   var grupos={};
   var grupoPuntos={};
-  sorted.forEach(function(s){
+  sistemas.forEach(function(s){
     var g=s.grupo||s.sistema||'General';
     if(!grupos[g])grupos[g]=[];
     grupos[g].push(s);
     grupoPuntos[g]=(grupoPuntos[g]||0)+(s.puntuacion||s.score||100);
   });
-
-  // SYSTEM_WEIGHT definida globalmente
 
   function getPrioLocal(g){
     var sw=SYSTEM_WEIGHT[g]||{pv:1,vital:false};
@@ -3489,7 +3485,6 @@ function renderResultVH(r){
     return 'soporte';
   }
 
-  // Separar grupos por prioridad
   var gruposAlta=[],gruposMedia=[],gruposSoporte=[];
   Object.keys(grupos).forEach(function(g){
     var p=getPrioLocal(g);
@@ -3500,13 +3495,13 @@ function renderResultVH(r){
 
   var h='<div class="rpt">';
 
-  // ── MEMBRETE ──
+  // MEMBRETE
   h+='<div class="membrete">';
-  h+='<div class="mbr-left">'+logo+'<div><div class="mbr-title">'+negocio+'</div><div class="mbr-sub">Reporte de Salud Personalizado</div></div></div>';
+  h+='<div class="mbr-left">'+logoHtml+'<div><div class="mbr-title">'+negocio+'</div><div class="mbr-sub">Reporte de Salud Personalizado</div></div></div>';
   h+='<div class="mbr-right"><div class="mbr-dl">Fecha del análisis</div><div class="mbr-date">'+(r.fecha||new Date().toLocaleDateString('es-MX'))+'</div><div class="mbr-dl" style="margin-top:2px">Confidencial</div></div>';
   h+='</div><div class="grad-bar"></div>';
 
-  // ── 1. INFORMACIÓN DEL PACIENTE ──
+  // 1. INFO PACIENTE
   h+='<div class="sec sec-teal"><div class="sec-hdr">1. Información del Paciente</div>';
   h+='<table class="pt">';
   [['Nombre',r.paciente||'—'],['Sexo',r.sexo||'—'],['Edad',r.edad?r.edad+' años':'—'],['Complexión',r.complexion||'—'],['Fecha del análisis',r.fecha||'—'],['Tipo de análisis',r.tipo_analisis||'Análisis BioCuántico VitalHealth']].forEach(function(row){
@@ -3514,77 +3509,84 @@ function renderResultVH(r){
   });
   h+='</table></div>';
 
-  // ── 2. SISTEMAS FUERA DE RANGO ──
-  if(sorted.length){
+  // 2. SISTEMAS
+  if(sistemas.length){
     h+='<div class="sec sec-red"><div class="sec-hdr">2. Sistemas Fuera de Rango · Orden de Atención</div>';
     h+='<div class="info-sub">El orden considera edad, impacto funcional y hallazgos combinados — no solo la desviación del valor.</div>';
 
     // Resumen personal
     if(resumenPersonal){
       h+='<div class="resbox"><div class="res-title">Lo que muestran tus resultados</div>';
-      if(typeof resumenPersonal==='object'&&resumenPersonal.bullets){
-        resumenPersonal.bullets.forEach(function(b,i){
+      if(Array.isArray(resumenPersonal)&&resumenPersonal.length){
+        resumenPersonal.forEach(function(b,i){
           var colors=['#e74c3c','#7b5ea7','#e67e22','#148f77','#2980b9'];
           var col=colors[i%colors.length];
+          var txt=typeof b==='object'?(b.desc||b.texto||b.sistema||''):b;
+          var label=typeof b==='object'?(b.sistema||''):'';
           h+='<div class="rb"><div class="rbn" style="background:'+col+'">'+(i+1)+'</div>';
-          h+='<div class="rbt"><span class="sys-label" style="color:'+col+'">'+(b.sistema||'')+'</span>';
-          if(b.badge)h+='<span style="font-size:10px;background:#fff0f0;color:#a32d2d;border-radius:4px;padding:1px 7px;vertical-align:middle">'+b.badge+'</span>';
-          h+='<br><span style="color:#4a2010">'+(b.desc||b.texto||b)+'</span></div></div>';
+          h+='<div class="rbt">'+(label?'<span class="sys-label" style="color:'+col+'">'+label+'</span><br>':'');
+          h+='<span style="color:#333">'+txt+'</span></div></div>';
         });
-      } else if(typeof resumenPersonal==='string'){
+      } else if(typeof resumenPersonal==='string'&&resumenPersonal.trim()){
         h+='<div style="font-size:11px;color:#555;line-height:1.6">'+resumenPersonal+'</div>';
       }
       h+='</div>';
     }
 
-    // Tabla principal
     h+='<table class="main"><tr><th style="text-align:center">#</th><th>Parámetro</th><th style="text-align:center">Valor detectado</th><th>¿Qué significa?</th></tr>';
 
     var counter=1;
+
     function renderGrupo(g,prio){
       var items=grupos[g]||[];
       if(!items.length)return;
       var bgClass='bg-'+prio;
 
-      // Sub-título sistema
       h+='<tr class="sys-title-row"><td colspan="4"><span class="sys-title">'+g+'</span></td></tr>';
       h+='<tr class="col-mini-row"><td colspan="4"><div class="col-mini"><span>#</span><span>Parámetro</span><span>Valor detectado</span><span>¿Qué significa?</span></div></td></tr>';
 
       items.forEach(function(s,idx){
-        var urgencia=s.urgencia||s.nivel||3;
-        var nClass='n-'+prio.charAt(0)+urgencia;
-        var bClass='b-'+prio.charAt(0)+urgencia;
-        var urg='+'.repeat(Math.min(3,parseInt(urgencia)||1));
+        var urgencia=s.urgencia||s.nivel||'soporte';
+        var urgNum=urgencia==='alta'||urgencia==='alto'?3:urgencia==='media'||urgencia==='medio'?2:1;
+        var prioChar=prio.charAt(0);
+        var nClass='n-'+prioChar+urgNum;
+        var bClass='b-'+prioChar+urgNum;
+        var urg='+'.repeat(urgNum);
         var altColor=idx%2===0?'row-plain':'row-alt';
-        var valColor=s.valor>s.ref_max?'#c0392b':'#185fa5';
-        var refStr=s.ref_min!=null&&s.ref_max!=null?'ref: '+s.ref_min+' – '+s.ref_max:(s.referencia||'');
+
+        // Valor y referencia
+        var val=s.valor!=null?s.valor:(s.val!=null?s.val:'—');
+        var rmin=s.ref_min!=null?s.ref_min:(s.rmin!=null?s.rmin:null);
+        var rmax=s.ref_max!=null?s.ref_max:(s.rmax!=null?s.rmax:null);
+        var valColor=s.dir==='alto'||s.dir==='high'?'#c0392b':'#185fa5';
+        if(val==='—')valColor='#666';
+        var refStr=rmin!=null&&rmax!=null?'ref: '+rmin+' – '+rmax:(s.referencia||'');
+
+        var sig=s.significado||s.descripcion||s.interpretacion||s.sig||s.hallazgo||'—';
+        var param=s.parametro||s.display||s.sistema||s.nombre||'—';
 
         h+='<tr class="'+bClass+' '+altColor+'">';
         h+='<td class="num-cell '+nClass+'">'+counter+'<span class="urg-badge">'+urg+'</span></td>';
-        h+='<td class="param-cell '+bgClass+'">'+(s.parametro||s.nombre||s.sistema||'—')+'</td>';
-        h+='<td class="val-cell"><span class="val-num" style="color:'+valColor+'">'+(s.valor||'—')+'</span>';
+        h+='<td class="param-cell '+bgClass+'">'+param+'</td>';
+        h+='<td class="val-cell"><span class="val-num" style="color:'+valColor+'">'+val+'</span>';
         if(refStr)h+='<div class="val-ref">'+refStr+'</div>';
         h+='</td>';
-        h+='<td class="sig-cell">'+(s.significado||s.descripcion||s.interpretacion||'—')+'</td></tr>';
+        h+='<td class="sig-cell">'+sig+'</td></tr>';
         counter++;
       });
 
-      // Fila ¿Qué hacer?
-      var rec=generarRecomendacionGrupo?generarRecomendacionGrupo(g):'Consulta con un profesional de salud.';
+      var rec=typeof generarRecomendacionGrupo==='function'?generarRecomendacionGrupo(g):'Consulta con un profesional de salud.';
       h+='<tr class="rec-row"><td colspan="4"><span class="rec-label">¿Qué hacer?</span><span class="rec-text">'+rec+'</span></td></tr>';
     }
 
-    // Alta
     if(gruposAlta.length){
       h+='<tr class="pri-title-row"><td colspan="4"><div class="pri-block pri-alta-block"><div class="pri-name">Prioridad Alta</div><div class="pri-desc">Sistemas que merecen mayor atención preventiva según edad y hallazgos.</div></div></td></tr>';
       gruposAlta.forEach(function(g){renderGrupo(g,'alta');});
     }
-    // Media
     if(gruposMedia.length){
       h+='<tr class="pri-title-row"><td colspan="4"><div class="pri-block pri-media-block"><div class="pri-name">Prioridad Media</div><div class="pri-desc">Funciones corporales que podrían beneficiarse de seguimiento y apoyo.</div></div></td></tr>';
       gruposMedia.forEach(function(g){renderGrupo(g,'media');});
     }
-    // Soporte
     if(gruposSoporte.length){
       h+='<tr class="pri-title-row"><td colspan="4"><div class="pri-block pri-soporte-block"><div class="pri-name">Soporte y Optimización</div><div class="pri-desc">Aspectos relacionados con nutrición, equilibrio y bienestar integral.</div></div></td></tr>';
       gruposSoporte.forEach(function(g){renderGrupo(g,'soporte');});
@@ -3593,34 +3595,46 @@ function renderResultVH(r){
     h+='</table></div>';
   }
 
-  // ── 3. RECOMENDACIONES ALIMENTICIAS ──
+  // 3. ALIMENTACIÓN
   if(comida.length){
-    h+='<div class="sec sec-green"><div class="sec-hdr">3. Recomendaciones Alimenticias por Sistemas Detectados</div>';
-    h+='<div style="padding:6px 13px 2px"><div style="font-size:9.5px;color:#555;font-style:italic">Basadas en los sistemas más afectados · No sustituyen indicación profesional.</div></div>';
-    h+='<table class="ali-table"><tr><th>Sistema</th><th style="color:#1a7f3c">Incluir</th><th style="color:#a32d2d">Reducir</th></tr>';
-    comida.forEach(function(c){
-      h+='<tr><td style="font-weight:700;white-space:nowrap">'+(c.sistema||c.grupo||'—')+'</td>';
-      h+='<td>'+(Array.isArray(c.comer)?c.comer.join(' · '):c.comer||c.incluir||'—')+'</td>';
-      h+='<td>'+(Array.isArray(c.evitar)?c.evitar.join(' · '):c.evitar||c.reducir||'—')+'</td></tr>';
-    });
-    h+='</table>';
-    if(r.edad&&parseInt(r.edad)>=60)h+='<div style="padding:4px 13px 8px;font-size:9px;color:#1a7f3c;font-style:italic">Para mayores de 60: priorizar proteínas de fácil digestión, vitamina D y calcio diario.</div>';
+    h+='<div class="sec sec-green"><div class="sec-hdr">3. Recomendaciones Alimenticias</div>';
+    h+='<div style="padding:6px 13px 2px"><div style="font-size:9.5px;color:#555;font-style:italic">No sustituyen indicación profesional.</div></div>';
+    // comida puede ser array de strings o array de {sistema,comer,evitar}
+    if(typeof comida[0]==='string'){
+      h+='<ul style="padding:8px 13px 8px 28px;margin:0">';
+      comida.forEach(function(c){h+='<li style="font-size:11px;color:#333;margin-bottom:4px">'+c+'</li>';});
+      h+='</ul>';
+    } else {
+      h+='<table class="ali-table"><tr><th>Sistema</th><th style="color:#1a7f3c">Incluir</th><th style="color:#a32d2d">Reducir</th></tr>';
+      comida.forEach(function(c){
+        h+='<tr><td style="font-weight:700;white-space:nowrap">'+(c.sistema||c.grupo||'—')+'</td>';
+        h+='<td>'+(Array.isArray(c.comer)?c.comer.join(' · '):c.comer||c.incluir||'—')+'</td>';
+        h+='<td>'+(Array.isArray(c.evitar)?c.evitar.join(' · '):c.evitar||c.reducir||'—')+'</td></tr>';
+      });
+      h+='</table>';
+    }
     h+='</div>';
   }
 
-  // ── PROTOCOLOS / PAQUETES ──
+  // 4. PROTOCOLOS
   var pks=r.paquetes||{};
-  var pkKeys=Object.keys(pks);
+  var pkKeys=Object.keys(pks).filter(function(k){
+    var p=pks[k];return p&&((p.productos&&p.productos.length)||(Array.isArray(p)&&p.length));
+  });
   if(pkKeys.length){
     h+='<div class="sec" style="border-color:#d5e8ff"><div class="sec-hdr" style="background:#eaf2ff;border-color:#1a56db;color:#1a56db">4. Protocolos de Suplementación Sugeridos</div>';
+    var pkLabels={basico:'Básico',esencial:'Esencial',completo:'Completo'};
     pkKeys.forEach(function(pk){
       var p=pks[pk];
+      var prods=p.productos||p||[];
+      if(!prods.length)return;
       h+='<div style="padding:8px 13px;border-bottom:1px solid #f0f0f0">';
-      h+='<div style="font-size:11px;font-weight:700;color:#1a2a3e;margin-bottom:4px">'+pk+'</div>';
-      if(Array.isArray(p)){
-        p.forEach(function(item){h+='<div style="font-size:10px;color:#555;margin-bottom:2px">• '+item+'</div>';});
-      } else {
-        h+='<div style="font-size:10px;color:#555">'+p+'</div>';
+      h+='<div style="font-size:11px;font-weight:700;color:#1a2a3e;margin-bottom:4px">'+(pkLabels[pk]||pk)+(p.justificacion?' — <span style="font-weight:400;font-size:10px;color:#555">'+p.justificacion+'</span>':'')+'</div>';
+      if(Array.isArray(prods)){
+        prods.forEach(function(item){
+          var name=typeof item==='string'?item:(item.nombre||item.n||item);
+          h+='<div style="font-size:10px;color:#555;margin-bottom:2px">• '+name+'</div>';
+        });
       }
       h+='</div>';
     });
@@ -5279,9 +5293,18 @@ function parsearReporteBiocuantico(texto,c){
   var sistemas=outParams.map(function(p){
     return{
       sistema:p.display,
+      parametro:p.display,
+      grupo:p.section||'General',
+      valor:p.val,
+      ref_min:p.rmin,
+      ref_max:p.rmax,
       detectado:'Valor: '+p.val+' (rango normal: '+p.rmin+' – '+p.rmax+')',
       significado:p.sig,
-      urgencia:p.urgencia,nivel:p.urgencia==='alta'?'alto':p.urgencia==='media'?'medio':'bajo',
+      descripcion:p.sig,
+      urgencia:p.urgencia,
+      nivel:p.urgencia==='alta'?'alto':p.urgencia==='media'?'medio':'bajo',
+      puntuacion:p.urgencia==='alta'?700:p.urgencia==='media'?300:100,
+      score:p.urgencia==='alta'?700:p.urgencia==='media'?300:100,
       num:p.num,dir:p.dir
     };
   });
