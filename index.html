@@ -234,7 +234,7 @@ body{font-family:-apple-system,sans-serif;background:var(--cream);color:var(--de
 .empty-icon{font-size:38px;margin-bottom:8px;opacity:.5}
 
 /* MODALS */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:flex-end;justify-content:center}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1100;align-items:flex-end;justify-content:center}
 .overlay.on{display:flex}
 .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;padding:18px 16px 60px;position:relative}
 .m-handle{width:34px;height:3px;background:var(--border);border-radius:2px;margin:0 auto 13px}
@@ -2508,6 +2508,7 @@ function renderConHistory(c){
 }
 
 function openHistoryDetail(idx){
+  try{
   const c=getActiveCon();if(!c)return;
   const h=c.history[idx];if(!h)return;
   let body='';
@@ -2542,6 +2543,8 @@ function openHistoryDetail(idx){
     body=`<pre style="background:#fafafa;padding:11px;border-radius:8px;font-size:11px;white-space:pre-wrap">${JSON.stringify(h.data,null,2)}</pre>`;
   }
   openMo(2,`<div class="m-title">${h.summary||h.type}</div><div class="m-sub">${new Date(h.date).toLocaleString('es-MX')}</div>${body}`);
+
+  }catch(e){console.error("openHistoryDetail error:",e);showT("Error al abrir: "+e.message);}
 }
 
 function addToHistory(type,summary,data){
@@ -4385,6 +4388,7 @@ function generarPlanAlimentacionTabla(sistemasDetectados, habitosTexto, paciente
 
 
 function runVHTextAnalysis(){
+  try{
   const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
   if(!texto){showT('Pega el texto del reporte primero');return;}
   const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
@@ -4440,6 +4444,8 @@ function runVHTextAnalysis(){
 
   addToHistory('vh','🔬 Análisis BioCuántico — '+sisLen+' hallazgos',result);
   showT('✓ Reporte generado — '+sisLen+' sistemas detectados');
+
+  }catch(e){console.error("runVHTextAnalysis error:",e);var resEl=document.getElementById("anaRes");var spinEl=document.getElementById("anaSpin");if(spinEl)spinEl.style.display="none";if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error:</b> '+e.message+'</div>';}
 }
 
 // ── API VERSION: Tabla Maestra para sistemas/paquetes + mini-llamada API solo para plan alimenticio ──
