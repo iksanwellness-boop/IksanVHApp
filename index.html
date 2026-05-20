@@ -2182,9 +2182,13 @@ function applyModulosTabs(u){
 
   // Redirect if on locked view
   if(!hasM1){
-    document.getElementById('mainApp').style.display='none';
-    document.getElementById('loginScreen').style.display='flex';
-    showT('Sin módulos activos. Contacta al admin.');
+    // Solo ocultar mainApp si realmente no hay sesión activa
+    // No re-mostrar loginScreen si el usuario ya está autenticado
+    if(!currentUser){
+      document.getElementById('mainApp').style.display='none';
+      document.getElementById('loginScreen').style.display='flex';
+    }
+    showT('Sin módulos activos. Contacta al administrador para activar tu cuenta.');
     return;
   }
   if(!hasM2&&curView==='bo')goView('clientes');
@@ -11147,7 +11151,7 @@ window.addEventListener('load',function(){
   })();
 
   // Version check - clear corrupted data from old versions
-  var APP_VER='1778796914';
+  var APP_VER='20260520_001';
   var storedVer=localStorage.getItem('ik_appver');
 
   // CRITICAL: ensure only u_admin exists as master, clean any corruption
@@ -11177,7 +11181,7 @@ window.addEventListener('load',function(){
 
   if(storedVer!==APP_VER){
     // Clear potentially corrupted ik_users and ik_modulos from old versions
-    localStorage.removeItem('ik_modulos');
+    // No borrar ik_modulos — los módulos de usuarios se mantienen entre versiones
     // Force re-init users
     users=(function(){
       try{
