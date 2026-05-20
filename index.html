@@ -4521,139 +4521,6 @@ function generarPlanAlimentacionTabla(sistemasDetectados, habitosTexto, paciente
 }
 
 
-function runVHTextAnalysis(){
-  const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
-  if(!texto){showT('Pega el texto del reporte primero');return;}
-  const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
-  var mode=S.get('ik_vh_mode','tabla')||'tabla';
-  if(mode==='api'){runVHTextAnalysisAPI();return;}
-
-  var spinEl=document.getElementById('anaSpin');
-  var resEl=document.getElementById('anaRes');
-  if(spinEl){spinEl.style.display='block';var sd=spinEl.querySelector('div:last-child');if(sd)sd.textContent='Extrayendo datos...';}
-  if(resEl)resEl.innerHTML='';
-
-  var result;
-  try{result=parsearReporteBiocuantico(texto,c);}
-  catch(err){
-    if(spinEl)spinEl.style.display='none';
-    if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error al leer reporte:</b> '+err.message+'</div>';
-    return;
-  }
-
-  // ── Plan de alimentación desde Tablas (gratis) — siempre genera si está marcado ──
-  var incluirAliment=document.getElementById('chkAlimentVH')?.checked;
-  var habitosText=(document.getElementById('alimentHabitosVH')?.value||'').trim();
-  var sisParaPlan=(result.sistemas_afectados||[]).length>0?result.sistemas_afectados:[{sistema:'Metabolismo Lipídico'},{sistema:'Contenido de Grasa en el Hígado'}];
-  // Siempre generar tablaParamAlim automaticamente
-  result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
-  if(incluirAliment){
-  }
-
-  if(spinEl)spinEl.style.display='none';
-  _lastResult=result;_fileSource='vh';
-
-  var sisLen=(result.sistemas_afectados||[]).length;
-  console.log('[VH] sistemas_afectados: '+sisLen);
-
-  if(sisLen===0){
-    // Check if the text even has ranges in it
-    var testRanges=(texto.match(/(\d+[,.]\d+\s*[-–]\s*\d+[,.]\d+)/g)||[]).length;
-    var testVals=(texto.match(/^\d+[,.]\d+$/gm)||[]).length;
-    var testInline=(texto.match(/\d+[,.]\d+\s*[-–]\s*\d+[,.]\d+\s+\d+[,.]\d+/g)||[]).length;
-    if(resEl)resEl.innerHTML='<div style="background:#fff8e8;border-radius:9px;padding:14px;border:1px solid #fbbf24;font-size:12px">'
-      +'<b style="color:#b45309">⚠️ No se detectaron parámetros fuera de rango</b><br><br>'
-      +'<b>Diagnóstico del texto pegado:</b><br>'
-      +'• Caracteres totales: <b>'+texto.length+'</b><br>'
-      +'• Rangos numéricos encontrados (ej: 0,097 - 0,419): <b>'+testRanges+'</b><br>'
-      +'• Valores en línea propia (ej: 0.723): <b>'+testVals+'</b><br>'
-      +'• Formato inline detectado (rango+valor en misma línea): <b>'+testInline+'</b><br><br>'
-      +(testRanges<5?'<b style="color:#c04040">❌ El texto no contiene rangos numéricos del escáner.</b><br>Asegúrate de pegar las páginas 119-124 del PDF (Informe de síntesis).<br><br>':'')
-      +(testRanges>=5?'<b style="color:#1a7f3c">✓ El texto tiene rangos pero ninguno salió fuera de rango.</b><br>Esto puede ser correcto si el paciente está dentro de todos los rangos.<br><br>':'')
-      +'<b>Información extraída:</b> Paciente: '+result.paciente+' | Edad: '+result.edad+' | Sexo: '+result.sexo
-      +'</div>';
-  } else {
-    if(resEl)resEl.innerHTML=renderResultVH(result);
-  }
-
-  addToHistory('vh','🔬 Análisis BioCuántico — '+sisLen+' hallazgos',result);
-  showT('✓ Reporte generado — '+sisLen+' sistemas detectados');
-}
-
-// ── API VERSION: Tabla Maestra para sistemas/paquetes + mini-llamada API solo para plan alimenticio ──
-async function runVHTextAnalysisAPI(){
-  const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
-  if(!texto){showT('Pega el texto del reporte primero');return;}
-  const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
-
-  var spinEl=document.getElementById('anaSpin');
-  var resEl=document.getElementById('anaRes');
-  if(spinEl){spinEl.style.display='block';var sd=spinEl.querySelector('div:last-child');if(sd)sd.textContent='Procesando con Tabla Maestra...';}
-  if(resEl)resEl.innerHTML='';
-
-  // ── Paso 1: Tabla Maestra (gratis, instantáneo) ──
-  var result;
-  try{result=parsearReporteBiocuantico(texto,c);}
-  catch(err){
-    if(spinEl)spinEl.style.display='none';
-    if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error al leer reporte:</b> '+err.message+'</div>';
-    return;
-  }
-
-  var incluirAliment=document.getElementById('chkAlimentVH')?.checked||document.getElementById('chkAliment')?.checked;
-  var habitosText=incluirAliment?((document.getElementById('alimentHabitosVH')?.value||document.getElementById('alimentHabitos')?.value||'').trim()):'';
-  // ── Paso 2: Mini-llamada via Worker solo para plan de alimentación ──
-  if(incluirAliment&&(result.sistemas_afectados||[]).length>0){
-    if(sd)sd.textContent='Generando plan alimenticio con IA...';
-    var sistemasStr=(result.sistemas_afectados||[]).slice(0,10).map(function(s){
-      return s.sistema+(s.significado?' — '+s.significado.slice(0,60):'');
-    }).join('\n');
-    var sexLbl2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':'';
-    var miniPrompt='Eres nutrióloga integrativa. Crea un plan alimenticio práctico y personalizado. Responde SOLO con JSON sin markdown.\n\nPACIENTE: '+c.name+(c.age?', '+c.age+' años':'')+', '+(sexLbl2||'')+'.\nSISTEMAS ALTERADOS EN EL ESCÁNER:\n'+sistemasStr+(habitosText?'\n\nHÁBITOS Y PREFERENCIAS DEL CLIENTE: '+habitosText:'')+'\n\nGenera un JSON con exactamente esta estructura:\n{"comer":["alimento o hábito 1","alimento o hábito 2",...7 máximo],"evitar":["cosa a evitar 1",...7 máximo],"tips":["consejo práctico 1",...4 máximo]}\n\nSé específica y personal — menciona los sistemas alterados. Evita frases genéricas. Usa lenguaje cálido y motivador.';
-    try{
-      var WORKER_URL='https://iksanmastervh.iksanwellness.workers.dev/chat';
-      var wRes=await fetch(WORKER_URL,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          model:'claude-haiku-4-5-20251001',
-          max_tokens:800,
-          messages:[{role:'user',content:miniPrompt}]
-        })
-      });
-      if(wRes.ok){
-        var wData=await wRes.json();
-        var raw=(wData.content||[]).map(function(x){return x.text||'';}).join('').trim();
-        try{
-          var m=raw.match(/\{[\s\S]*\}/);
-          var planParsed=JSON.parse(m?m[0]:raw);
-          if(planParsed.comer||planParsed.evitar){result.plan_alimenticio=planParsed;}
-          else{result.plan_alimenticio=generarPlanAlimentacionTabla(result.sistemas_afectados,habitosText);}
-        }catch(pe){
-          result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
-        }
-      }else{
-        result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
-      }
-    }catch(apiErr){
-      result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
-    }
-  }
-
-  if(spinEl)spinEl.style.display='none';
-  _lastResult=result;
-  _fileSource='vh';
-  if(resEl)resEl.innerHTML=renderResultVH(result);
-  addToHistory('vh','🔬 Análisis BioCuántico — '+(result.sistemas_afectados||[]).length+' hallazgos',result);
-  showT('✓ Reporte generado con plan personalizado');
-}
-
-
-
-// ═══════════════════════════════════════════════════════════════
-// PARAM_TABLE — 184 parámetros del escáner
-// Clave: nombre en minúsculas  |  .d=display .s=section .a=si_alto .b=si_bajo .t=sistemas
-// ═══════════════════════════════════════════════════════════════
 // ═══ RANGE_TABLE: range key → [display, section, si_alto, si_bajo, sistemas] ═══
 // Clave: rmin_rmax  (3 decimales redondeados)
 // Fuente: 3 reportes reales — Rachael Flug (F/43), Luz Garcia (F/51), Suegro Dany (M/75)
@@ -4956,6 +4823,141 @@ var RANGE_TABLE={
   "2.807_3.294":["Fibrinógeno","Ciclo Menstrual","El fibrinógeno podría estar elevado — puede relacionarse con mayor tendencia de coagulación. Conviene valorarlo con un médico.","El fibrinógeno está por debajo del rango — conviene valorarlo con médico durante el ciclo menstrual o en situaciones de herida; la coagulación puede estar comprometida.",["sangre","coagulación","cardiovascular"]],
   "6.326_8.018":["Tasa de Sedimentación","Ciclo Menstrual","La tasa de sedimentación podría estar elevada — puede relacionarse con proceso inflamatorio en curso. Conviene valorarlo con un médico.","La tasa de sedimentación está baja — generalmente es un indicador positivo; sin inflamación sistémica activa.",["inflamación","inmunidad","sangre"]]
 };
+
+
+function runVHTextAnalysis(){
+  const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
+  if(!texto){showT('Pega el texto del reporte primero');return;}
+  const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
+  var mode=S.get('ik_vh_mode','tabla')||'tabla';
+  if(mode==='api'){runVHTextAnalysisAPI();return;}
+
+  var spinEl=document.getElementById('anaSpin');
+  var resEl=document.getElementById('anaRes');
+  if(spinEl){spinEl.style.display='block';var sd=spinEl.querySelector('div:last-child');if(sd)sd.textContent='Extrayendo datos...';}
+  if(resEl)resEl.innerHTML='';
+
+  var result;
+  try{result=parsearReporteBiocuantico(texto,c);}
+  catch(err){
+    if(spinEl)spinEl.style.display='none';
+    if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error al leer reporte:</b> '+err.message+'</div>';
+    return;
+  }
+
+  // ── Plan de alimentación desde Tablas (gratis) — siempre genera si está marcado ──
+  var incluirAliment=document.getElementById('chkAlimentVH')?.checked;
+  var habitosText=(document.getElementById('alimentHabitosVH')?.value||'').trim();
+  var sisParaPlan=(result.sistemas_afectados||[]).length>0?result.sistemas_afectados:[{sistema:'Metabolismo Lipídico'},{sistema:'Contenido de Grasa en el Hígado'}];
+  // Siempre generar tablaParamAlim automaticamente
+  result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
+  if(incluirAliment){
+  }
+
+  if(spinEl)spinEl.style.display='none';
+  _lastResult=result;_fileSource='vh';
+
+  var sisLen=(result.sistemas_afectados||[]).length;
+  console.log('[VH] sistemas_afectados: '+sisLen);
+
+  if(sisLen===0){
+    // Check if the text even has ranges in it
+    var testRanges=(texto.match(/(\d+[,.]\d+\s*[-–]\s*\d+[,.]\d+)/g)||[]).length;
+    var testVals=(texto.match(/^\d+[,.]\d+$/gm)||[]).length;
+    var testInline=(texto.match(/\d+[,.]\d+\s*[-–]\s*\d+[,.]\d+\s+\d+[,.]\d+/g)||[]).length;
+    if(resEl)resEl.innerHTML='<div style="background:#fff8e8;border-radius:9px;padding:14px;border:1px solid #fbbf24;font-size:12px">'
+      +'<b style="color:#b45309">⚠️ No se detectaron parámetros fuera de rango</b><br><br>'
+      +'<b>Diagnóstico del texto pegado:</b><br>'
+      +'• Caracteres totales: <b>'+texto.length+'</b><br>'
+      +'• Rangos numéricos encontrados (ej: 0,097 - 0,419): <b>'+testRanges+'</b><br>'
+      +'• Valores en línea propia (ej: 0.723): <b>'+testVals+'</b><br>'
+      +'• Formato inline detectado (rango+valor en misma línea): <b>'+testInline+'</b><br><br>'
+      +(testRanges<5?'<b style="color:#c04040">❌ El texto no contiene rangos numéricos del escáner.</b><br>Asegúrate de pegar las páginas 119-124 del PDF (Informe de síntesis).<br><br>':'')
+      +(testRanges>=5?'<b style="color:#1a7f3c">✓ El texto tiene rangos pero ninguno salió fuera de rango.</b><br>Esto puede ser correcto si el paciente está dentro de todos los rangos.<br><br>':'')
+      +'<b>Información extraída:</b> Paciente: '+result.paciente+' | Edad: '+result.edad+' | Sexo: '+result.sexo
+      +'</div>';
+  } else {
+    if(resEl)resEl.innerHTML=renderResultVH(result);
+  }
+
+  addToHistory('vh','🔬 Análisis BioCuántico — '+sisLen+' hallazgos',result);
+  showT('✓ Reporte generado — '+sisLen+' sistemas detectados');
+}
+
+// ── API VERSION: Tabla Maestra para sistemas/paquetes + mini-llamada API solo para plan alimenticio ──
+async function runVHTextAnalysisAPI(){
+  const texto=(document.getElementById('vhTextoReporte')?.value||'').trim();
+  if(!texto){showT('Pega el texto del reporte primero');return;}
+  const c=getActiveCon();if(!c){showT('Selecciona un cliente primero');return;}
+
+  var spinEl=document.getElementById('anaSpin');
+  var resEl=document.getElementById('anaRes');
+  if(spinEl){spinEl.style.display='block';var sd=spinEl.querySelector('div:last-child');if(sd)sd.textContent='Procesando con Tabla Maestra...';}
+  if(resEl)resEl.innerHTML='';
+
+  // ── Paso 1: Tabla Maestra (gratis, instantáneo) ──
+  var result;
+  try{result=parsearReporteBiocuantico(texto,c);}
+  catch(err){
+    if(spinEl)spinEl.style.display='none';
+    if(resEl)resEl.innerHTML='<div style="background:#fff5f5;border-radius:9px;padding:14px;border:1px solid #fca5a5"><b style="color:#c04040">Error al leer reporte:</b> '+err.message+'</div>';
+    return;
+  }
+
+  var incluirAliment=document.getElementById('chkAlimentVH')?.checked||document.getElementById('chkAliment')?.checked;
+  var habitosText=incluirAliment?((document.getElementById('alimentHabitosVH')?.value||document.getElementById('alimentHabitos')?.value||'').trim()):'';
+  // ── Paso 2: Mini-llamada via Worker solo para plan de alimentación ──
+  if(incluirAliment&&(result.sistemas_afectados||[]).length>0){
+    if(sd)sd.textContent='Generando plan alimenticio con IA...';
+    var sistemasStr=(result.sistemas_afectados||[]).slice(0,10).map(function(s){
+      return s.sistema+(s.significado?' — '+s.significado.slice(0,60):'');
+    }).join('\n');
+    var sexLbl2=c.sex==='F'?'Femenino':c.sex==='M'?'Masculino':'';
+    var miniPrompt='Eres nutrióloga integrativa. Crea un plan alimenticio práctico y personalizado. Responde SOLO con JSON sin markdown.\n\nPACIENTE: '+c.name+(c.age?', '+c.age+' años':'')+', '+(sexLbl2||'')+'.\nSISTEMAS ALTERADOS EN EL ESCÁNER:\n'+sistemasStr+(habitosText?'\n\nHÁBITOS Y PREFERENCIAS DEL CLIENTE: '+habitosText:'')+'\n\nGenera un JSON con exactamente esta estructura:\n{"comer":["alimento o hábito 1","alimento o hábito 2",...7 máximo],"evitar":["cosa a evitar 1",...7 máximo],"tips":["consejo práctico 1",...4 máximo]}\n\nSé específica y personal — menciona los sistemas alterados. Evita frases genéricas. Usa lenguaje cálido y motivador.';
+    try{
+      var WORKER_URL='https://iksanmastervh.iksanwellness.workers.dev/chat';
+      var wRes=await fetch(WORKER_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:800,
+          messages:[{role:'user',content:miniPrompt}]
+        })
+      });
+      if(wRes.ok){
+        var wData=await wRes.json();
+        var raw=(wData.content||[]).map(function(x){return x.text||'';}).join('').trim();
+        try{
+          var m=raw.match(/\{[\s\S]*\}/);
+          var planParsed=JSON.parse(m?m[0]:raw);
+          if(planParsed.comer||planParsed.evitar){result.plan_alimenticio=planParsed;}
+          else{result.plan_alimenticio=generarPlanAlimentacionTabla(result.sistemas_afectados,habitosText);}
+        }catch(pe){
+          result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
+        }
+      }else{
+        result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
+      }
+    }catch(apiErr){
+      result.plan_alimenticio=generarPlanAlimentacionTabla(sisParaPlan,habitosText);
+    }
+  }
+
+  if(spinEl)spinEl.style.display='none';
+  _lastResult=result;
+  _fileSource='vh';
+  if(resEl)resEl.innerHTML=renderResultVH(result);
+  addToHistory('vh','🔬 Análisis BioCuántico — '+(result.sistemas_afectados||[]).length+' hallazgos',result);
+  showT('✓ Reporte generado con plan personalizado');
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// PARAM_TABLE — 184 parámetros del escáner
+// Clave: nombre en minúsculas  |  .d=display .s=section .a=si_alto .b=si_bajo .t=sistemas
+// ═══════════════════════════════════════════════════════════════
 
 function lookupByRange(rmin,rmax){
   var k=Math.round(rmin*1000)/1000+'_'+Math.round(rmax*1000)/1000;
